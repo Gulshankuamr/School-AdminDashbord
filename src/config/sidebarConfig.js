@@ -1,0 +1,109 @@
+import {
+  LayoutDashboard,
+  Users,
+  BookOpen,
+  Wallet,
+  Calendar,
+  DollarSign,
+  ClipboardCheck,
+  FileText,
+  BarChart3,
+  Settings,
+  Layers,
+ 
+  List,
+ 
+ 
+ 
+  PlusCircle,
+} from 'lucide-react'
+
+export const sidebarMenuItems = [
+  // {
+  //   id: 'dashboard',
+  //   label: 'Dashboard',
+  //   icon: LayoutDashboard,
+  //   hasDropdown: true,
+  //   subItems: [
+  //     { id: 'admin-dashboard', label: 'Admin Dashboard', path: '/admin' },
+  //   ],
+  // },
+
+     {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    path: '/admin',
+    hasDropdown: false,
+  },
+  {
+    id: 'students',
+    label: 'Students',
+    icon: Users,
+    hasDropdown: true,
+    subItems: [
+      { id: 'student-list', label: 'View All Student', path: '/admin/students' },
+      { id: 'add-student', label: 'Add Student', path: '/admin/students/add' },
+    ],
+  },
+  {
+    id: 'teachers',
+    label: 'Teachers',
+    icon: BookOpen,
+    hasDropdown: true,
+    subItems: [
+      { id: 'teacher-list', label: 'View All Teacher', path: '/admin/teachers' },
+      { id: 'add-teacher', label: 'Add Teacher', path: '/admin/teachers/add' },
+    ],
+  },
+  {
+    id: 'accountants',
+    label: 'Accountants',
+    icon: Wallet,
+    hasDropdown: true,
+    subItems: [
+      { id: 'accountant-list', label: 'View All Accountant', path: '/admin/accountants' },
+      { id: 'add-accountant', label: 'Add Accountant', path: '/admin/accountants/add' },
+    ],
+  },
+
+  {
+  id: 'classes',
+  label: 'Classes',
+  icon: Calendar,
+  hasDropdown: true,
+  subItems: [
+    { id: 'class-list', label: 'View All Classes', path: '/admin/classes' ,  icon: List, },
+    { id: 'add-class', label: 'Add Class', path: '/admin/classes/add' },
+  ],
+},
+
+{
+  id: 'sections',
+  label: 'Sections',
+  icon: Layers,
+  hasDropdown: true,
+  subItems: [
+    { id: 'section-list', label: 'View All Sections', path: '/admin/sections' },
+    { id: 'add-section', label: 'Add Section', path: '/admin/sections/add' },
+  ],
+},
+
+ {
+  id: 'subjects',
+  label: 'Subjects',
+  icon: BookOpen,
+  hasDropdown: true,
+  subItems: [
+    { id: 'subject-list', label: 'View All subject', path: '/admin/subject' },
+    { id: 'add-subject', label: 'Add subject', path: '/admin/subject/add' },
+  ],
+},
+
+  // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },
+  { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
+  { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },
+  { id: 'exams', label: 'Exams', icon: FileText, path: '/admin/exams', hasDropdown: false },
+  { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports', hasDropdown: false },
+  { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', hasDropdown: false },
+]
