@@ -100,6 +100,32 @@ export const sidebarMenuItems = [
   ],
 },
 
+{
+  id: 'attendance',
+  label: 'Attendance',
+  icon: ClipboardCheck,
+  hasDropdown: true,
+  subItems: [
+    {
+      id: 'mark-attendance',
+      label: 'Mark Attendance',
+      path: '/admin/attendance'
+    },
+    {
+      id: 'attendance-list',
+      label: 'Attendance List',
+      path: '/admin/attendance/list'
+    },
+    {
+      id: 'attendance-report',
+      label: 'Attendance Report',
+      path: '/admin/attendance/report'
+    }
+  ]
+},
+
+
+    
   // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },
   { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
   { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },

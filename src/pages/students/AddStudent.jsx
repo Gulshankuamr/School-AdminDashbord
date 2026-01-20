@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload, CheckCircle } from 'lucide-react'
 import { studentService } from '../../services/studentService'
@@ -28,9 +28,67 @@ const AddStudent = () => {
 
   const [showSuccess, setShowSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
+  
+  // New states for dropdowns
+  const [classes, setClasses] = useState([])
+  const [sections, setSections] = useState([])
+  const [loadingClasses, setLoadingClasses] = useState(false)
+  const [loadingSections, setLoadingSections] = useState(false)
+
+  // Fetch classes on component mount
+  useEffect(() => {
+    const fetchClasses = async () => {
+      try {
+        setLoadingClasses(true)
+        const data = await studentService.getAllClasses()
+        setClasses(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching classes:', error)
+        setClasses([])
+      } finally {
+        setLoadingClasses(false)
+      }
+    }
+    
+    fetchClasses()
+  }, [])
+
+  // Fetch sections when class_id changes
+  useEffect(() => {
+    const fetchSections = async () => {
+      if (!formData.class_id) {
+        setSections([])
+        return
+      }
+      
+      try {
+        setLoadingSections(true)
+        const data = await studentService.getSectionsByClassId(formData.class_id)
+        setSections(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching sections:', error)
+        setSections([])
+      } finally {
+        setLoadingSections(false)
+      }
+    }
+    
+    fetchSections()
+  }, [formData.class_id])
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    
+    // If class is changed, clear section
+    if (name === 'class_id') {
+      setFormData({ 
+        ...formData, 
+        [name]: value,
+        section_id: '' // Clear section when class changes
+      })
+    } else {
+      setFormData({ ...formData, [name]: value })
+    }
   }
 
   const handleFileChange = (e) => {
@@ -123,8 +181,6 @@ const AddStudent = () => {
               { label: 'Email', name: 'user_email', type: 'email', placeholder: 'student@example.com' },
               { label: 'Password', name: 'password', type: 'password', placeholder: 'Enter password' },
               { label: 'Admission No', name: 'admission_no', type: 'text', placeholder: 'e.g., 2024001' },
-              { label: 'Class ID', name: 'class_id', type: 'text', placeholder: 'e.g., 10' },
-              { label: 'Section ID', name: 'section_id', type: 'text', placeholder: 'e.g., A' },
             ].map((field) => (
               <div key={field.name}>
                 <label className="block text-sm font-medium text-black mb-2">
@@ -141,6 +197,62 @@ const AddStudent = () => {
                 />
               </div>
             ))}
+
+            {/* Class Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Class <span className="text-black">*</span>
+              </label>
+              <select
+                name="class_id"
+                value={formData.class_id}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                required
+                disabled={loadingClasses}
+              >
+                <option value="">Select Class</option>
+                {loadingClasses ? (
+                  <option disabled>Loading classes...</option>
+                ) : (
+                  classes.map((cls) => (
+                    <option key={cls.class_id} value={cls.class_id}>
+                      {cls.class_name || `Class ${cls.class_id}`}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            {/* Section Dropdown */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Section <span className="text-black">*</span>
+              </label>
+              <select
+                name="section_id"
+                value={formData.section_id}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                required
+                disabled={!formData.class_id || loadingSections}
+              >
+                <option value="">Select Section</option>
+                {!formData.class_id ? (
+                  <option disabled>Please select a class first</option>
+                ) : loadingSections ? (
+                  <option disabled>Loading sections...</option>
+                ) : sections.length === 0 ? (
+                  <option disabled>No sections available</option>
+                ) : (
+                  sections.map((section) => (
+                    <option key={section.section_id} value={section.section_id}>
+                      {section.section_name || `Section ${section.section_id}`}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
 
             {/* Gender Select */}
             <div>
@@ -233,4 +345,4 @@ const AddStudent = () => {
   )
 }
 
-export default AddStudent
+export default AddStudent  

@@ -40,6 +40,14 @@ import AddSubject from './pages/subject/AddSubject'
 import EditSubject from './pages/subject/EditSubject'
 import SubjectList from './pages/subject/SubjectList'
 
+// attendence-------------------------------------
+
+// attendance pages
+import MarkAttendance from './pages/attendance/MarkAttendance'
+import AttendanceList from './pages/attendance/AttendanceList'
+import AttendanceReport from './pages/attendance/AttendanceReport'
+
+
 // Layout shown only after login
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -109,6 +117,11 @@ function App() {
            <Route path="subject/add" element={<AddSubject/>}/>
            <Route path="subject/edit/:id" element={<EditSubject/>}/>
            
+               {/* ================= Attendance ================= */}
+
+<Route path="attendance" element={<MarkAttendance />} />
+<Route path="attendance/list" element={<AttendanceList />} />
+<Route path="attendance/report" element={<AttendanceReport />} />
 
 
 

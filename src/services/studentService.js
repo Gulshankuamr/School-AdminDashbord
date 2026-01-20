@@ -86,42 +86,41 @@ export const studentService = {
   // ===============================
   // 4️⃣ UPDATE STUDENT
   // ===============================
- updateStudent: async (studentId, studentData) => {
-  console.log(studentData, ">>>>", studentId)
-  const token = getAuthToken()
-  if (!token) throw new Error('Token missing')
+  updateStudent: async (studentId, studentData) => {
+    console.log(studentData, ">>>>", studentId)
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
 
-  const formData = new FormData()
-  formData.append('student_id', studentId)
+    const formData = new FormData()
+    formData.append('student_id', studentId)
 
-  for (let key in studentData) {
-    if (
-      key !== 'student_id' &&
-      studentData[key] !== null &&
-      studentData[key] !== undefined &&
-      studentData[key] !== ''
-    ) {
-      formData.append(key, studentData[key])
+    for (let key in studentData) {
+      if (
+        key !== 'student_id' &&
+        studentData[key] !== null &&
+        studentData[key] !== undefined &&
+        studentData[key] !== ''
+      ) {
+        formData.append(key, studentData[key])
+      }
     }
-  }
 
-  const response = await fetch(
-    `${API_BASE_URL}/schooladmin/updateStudent`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData,
-    }
-  )
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/updateStudent`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    )
 
-  const data = await response.json()
-  if (!response.ok) throw new Error(data.message || 'Student not updated')
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.message || 'Student not updated')
 
-  return data
-},
-
+    return data
+  },
 
   // ===============================
   // 5️⃣ DELETE STUDENT
@@ -146,5 +145,51 @@ export const studentService = {
     if (!response.ok) throw new Error(data.message || 'Student not deleted')
 
     return data
+  },
+
+  // ===============================
+  // 6️⃣ GET ALL CLASSES
+  // ===============================
+  getAllClasses: async () => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
+
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/getAllClassList`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.message || 'Could not fetch classes')
+
+    return data.data || data
+  },
+
+  // ===============================
+  // 7️⃣ GET SECTIONS BY CLASS ID
+  // ===============================
+  getSectionsByClassId: async (classId) => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
+
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/getAllSections?class_id=${classId}`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.message || 'Could not fetch sections')
+
+    return data.data || data
   },
 }

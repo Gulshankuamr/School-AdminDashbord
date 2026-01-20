@@ -1,213 +1,156 @@
-import React, { useState } from 'react'
+// src/pages/AddSubject.js
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Save, AlertCircle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, BookOpen, Loader } from 'lucide-react'
 import { subjectService } from '../../services/subjectService'
 
-function AddSubject() {
+const AddSubject = () => {
   const navigate = useNavigate()
-  
-  const [saving, setSaving] = useState(false)
-  const [errors, setErrors] = useState({})
-  const [serverError, setServerError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
-
   const [formData, setFormData] = useState({
-    subject_name: ''
+    subject_name: '',
   })
 
-  // Handle form input changes
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
-    
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }))
-    }
-    
-    // Clear server error
-    if (serverError) {
-      setServerError('')
-    }
   }
 
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {}
-    
-    if (!formData.subject_name.trim()) {
-      newErrors.subject_name = 'Subject name is required'
-    } else if (formData.subject_name.trim().length < 2) {
-      newErrors.subject_name = 'Subject name must be at least 2 characters'
-    } else if (formData.subject_name.trim().length > 100) {
-      newErrors.subject_name = 'Subject name is too long (max 100 characters)'
-    }
-    
-    return newErrors
-  }
-
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault()
-    
-    // Validate form
-    const validationErrors = validateForm()
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      return
-    }
-    
+    setLoading(true)
+    setError('')
+
     try {
-      setSaving(true)
-      setServerError('')
-      
-      // Prepare data for API
-      const subjectData = {
-        subject_name: formData.subject_name.trim()
+      if (!formData.subject_name.trim()) {
+        throw new Error('Subject name is required')
       }
+
+      if (formData.subject_name.length < 2) {
+        throw new Error('Subject name must be at least 2 characters')
+      }
+
+      const result = await subjectService.addSubject(formData)
+      console.log('Add subject result:', result)
+
+      if (result.success) {
+        setShowSuccess(true)
+        setTimeout(() => {
+          setShowSuccess(false)
+          navigate('/admin/subjects')
+        }, 1500)
+      } else {
+        throw new Error(result.message || 'Failed to add subject')
+      }
+    } catch (err) {
+      console.error('Error adding subject:', err)
+      setError(err.message)
       
-      console.log('Creating subject with data:', subjectData)
-      
-      // Call API
-      const response = await subjectService.createSubject(subjectData)
-      console.log('Create response:', response)
-      
-      // Show success message
-      setSuccessMessage('Subject created successfully!')
-      
-      // Reset form
-      setFormData({ subject_name: '' })
-      
-      // Navigate back to list after 2 seconds
-      setTimeout(() => {
-        navigate('/admin/subjects')
-      }, 2000)
-      
-    } catch (error) {
-      console.error('Error creating subject:', error)
-      setServerError(error.message || 'Failed to create subject. Please try again.')
+      const errMsg = err.message.toLowerCase()
+      if (errMsg.includes('duplicate') || errMsg.includes('already exists')) {
+        alert('Subject name already exists. Please use a unique name.')
+      } else {
+        alert(`Error: ${err.message}`)
+      }
     } finally {
-      setSaving(false)
+      setLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 p-6">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 p-6">
+      {/* Success Notification */}
+      {showSuccess && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-bounce z-50">
+          <CheckCircle className="w-6 h-6" />
+          <span className="font-medium">Subject added successfully!</span>
+        </div>
+      )}
+
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="flex items-center gap-4 mb-6">
           <button
             onClick={() => navigate('/admin/subjects')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-6 transition"
+            className="p-2 hover:bg-white rounded-lg transition shadow-sm bg-white/50"
+            aria-label="Go back"
           >
-            <ArrowLeft className="w-5 h-5" />
-            <span className="font-medium">Back to Subjects</span>
+            <ArrowLeft className="w-6 h-6 text-gray-700" />
           </button>
-          
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Add New Subject</h1>
-            <p className="text-gray-600 mt-2">
-              Create a new subject for your school
+            <h1 className="text-4xl font-bold text-gray-900">Add New Subject</h1>
+            <p className="text-gray-600 mt-1">Fill in the subject details</p>
+          </div>
+        </div>
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-600 text-sm font-medium">{error}</p>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl p-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-purple-500 flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-purple-600" />
+            Subject Information
+          </h2>
+          
+          {/* Subject Name */}
+          <div className="mb-8">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
+              Subject Name <span className="text-red-600">*</span>
+            </label>
+            <input
+              type="text"
+              name="subject_name"
+              value={formData.subject_name}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition text-gray-900"
+              required
+              placeholder="e.g., Mathematics, English, Science"
+              minLength={2}
+              maxLength={100}
+            />
+            <p className="text-gray-500 text-xs mt-2">
+              Enter a unique subject name (2-100 characters)
             </p>
           </div>
-        </div>
 
-        {/* Success Message */}
-        {successMessage && (
-          <div className="mb-6 bg-green-50 border border-green-200 rounded-xl p-6">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <div>
-                <p className="font-semibold text-green-800">{successMessage}</p>
-                <p className="text-green-700 text-sm mt-1">Redirecting to subjects list...</p>
-              </div>
-            </div>
+          {/* Action Buttons */}
+          <div className="flex gap-4 mt-10 pt-6 border-t">
+            <button
+              type="submit"
+              disabled={loading}
+              className={`flex-1 px-6 py-3 bg-purple-600 text-white rounded-lg transition font-semibold shadow-lg hover:shadow-xl ${
+                loading 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:bg-purple-700 hover:-translate-y-0.5'
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader className="animate-spin h-5 w-5" />
+                  Adding...
+                </span>
+              ) : 'Add Subject'}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/subjects')}
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
+            >
+              Cancel
+            </button>
           </div>
-        )}
-
-        {/* Server Error */}
-        {serverError && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6">
-            <div className="flex items-center gap-3">
-              <AlertCircle className="w-6 h-6 text-red-600" />
-              <div>
-                <p className="font-semibold text-red-800">Error</p>
-                <p className="text-red-700">{serverError}</p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
-          <form onSubmit={handleSubmit}>
-            {/* Subject Name */}
-            <div className="mb-8">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">
-                Subject Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                name="subject_name"
-                value={formData.subject_name}
-                onChange={handleChange}
-                placeholder="Enter subject name (e.g., Mathematics, Science, English)"
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  errors.subject_name ? 'border-red-500' : 'border-gray-300'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500`}
-                disabled={saving || successMessage}
-              />
-              {errors.subject_name && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.subject_name}
-                </p>
-              )}
-              <p className="mt-2 text-sm text-gray-500">
-                Enter the full name of the subject. This will be displayed to students and teachers.
-              </p>
-            </div>
-
-            {/* Form Actions */}
-            <div className="flex gap-4 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => navigate('/admin/subjects')}
-                disabled={saving}
-                className="px-8 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition font-medium shadow-sm disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              
-              <button
-                type="submit"
-                disabled={saving || successMessage}
-                className="flex-1 px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl hover:from-blue-700 hover:to-blue-800 transition font-medium shadow-lg hover:shadow-xl flex items-center justify-center gap-3 disabled:opacity-50"
-              >
-                {saving ? (
-                  <>
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Creating Subject...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    Create Subject
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+        </form>
       </div>
     </div>
   )
