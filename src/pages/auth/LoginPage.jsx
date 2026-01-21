@@ -98,7 +98,7 @@ function LoginPage() {
                   <GraduationCap className="h-9 w-9 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-4xl font-bold">EduManage</h1>
+                  <h1 className="text-4xl font-bold">SchoolEdge</h1>
                   <p className="text-blue-200 text-sm">School Management System</p>
                 </div>
               </div>

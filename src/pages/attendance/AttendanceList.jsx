@@ -1,6 +1,6 @@
 // src/pages/attendance/AttendanceList.jsx
 import React, { useState, useEffect } from 'react'
-import { Search, Calendar, Download, Users, CheckCircle, XCircle, Clock, Home, Edit, Save, Trash2, X, User, Hash, BookOpen, Layers } from 'lucide-react'
+import { Search, Calendar, Download, Users, CheckCircle, XCircle, Clock, Home, Edit, Save, Trash2, X, User, BookOpen, Layers } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
 import { attendanceService } from '../../services/attendanceService'
@@ -10,19 +10,18 @@ const AttendanceList = () => {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [dateFilter, setDateFilter] = useState(new Date())
-  const [classFilter, setClassFilter] = useState('')
-  const [sectionFilter, setSectionFilter] = useState('')
+  
+  // ✅ FIXED STATES
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
+  const [classFilter, setClassFilter] = useState('') // No auto-select
+  const [sectionFilter, setSectionFilter] = useState('')
+  
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [deleteLoading, setDeleteLoading] = useState(null)
-  // const [classFilter, setClassFilter] = useState('')     // 👈 real logic
-const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
-
   const [notification, setNotification] = useState({ show: false, message: '', type: '' })
 
-  // Status options
   const statusOptions = [
     { value: 'P', label: 'Present', icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-100 text-green-800 border-green-200' },
     { value: 'A', label: 'Absent', icon: <XCircle className="w-4 h-4" />, color: 'bg-red-100 text-red-800 border-red-200' },
@@ -31,7 +30,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
     { value: 'OL', label: 'On Leave', icon: <Users className="w-4 h-4" />, color: 'bg-purple-100 text-purple-800 border-purple-200' }
   ]
 
-  // Show notification
   const showNotification = (message, type = 'success') => {
     setNotification({ show: true, message, type })
     setTimeout(() => {
@@ -39,12 +37,12 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
     }, 3000)
   }
 
-  // Fetch classes on component mount
+  // ✅ FIXED: Fetch classes on mount
   useEffect(() => {
     fetchClasses()
   }, [])
 
-  // Fetch sections when class changes
+  // ✅ FIXED: Fetch sections when class is selected
   useEffect(() => {
     if (classFilter) {
       fetchSections(classFilter)
@@ -54,59 +52,58 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
     }
   }, [classFilter])
 
-  // Fetch attendance when filters change
+  // ✅ FIXED: Fetch attendance only when ALL filters are selected
   useEffect(() => {
     if (classFilter && sectionFilter && dateFilter) {
       fetchAttendanceList()
     }
   }, [dateFilter, classFilter, sectionFilter])
 
-  // const fetchClasses = async () => {
-  //   try {
-  //     const response = await attendanceService.getAllClasses()
-  //     if (response.success) {
-  //       setClasses(response.data || [])
-  //       // Auto-select first class if available
-  //       if (response.data && response.data.length > 0) {
-  //         setClassFilter(response.data[0].class_id)
-  //       }
-  //     }
-  //   } catch (error) {
-  //     console.error('Error fetching classes:', error)
-  //     showNotification('Failed to load classes', 'error')
-  //   }
-  // }
+  // ✅ 1️⃣ FETCH CLASSES (FIXED - No auto-select)
   const fetchClasses = async () => {
-  try {
-    const response = await attendanceService.getAllClasses()
-    if (response.success) {
-      setClasses(response.data || [])
-
-      if (response.data && response.data.length > 0) {
-        setClassFilter(response.data[0].class_id) // ✅ logic same
-        setUiClassValue('') // 👈 Select Class dikhane ke liye
+    try {
+      const response = await attendanceService.getAllClasses()
+      if (response.success) {
+        setClasses(response.data || [])
+        // ✅ NO AUTO-SELECTION - Keep empty
+        setClassFilter('')
+        setSections([])
+        setSectionFilter('')
       }
+    } catch (error) {
+      console.error('Error fetching classes:', error)
+      showNotification('Failed to load classes', 'error')
     }
-  } catch (error) {
-    console.error('Error fetching classes:', error)
   }
-}
 
+  // ✅ 2️⃣ CLASS CHANGE HANDLER (FIXED)
+  const handleClassChange = (e) => {
+    const selectedClassId = e.target.value
+    setClassFilter(selectedClassId) // Set the selected class
+    setSections([]) // Clear previous sections
+    setSectionFilter('') // Clear section selection
+    // fetchSections will be called via useEffect
+  }
 
+  // ✅ 3️⃣ FETCH SECTIONS (FIXED - No auto-select)
   const fetchSections = async (classId) => {
     try {
       const response = await attendanceService.getSectionsByClass(classId)
       if (response.success) {
-        setSections(response.data || [])
-        // Auto-select first section if available
-        if (response.data && response.data.length > 0) {
-          setSectionFilter(response.data[0].section_id)
-        }
+        const sectionList = response.data || []
+        setSections(sectionList)
+        // ✅ NO AUTO-SELECTION - Keep empty
+        setSectionFilter('')
       }
     } catch (error) {
       console.error('Error fetching sections:', error)
       showNotification('Failed to load sections', 'error')
     }
+  }
+
+  // ✅ 4️⃣ SECTION CHANGE HANDLER
+  const handleSectionChange = (e) => {
+    setSectionFilter(e.target.value)
   }
 
   const fetchAttendanceList = async () => {
@@ -122,38 +119,78 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
       
       const formattedDate = formatDate(dateFilter)
       
-      const response = await attendanceService.getAttendanceByClassSection(
-        classFilter,
-        sectionFilter,
-        formattedDate
-      )
+      console.log('🔍 Fetching attendance for:', { classFilter, sectionFilter, formattedDate })
+      
+      const response = await attendanceService.getAttendanceList({
+        class_id: classFilter,
+        section_id: sectionFilter,
+        date: formattedDate
+      })
+      
+      console.log('📦 API Response:', response)
       
       if (response.success) {
-        const students = response.data?.students || []
-        // Transform API response to match our table structure
-        const formattedList = students.map(student => ({
-          id: student.student_id, // Using student_id as ID
-          student_id: student.student_id,
-          admission_no: student.admission_no,
-          roll_no: student.roll_no,
-          student_name: student.student_name,
-          father_name: student.father_name,
-          user_email: student.user_email,
-          status: student.marked_at ? 'P' : 'A', // If marked_at exists, assume Present
-          remarks: '', // Add remarks field
-          date: response.data?.date,
-          class_id: response.data?.class_id,
-          section_id: response.data?.section_id,
-          marked_at: student.marked_at,
-          attendance_id: student.attendance_id // ✅ Now we have attendance_id from API
-        }))
+        const students = response.data || []
+        
+        console.log('👥 Students from API:', students)
+        
+        const filteredStudents = students.filter(student => {
+          const studentDate = student.attendance_date || student.date
+          const normalizedStudentDate = studentDate ? formatDate(new Date(studentDate)) : null
+          const normalizedFilterDate = formattedDate
+          
+          return normalizedStudentDate === normalizedFilterDate
+        })
+        
+        console.log('📅 Filtered students for date:', formattedDate, filteredStudents)
+        
+        const uniqueStudents = []
+        const seenStudentIds = new Set()
+        
+        const sortedStudents = [...filteredStudents].sort((a, b) => {
+          const dateA = new Date(a.marked_at || a.created_at || 0)
+          const dateB = new Date(b.marked_at || b.created_at || 0)
+          return dateB - dateA
+        })
+        
+        for (const student of sortedStudents) {
+          const studentId = student.student_id
+          if (!seenStudentIds.has(studentId)) {
+            seenStudentIds.add(studentId)
+            uniqueStudents.push(student)
+          }
+        }
+        
+        console.log('✨ Unique students after deduplication:', uniqueStudents)
+        
+        const formattedList = uniqueStudents.map(student => {
+          return {
+            id: student.student_id,
+            student_id: student.student_id,
+            admission_no: student.admission_no || 'N/A',
+            roll_no: student.roll_no || 'N/A',
+            student_name: student.student_name || student.name || 'Unknown',
+            father_name: student.father_name || '',
+            user_email: student.user_email || '',
+            status: student.status || student.attendance_status || 'P',
+            remarks: student.remarks || student.remark || '',
+            date: formattedDate,
+            class_id: student.class_id || classFilter,
+            section_id: student.section_id || sectionFilter,
+            marked_at: student.marked_at || student.created_at || null,
+            attendance_id: student.attendance_id || student.id || null
+          }
+        })
+        
+        console.log('✅ Final Formatted List:', formattedList)
         
         setAttendanceList(formattedList)
       } else {
+        console.log('❌ API returned success: false')
         setAttendanceList([])
       }
     } catch (error) {
-      console.error('Error fetching attendance list:', error)
+      console.error('❌ Error fetching attendance list:', error)
       showNotification('Failed to load attendance data', 'error')
       setAttendanceList([])
     } finally {
@@ -179,23 +216,17 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
     })
   }
 
-  const handleSearch = (e) => {
-    e.preventDefault()
-    // Client-side search only
-  }
-
+  // ✅ FIXED: Clear filters handler
   const handleClearFilters = () => {
     setSearchTerm('')
-    if (classes.length > 0) {
-      setClassFilter(classes[0].class_id)
-    } else {
-      setClassFilter('')
-    }
+    setClassFilter('')
     setSectionFilter('')
     setDateFilter(new Date())
+    setAttendanceList([])
   }
 
   const handleEdit = (student) => {
+    console.log('✏️ Editing student:', student)
     setEditingId(student.id)
     setEditForm({
       student_id: student.student_id,
@@ -211,6 +242,8 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
 
   const handleSave = async (student) => {
     try {
+      console.log('💾 Saving attendance:', editForm)
+      
       const formattedDate = formatDate(dateFilter)
       
       const updateData = {
@@ -224,29 +257,23 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
         ]
       }
 
+      console.log('📤 Update payload:', updateData)
+
       const response = await attendanceService.updateAttendance(updateData)
       
+      console.log('📥 Update response:', response)
+      
       if (response.success) {
-        // Update local state
-        setAttendanceList(prevList =>
-          prevList.map(item =>
-            item.id === student.id
-              ? {
-                  ...item,
-                  status: editForm.status,
-                  remarks: editForm.remarks,
-                  marked_at: new Date().toISOString()
-                }
-              : item
-          )
-        )
-        
-        setEditingId(null)
-        setEditForm({})
         showNotification('Attendance updated successfully')
+        
+        setTimeout(async () => {
+          await fetchAttendanceList()
+          setEditingId(null)
+          setEditForm({})
+        }, 500)
       }
     } catch (error) {
-      console.error('Error updating attendance:', error)
+      console.error('❌ Error updating attendance:', error)
       showNotification(error.message || 'Failed to update attendance', 'error')
     }
   }
@@ -257,28 +284,28 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
       return
     }
 
-    if (!window.confirm(`Are you sure you want to delete attendance for ${student.student_name}? This action cannot be undone.`)) {
+    if (!window.confirm(`Are you sure you want to delete attendance for ${student.student_name}?`)) {
       return
     }
 
     try {
       setDeleteLoading(student.id)
       
-      // ✅ Use the deleteStudentAttendance API (with attendance_id in body)
+      console.log('🗑️ Deleting attendance_id:', student.attendance_id)
+      
       const response = await attendanceService.deleteStudentAttendance(student.attendance_id)
       
+      console.log('📥 Delete response:', response)
+      
       if (response.success) {
-        // ✅ Remove from local state AND refetch from API
-        // First remove from UI immediately
-        setAttendanceList(prevList => prevList.filter(item => item.id !== student.id))
+        showNotification('Attendance deleted successfully')
         
-        // ✅ Then refetch fresh data from API to sync with database
-        fetchAttendanceList()
-        
-        showNotification('Attendance deleted successfully from database')
+        setTimeout(async () => {
+          await fetchAttendanceList()
+        }, 500)
       }
     } catch (error) {
-      console.error('Error deleting attendance:', error)
+      console.error('❌ Error deleting attendance:', error)
       showNotification(error.message || 'Failed to delete attendance', 'error')
     } finally {
       setDeleteLoading(null)
@@ -318,7 +345,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
     showNotification('Data exported successfully')
   }
 
-  // Filter attendance list based on search term
   const filteredAttendanceList = attendanceList.filter(student => {
     if (!searchTerm) return true
     
@@ -332,7 +358,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
 
   return (
     <div className="max-w-7xl mx-auto p-4">
-      {/* Notification */}
       {notification.show && (
         <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${notification.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-green-100 text-green-800 border border-green-200'}`}>
           <div className={`w-2 h-2 rounded-full ${notification.type === 'error' ? 'bg-red-500' : 'bg-green-500'}`}></div>
@@ -340,7 +365,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
         </div>
       )}
       
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -355,7 +379,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
         </div>
       </div>
 
-      {/* Filters Card */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 mb-8 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
           <div className="flex-1">
@@ -382,9 +405,7 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
           </button>
         </div>
 
-        {/* Advanced Filters */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Date Filter */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
@@ -399,58 +420,33 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
             />
           </div>
 
-          {/* Class Filter */}
-          {/* <div>
+          {/* ✅ FIXED CLASS DROPDOWN */}
+          <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               Class
             </label>
             <select
               value={classFilter}
-              onChange={(e) => setClassFilter(e.target.value)}
+              onChange={handleClassChange}
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
             >
-              <option value="" disabled className="text-gray-500">Select Class</option>
-              {classes.map(cls => (
-                <option key={cls.class_id} value={cls.class_id} className="text-gray-800">
+              <option value="" disabled className="text-gray-500">
+                Select Class
+              </option>
+              {classes.map((cls) => (
+                <option
+                  key={cls.class_id}
+                  value={cls.class_id}
+                  className="text-gray-800"
+                >
                   {cls.class_name}
                 </option>
               ))}
             </select>
-          </div> */}
+          </div>
 
-          <div>
-  <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-    <BookOpen className="w-4 h-4" />
-    Class
-  </label>
-
-  <select
-    value={uiClassValue}
-    onChange={(e) => {
-      setUiClassValue(e.target.value)   // 👈 UI update
-      setClassFilter(e.target.value)    // 👈 real value
-    }}
-    className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800"
-  >
-    <option value="" disabled className="text-gray-500">
-      Select Class
-    </option>
-
-    {classes.map((cls) => (
-      <option
-        key={cls.class_id}
-        value={cls.class_id}
-        className="text-gray-800"
-      >
-        {cls.class_name}
-      </option>
-    ))}
-  </select>
-</div>
-
-
-          {/* Section Filter */}
+          {/* ✅ FIXED SECTION DROPDOWN */}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <Layers className="w-4 h-4" />
@@ -458,11 +454,13 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
             </label>
             <select
               value={sectionFilter}
-              onChange={(e) => setSectionFilter(e.target.value)}
-              disabled={!classFilter}
+              onChange={handleSectionChange}
+              disabled={!classFilter || sections.length === 0}
               className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 text-gray-800"
             >
-              <option value="" disabled className="text-gray-500">Select Section</option>
+              <option value="" disabled className="text-gray-500">
+                {sections.length === 0 ? "Select class first" : "Select Section"}
+              </option>
               {sections.map(section => (
                 <option key={section.section_id} value={section.section_id} className="text-gray-800">
                   {section.section_name}
@@ -471,7 +469,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
             </select>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-end gap-2 col-span-2">
             <button
               onClick={fetchAttendanceList}
@@ -490,7 +487,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
         </div>
       </div>
 
-      {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center justify-between">
@@ -545,9 +541,7 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
         </div>
       </div>
 
-      {/* Attendance Table Container */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {/* Table Header */}
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-800">Attendance Records</h2>
           <p className="text-sm text-gray-600 mt-1">
@@ -555,7 +549,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
           </p>
         </div>
 
-        {/* Scrollable Table Area */}
         <div className="overflow-auto" style={{ maxHeight: '500px' }}>
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
@@ -614,7 +607,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
               ) : (
                 filteredAttendanceList.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    {/* Student Details */}
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
@@ -627,7 +619,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
                             {record.student_name || 'Student'}
                           </div>
                           <div className="flex items-center gap-4 mt-1">
-                            {/* Removed ID: */}
                             <div className="flex items-center gap-1">
                               <span className="text-xs text-gray-600">Roll: {record.roll_no || 'N/A'}</span>
                             </div>
@@ -639,7 +630,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
                       </div>
                     </td>
 
-                    {/* Status - Editable when editing */}
                     <td className="px-6 py-4">
                       {editingId === record.id ? (
                         <select
@@ -658,7 +648,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
                       )}
                     </td>
 
-                    {/* Remarks - Editable when editing */}
                     <td className="px-6 py-4">
                       {editingId === record.id ? (
                         <input
@@ -675,7 +664,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
                       )}
                     </td>
 
-                    {/* Marked Time */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       {record.marked_at ? (
                         <div className="flex flex-col">
@@ -695,7 +683,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
                       )}
                     </td>
 
-                    {/* Actions */}
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
                         {editingId === record.id ? (
@@ -752,7 +739,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
           </table>
         </div>
 
-        {/* Table Footer */}
         {filteredAttendanceList.length > 0 && (
           <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -769,7 +755,6 @@ const [uiClassValue, setUiClassValue] = useState('')   // 👈 sirf UI
         )}
       </div>
 
-      {/* Bottom Info */}
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
           Last updated: {new Date().toLocaleDateString('en-GB', { 

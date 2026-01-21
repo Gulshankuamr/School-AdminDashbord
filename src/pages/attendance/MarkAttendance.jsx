@@ -63,24 +63,6 @@ const MarkAttendance = () => {
           />
         </div>
       )}
-
-      {/* Instructions */}
-      {!showList && (
-        <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-black mb-2">
-            📋 Instructions:
-          </h3>
-          <ol className="list-decimal pl-5 space-y-2 text-black">
-            <li>Select the attendance date</li>
-            <li>Choose the class from dropdown</li>
-            <li>Select the section</li>
-            <li>Click "Show List" to load students</li>
-            <li>Mark attendance for each student (P/A/L/H)</li>
-            <li>Add remarks if needed</li>
-            <li>Click "Save Attendance"</li>
-          </ol>
-        </div>
-      )}
     </div>
   )
 }

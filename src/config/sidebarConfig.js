@@ -89,7 +89,7 @@ export const sidebarMenuItems = [
   ],
 },
 
- {
+{
   id: 'subjects',
   label: 'Subjects',
   icon: BookOpen,
@@ -106,21 +106,9 @@ export const sidebarMenuItems = [
   icon: ClipboardCheck,
   hasDropdown: true,
   subItems: [
-    {
-      id: 'mark-attendance',
-      label: 'Mark Attendance',
-      path: '/admin/attendance'
-    },
-    {
-      id: 'attendance-list',
-      label: 'Attendance List',
-      path: '/admin/attendance/list'
-    },
-    {
-      id: 'attendance-report',
-      label: 'Attendance Report',
-      path: '/admin/attendance/report'
-    }
+    { id: 'mark-attendance', label: 'Mark Attendance', path: '/admin/attendance' },
+    { id: 'attendance-list', label: 'Attendance List', path: '/admin/attendance/list' },
+    { id: 'attendance-report', label: 'Attendance Report', path: '/admin/attendance/report' }
   ]
 },
 
@@ -128,7 +116,7 @@ export const sidebarMenuItems = [
     
   // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },
   { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
-  { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },
+  // { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },
   { id: 'exams', label: 'Exams', icon: FileText, path: '/admin/exams', hasDropdown: false },
   { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports', hasDropdown: false },
   { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', hasDropdown: false },
