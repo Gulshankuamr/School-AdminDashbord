@@ -110,6 +110,28 @@ const AddStudent = () => {
     }
   }
 
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      user_email: '',
+      password: '',
+      admission_no: '',
+      gender: '',
+      class_id: '',
+      section_id: '',
+      student_photo: null,
+      aadhar_card: null,
+      father_photo: null,
+      mother_photo: null,
+    })
+    setFilePreviews({
+      student_photo: null,
+      aadhar_card: null,
+      father_photo: null,
+      mother_photo: null,
+    })
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -117,20 +139,17 @@ const AddStudent = () => {
     try {
       const result = await studentService.addStudent(formData)
 
-      // Normalize admission number and redirect to view page
-      const cleanAdmission = String(formData.admission_no || '')
-        .trim()
-        .toUpperCase()
-
-      if (!cleanAdmission) {
-        throw new Error('Admission number missing')
-      }
-
+      // Show success message
       setShowSuccess(true)
+
+      // Reset form immediately
+      resetForm()
+
+      // Hide success message after 0.5 seconds
       setTimeout(() => {
         setShowSuccess(false)
-        navigate(`/admin/students/view/${cleanAdmission}`)
-      }, 800)
+      }, 500)
+
     } catch (error) {
       console.error('Error adding student:', error)
       const message = error?.message || 'Failed to add student. Please try again.'
@@ -148,7 +167,7 @@ const AddStudent = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       {showSuccess && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 animate-bounce">
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-xl flex items-center gap-3 z-50 transform transition-all duration-300 ease-in-out animate-slide-in">
           <CheckCircle className="w-6 h-6" />
           <span className="font-medium">Student added successfully!</span>
         </div>
@@ -345,4 +364,4 @@ const AddStudent = () => {
   )
 }
 
-export default AddStudent  
+export default AddStudent

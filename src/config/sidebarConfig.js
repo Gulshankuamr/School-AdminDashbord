@@ -111,11 +111,34 @@ export const sidebarMenuItems = [
     { id: 'attendance-report', label: 'Attendance Report', path: '/admin/attendance/report' }
   ]
 },
+   {
+  id: 'timetable',
+  label: 'Timetable',
+  icon: Calendar,
+  hasDropdown: true,
+  subItems: [
+    {id: 'create-timetable',label: 'Create Timetable',path: '/admin/timetable/create',icon: PlusCircle,},
+    {id: 'view-timetable',label: 'View Timetable',path: '/admin/timetable/view',icon: List,},
+  ],
+},
+
+// fees========================================================
+// sidebarMenuItems array mein fees section update karein:
+{
+  id: 'fees',
+  label: 'Fees',
+  icon: DollarSign,
+  hasDropdown: true,
+  subItems: [
+    { id: 'fee-heads', label: 'Fee Heads', path: '/admin/fees/heads' },
+     { id: 'fee-fine-rules', label: 'Fine Rules', path: '/admin/fees/fine-rule' }, // ✅ CHANGE HERE
+  ],
+},
 
 
     
   // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },
-  { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
+  // { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
   // { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },
   { id: 'exams', label: 'Exams', icon: FileText, path: '/admin/exams', hasDropdown: false },
   { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports', hasDropdown: false },

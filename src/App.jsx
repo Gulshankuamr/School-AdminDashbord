@@ -47,16 +47,71 @@ import MarkAttendance from './pages/attendance/MarkAttendance'
 import AttendanceList from './pages/attendance/AttendanceList'
 import AttendanceReport from './pages/attendance/AttendanceReport'
 
+// timetable pages
+// import CreateTimetable from './pages/timetable/CreateTimetable'
+// import ViewTimetable from './pages/timetable/ViewTimetable'
+
+import CreateTimetable from './pages/timetable/CreateTimetable';
+import ViewTimetable from './pages/timetable/ViewTimetable';
+
+
+// ========fees----------------------
+
+import FeeHeads from './pages/fees/FeeHeads'
+import FineRule from './pages/fees/FineRule'
+
+
+
+
 
 // Layout shown only after login
+// function AdminLayout() {
+//   const [sidebarOpen, setSidebarOpen] = useState(false)
+//   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+
+//   return (
+//     <div className="min-h-screen bg-gray-50">
+//       <Navbar 
+//         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+//         isCollapsed={sidebarCollapsed}
+//         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+//       />
+//       <Sidebar 
+//         isOpen={sidebarOpen} 
+//         onClose={() => setSidebarOpen(false)}
+//         isCollapsed={sidebarCollapsed}
+//         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+//       />
+//       <main 
+//         className={`pt-20 p-6 transition-all duration-300 ease-in-out ${
+//           sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64'
+//         }`}
+//       >
+//         <Outlet />
+//       </main>
+//     </div>
+//   )
+// }
+
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <main className="lg:ml-64 pt-20 p-6">
+      <Navbar 
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+        isCollapsed={isCollapsed}
+      />
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        isCollapsed={isCollapsed}
+      />
+      <main className={`pt-20 transition-all duration-300 ${
+        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      } p-6`}>
         <Outlet />
       </main>
     </div>
@@ -119,12 +174,23 @@ function App() {
            
                {/* ================= Attendance ================= */}
 
-<Route path="attendance" element={<MarkAttendance />} />
-<Route path="attendance/list" element={<AttendanceList />} />
-<Route path="attendance/report" element={<AttendanceReport />} />
+           <Route path="attendance" element={<MarkAttendance />} />
+           <Route path="attendance/list" element={<AttendanceList />} />
+           <Route path="attendance/report" element={<AttendanceReport />} />
+           
+           {/* ================= Timetable ================= */}
+
+         <Route path="timetable/create" element={<CreateTimetable />} />
+         <Route path="timetable/view" element={<ViewTimetable />} />
+
+          {/* ===========================fees=============================== */}
+
+         {/* ================= Fees ================= */}
+          <Route path="fees/heads" element={<FeeHeads />} />
+          <Route path="fees/fine-rule" element={<FineRule />} />
 
 
-
+            
           {/* Placeholder pages */}
           <Route
             path="classes"

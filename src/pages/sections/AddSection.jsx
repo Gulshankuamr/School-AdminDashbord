@@ -81,12 +81,20 @@ const AddSection = () => {
 
       await sectionService.createSection(sectionData)
 
+      // Show success message
       setShowSuccess(true)
 
-      // Navigate back without any state (removed filter state)
+      // Reset form immediately
+      setFormData({
+        class_id: '',
+        section_name: '',
+      })
+
+      // Hide success message after 3 seconds
       setTimeout(() => {
-        navigate('/admin/sections')
-      }, 1500)
+        setShowSuccess(false)
+      }, 1000)
+
     } catch (error) {
       console.error('Error adding section:', error)
       setErrorMessage(error.message || 'Failed to add section. Please try again.')
@@ -257,5 +265,4 @@ const AddSection = () => {
     </div>
   )
 }
-
 export default AddSection
