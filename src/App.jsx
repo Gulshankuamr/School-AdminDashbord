@@ -59,6 +59,8 @@ import ViewTimetable from './pages/timetable/ViewTimetable';
 
 import FeeHeads from './pages/fees/FeeHeads'
 import FineRule from './pages/fees/FineRule'
+import CreateFee from './pages/fees/CreateFee'
+import FeePreview from './pages/fees/FeePreview'
 
 
 
@@ -188,6 +190,9 @@ function App() {
          {/* ================= Fees ================= */}
           <Route path="fees/heads" element={<FeeHeads />} />
           <Route path="fees/fine-rule" element={<FineRule />} />
+          <Route path="fees/create" element={<CreateFee />} />
+          <Route path="fees/preview" element={<FeePreview />} /> 
+          
 
 
             

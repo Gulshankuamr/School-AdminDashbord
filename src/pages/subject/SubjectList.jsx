@@ -172,15 +172,15 @@ function SubjectList() {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Subject ID
-                      </th> */}
+                      </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Subject Name
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Status
-                      </th>
+                      </th> */}
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
                       </th>
@@ -204,7 +204,7 @@ function SubjectList() {
                             {subject.subject_name}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                             subject.status === 1 
                               ? 'bg-green-100 text-green-700' 
@@ -213,7 +213,7 @@ function SubjectList() {
                             <span className={`w-2 h-2 rounded-full ${subject.status === 1 ? 'bg-green-500' : 'bg-red-500'}`}></span>
                             {subject.status === 1 ? 'Active' : 'Inactive'}
                           </span>
-                        </td>
+                        </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex items-center gap-4">
                             <button
@@ -225,8 +225,6 @@ function SubjectList() {
                               View
                             </button>
                             <button
-                              // onClick={() => navigate(`/admin/subjects/edit/${subject.subject_id}`)}
-
                               onClick={() => navigate(`/admin/subject/edit/${subject.subject_id}`)}
                               className="text-green-600 hover:text-green-900 transition flex items-center gap-1"
                               title="Edit"

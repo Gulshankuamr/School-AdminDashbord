@@ -124,6 +124,7 @@ export const sidebarMenuItems = [
 
 // fees========================================================
 // sidebarMenuItems array mein fees section update karein:
+// src/components/SidebarMenuItems.js (or wherever you keep it)
 {
   id: 'fees',
   label: 'Fees',
@@ -131,9 +132,12 @@ export const sidebarMenuItems = [
   hasDropdown: true,
   subItems: [
     { id: 'fee-heads', label: 'Fee Heads', path: '/admin/fees/heads' },
-     { id: 'fee-fine-rules', label: 'Fine Rules', path: '/admin/fees/fine-rule' }, // ✅ CHANGE HERE
+    { id: 'fee-fine-rules', label: 'Fine Rules', path: '/admin/fees/fine-rule' },
+    { id: 'create-fee', label: 'Create Fee Structure', path: '/admin/fees/create' }, // ✅ Add this
+    { id: 'fee-preview', label: 'View fee Structure ', path: '/admin/fees/preview' }, // ✅ Optional preview page
   ],
 },
+
 
 
     

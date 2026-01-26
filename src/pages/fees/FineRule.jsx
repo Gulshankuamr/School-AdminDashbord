@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiEdit2, FiTrash2, FiSave, FiX, FiSearch, FiCheckCircle, FiList } from 'react-icons/fi';
 import { HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
 import { feeFineRuleService } from '../../services/FeeFineRuleService';
-import { feeHeadService } from '../../services/FeeHeadService';
+import { feeHeadService } from '../../services/feeHeadService';
 
 const FineRule = () => {
   // State for fine rules data
