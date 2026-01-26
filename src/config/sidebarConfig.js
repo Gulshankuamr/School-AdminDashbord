@@ -102,7 +102,7 @@ export const sidebarMenuItems = [
 
 {
   id: 'attendance',
-  label: 'Attendance',
+  label: 'Students Attendance',
   icon: ClipboardCheck,
   hasDropdown: true,
   subItems: [
