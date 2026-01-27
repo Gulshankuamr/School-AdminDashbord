@@ -102,7 +102,7 @@ export const sidebarMenuItems = [
 
 {
   id: 'attendance',
-  label: 'Students Attendance',
+  label: 'Student Attendance',
   icon: ClipboardCheck,
   hasDropdown: true,
   subItems: [
@@ -111,6 +111,23 @@ export const sidebarMenuItems = [
     { id: 'attendance-report', label: 'Attendance Report', path: '/admin/attendance/report' }
   ]
 },
+
+
+
+{
+  id: 'teacher-attendance',
+  label: 'Teacher Attendance',
+  icon: ClipboardCheck,
+  hasDropdown: true,
+  subItems: [
+    {id: 'mark-teacher-attendance',label: 'Mark Attendance',path: '/admin/teacher-attendance'},
+    {id: 'teacher-attendance-list',label: 'Attendance List',path: '/admin/teacher-attendance/list'},
+    {id: 'teacher-attendance-report',label: 'Attendance Report',path: '/admin/teacher-attendance/report'}
+  ]
+},
+
+
+
    {
   id: 'timetable',
   label: 'Timetable',
@@ -121,6 +138,8 @@ export const sidebarMenuItems = [
     {id: 'view-timetable',label: 'View Timetable',path: '/admin/timetable/view',icon: List,},
   ],
 },
+
+
 
 // fees========================================================
 // sidebarMenuItems array mein fees section update karein:

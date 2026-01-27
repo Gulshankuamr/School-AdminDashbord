@@ -40,12 +40,18 @@ import AddSubject from './pages/subject/AddSubject'
 import EditSubject from './pages/subject/EditSubject'
 import SubjectList from './pages/subject/SubjectList'
 
-// attendence-------------------------------------
+//Student attendence-------------------------------------
 
 // attendance pages
 import MarkAttendance from './pages/attendance/MarkAttendance'
 import AttendanceList from './pages/attendance/AttendanceList'
 import AttendanceReport from './pages/attendance/AttendanceReport'
+
+// Teacher attendance pages
+import MarkTeacherAttendance from './pages/teacherAttendance/MarkTeacherAttendance'
+import TeacherAttendanceList from './pages/teacherAttendance/TeacherAttendanceList'
+import TeacherAttendanceReport from './pages/teacherAttendance/TeacherAttendanceReport'
+
 
 // timetable pages
 // import CreateTimetable from './pages/timetable/CreateTimetable'
@@ -174,11 +180,19 @@ function App() {
            <Route path="subject/add" element={<AddSubject/>}/>
            <Route path="subject/edit/:id" element={<EditSubject/>}/>
            
-               {/* ================= Attendance ================= */}
+               {/* =================studentAttendance ================= */}
 
            <Route path="attendance" element={<MarkAttendance />} />
            <Route path="attendance/list" element={<AttendanceList />} />
            <Route path="attendance/report" element={<AttendanceReport />} />
+
+
+           {/* ================= Teacher Attendance ================= */}
+
+            <Route path="teacher-attendance" element={<MarkTeacherAttendance />} />
+            <Route path="teacher-attendance/list" element={<TeacherAttendanceList />} />
+            <Route path="teacher-attendance/report" element={<TeacherAttendanceReport />} />
+
            
            {/* ================= Timetable ================= */}
 
