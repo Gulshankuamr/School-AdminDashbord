@@ -48,7 +48,7 @@ const Navbar = ({ onMenuClick, isCollapsed }) => {
           </button>
 
           {/* Title */}
-          <div>
+          <div className='ml-4'>
             <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
             <p className="text-sm text-gray-500 hidden md:block">
               Manage your school efficiently
