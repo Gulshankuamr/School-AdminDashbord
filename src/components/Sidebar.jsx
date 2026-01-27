@@ -62,7 +62,7 @@ const Sidebar = ({ isOpen, onClose, onToggleCollapse, isCollapsed }) => {
         className={`fixed top-0 left-0 h-full bg-white border-r border-gray-200 z-50 transition-all duration-300 overflow-y-auto ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${
-          isCollapsed ? 'w-20' : 'w-64'
+          isCollapsed ? 'w-24' : 'w-61'
         } lg:translate-x-0`}
       >
         {/* Top Section with Logo and Toggle */}

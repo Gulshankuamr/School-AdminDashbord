@@ -127,6 +127,20 @@ export const sidebarMenuItems = [
 },
 
 
+{
+  id: 'accountant-attendance',
+  label: 'Accountant Attendance',
+  icon: ClipboardCheck,
+  hasDropdown: true,
+  subItems: [
+    {id: 'mark-accountant-attendance',label: 'Mark Attendance',path: '/admin/accountant-attendance'},
+    {id: 'accountant-attendance-list',label: 'Attendance List',path: '/admin/accountant-attendance/list'},
+    {id: 'accountant-attendance-report',label: 'Attendance Report',path: '/admin/accountant-attendance/report'}
+  ]
+},
+
+
+
 
    {
   id: 'timetable',
@@ -163,7 +177,7 @@ export const sidebarMenuItems = [
   // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },
   // { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
   // { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },
-  { id: 'exams', label: 'Exams', icon: FileText, path: '/admin/exams', hasDropdown: false },
+  // { id: 'exams', label: 'Exams', icon: FileText, path: '/admin/exams', hasDropdown: false },
   { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports', hasDropdown: false },
-  { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', hasDropdown: false },
+  // { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', hasDropdown: false },
 ]

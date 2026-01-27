@@ -6,6 +6,7 @@ import LoginPage from './pages/auth/LoginPage'
 import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import Unauthorized from './pages/Unauthorized'
+import Report from './pages/Report'
 
 
 // Pages
@@ -52,6 +53,12 @@ import MarkTeacherAttendance from './pages/teacherAttendance/MarkTeacherAttendan
 import TeacherAttendanceList from './pages/teacherAttendance/TeacherAttendanceList'
 import TeacherAttendanceReport from './pages/teacherAttendance/TeacherAttendanceReport'
 
+// Accountant attendance pages
+import MarkAccountantAttendance from './pages/accountantAttendance/MarkAccountantAttendance'
+import AccountantAttendanceList from './pages/accountantAttendance/AccountantAttendanceList'
+import AccountantAttendanceReport from './pages/accountantAttendance/AccountantAttendanceReport'
+
+
 
 // timetable pages
 // import CreateTimetable from './pages/timetable/CreateTimetable'
@@ -67,6 +74,7 @@ import FeeHeads from './pages/fees/FeeHeads'
 import FineRule from './pages/fees/FineRule'
 import CreateFee from './pages/fees/CreateFee'
 import FeePreview from './pages/fees/FeePreview'
+
 
 
 
@@ -193,7 +201,20 @@ function App() {
             <Route path="teacher-attendance/list" element={<TeacherAttendanceList />} />
             <Route path="teacher-attendance/report" element={<TeacherAttendanceReport />} />
 
+          
+           {/* ================= accountend Attendance ================= */}
+
+
+           <Route path="accountant-attendance" element={<MarkAccountantAttendance />} />
+           <Route path="accountant-attendance/list" element={<AccountantAttendanceList />} />
+           <Route path="accountant-attendance/report" element={<AccountantAttendanceReport />} />
+
+
+         {/* Report's--------------------- */}
            
+        
+         
+
            {/* ================= Timetable ================= */}
 
          <Route path="timetable/create" element={<CreateTimetable />} />
@@ -243,14 +264,9 @@ function App() {
               </div>
             }
           />
-          <Route
-            path="reports"
-            element={
-              <div className="text-center py-20">
-                <h1 className="text-2xl font-bold">Reports Page (Coming Soon)</h1>
-              </div>
-            }
-          />
+           {/* ================= Reports ================= */}
+           <Route path="reports" element={<Report />} />
+
           <Route
             path="settings"
             element={

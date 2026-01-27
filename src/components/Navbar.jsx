@@ -8,7 +8,7 @@ const Navbar = ({ onMenuClick, isCollapsed }) => {
   const { logout, user } = useAuth()
   const navigate = useNavigate()
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
+  // const [isNotificationOpen, setIsNotificationOpen] = useState(false)
   const userMenuRef = useRef(null)
   const notificationRef = useRef(null)
 
@@ -18,19 +18,19 @@ const Navbar = ({ onMenuClick, isCollapsed }) => {
   }
 
   // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setIsUserMenuOpen(false)
-      }
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
-        setIsNotificationOpen(false)
-      }
-    }
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+  //       setIsUserMenuOpen(false)
+  //     }
+  //     if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+  //       setIsNotificationOpen(false)
+  //     }
+  //   }
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  //   document.addEventListener('mousedown', handleClickOutside)
+  //   return () => document.removeEventListener('mousedown', handleClickOutside)
+  // }, [])
 
   return (
     <nav className={`bg-white border-b border-gray-200 px-6 py-4 fixed top-0 left-0 ${
@@ -74,7 +74,7 @@ const Navbar = ({ onMenuClick, isCollapsed }) => {
           </button>
 
           {/* Notifications */}
-          <div className="relative" ref={notificationRef}>
+          {/* <div className="relative" ref={notificationRef}>
             <button 
               onClick={() => setIsNotificationOpen(!isNotificationOpen)}
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -121,7 +121,7 @@ const Navbar = ({ onMenuClick, isCollapsed }) => {
                 </div>
               </div>
             )}
-          </div>
+          </div> */}
 
           {/* User Menu */}
           <div className="relative flex items-center gap-3 pl-3 border-l border-gray-200" ref={userMenuRef}>

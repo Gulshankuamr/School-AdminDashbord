@@ -1,11 +1,11 @@
-// src/pages/teacherAttendance/TeacherAttendanceList.jsx
-import React, { useState, useEffect } from 'react'
+// src/pages/accountantAttendance/AccountantAttendanceList.jsx
+import React, { useState } from 'react'
 import { Calendar, Users, CheckCircle, XCircle, Clock, Home, Edit, Save, Trash2, X, User, Briefcase, RefreshCw } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { teacherAttendanceService } from '../../services/teacherAttendanceService'
+import { accountantAttendanceService } from '../../services/accountantAttendanceService'
 
-const TeacherAttendanceList = () => {
+const AccountantAttendanceList = () => {
   const [attendanceList, setAttendanceList] = useState([])
   const [loading, setLoading] = useState(false)
   const [dateFilter, setDateFilter] = useState(new Date())
@@ -18,11 +18,11 @@ const TeacherAttendanceList = () => {
 
   // ✅ Status options exactly as API expects
   const statusOptions = [
-    { value: 'P', label: 'Present', icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-100 text-green-800 border-green-200' },
-    { value: 'A', label: 'Absent', icon: <XCircle className="w-4 h-4" />, color: 'bg-red-100 text-red-800 border-red-200' },
-    { value: 'L', label: 'Late', icon: <Clock className="w-4 h-4" />, color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
-    { value: 'H', label: 'Half Day', icon: <Home className="w-4 h-4" />, color: 'bg-blue-100 text-blue-800 border-blue-200' },
-    { value: 'OL', label: 'On Leave', icon: <Briefcase className="w-4 h-4" />, color: 'bg-purple-100 text-purple-800 border-purple-200' }
+    { value: 'P', label: 'Present', icon: <CheckCircle className="w-4 h-4" />, color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
+    { value: 'A', label: 'Absent', icon: <XCircle className="w-4 h-4" />, color: 'bg-rose-100 text-rose-800 border-rose-300' },
+    { value: 'L', label: 'Late', icon: <Clock className="w-4 h-4" />, color: 'bg-amber-100 text-amber-800 border-amber-300' },
+    { value: 'H', label: 'Half Day', icon: <Home className="w-4 h-4" />, color: 'bg-sky-100 text-sky-800 border-sky-300' },
+    { value: 'OL', label: 'On Leave', icon: <Briefcase className="w-4 h-4" />, color: 'bg-violet-100 text-violet-800 border-violet-300' }
   ]
 
   const showNotification = (message, type = 'success') => {
@@ -73,7 +73,7 @@ const TeacherAttendanceList = () => {
       
       console.log('📅 Fetching attendance for date:', formattedDate)
       
-      const response = await teacherAttendanceService.getTeacherAttendanceByDate(formattedDate)
+      const response = await accountantAttendanceService.getAccountantAttendanceByDate(formattedDate)
       
       console.log('📊 Attendance API Response:', response)
       
@@ -84,8 +84,8 @@ const TeacherAttendanceList = () => {
         const formattedList = attendanceRecords.map(record => ({
           id: record.attendance_id,
           attendance_id: record.attendance_id,
-          teacher_id: record.teacher_id,
-          teacher_name: record.teacher_name || 'Unknown Teacher',
+          accountant_id: record.accountant_id,
+          accountant_name: record.accountant_name || 'Unknown Accountant',
           attendance_date: record.attendance_date,
           status: record.status || 'P',
           remarks: record.remarks || '',
@@ -119,20 +119,34 @@ const TeacherAttendanceList = () => {
     const statusOption = statusOptions.find(opt => opt.value === status) || statusOptions[0]
     
     return (
-      <div className={`px-3 py-1.5 rounded-md border ${statusOption.color} flex items-center gap-2`}>
+      <div className={`px-3 py-1.5 rounded-lg border ${statusOption.color} flex items-center gap-2 w-fit`}>
         {statusOption.icon}
-        <span className="font-medium">{statusOption.label}</span>
+        <span className="font-semibold text-sm">{statusOption.label}</span>
       </div>
     )
   }
 
   const handleEdit = (record) => {
     console.log('✏️ Editing record:', record)
+    
+    // ✅ Validate attendance_id
+    if (!record.attendance_id) {
+      showNotification('Error: attendance_id missing from record', 'error')
+      console.error('❌ Record missing attendance_id:', record)
+      return
+    }
+
     setEditingId(record.id)
     setEditForm({
       attendance_id: record.attendance_id,
       status: record.status || 'P',
       remarks: record.remarks || ''
+    })
+    
+    console.log('📝 Edit form initialized:', {
+      attendance_id: record.attendance_id,
+      status: record.status,
+      remarks: record.remarks
     })
   }
 
@@ -143,24 +157,33 @@ const TeacherAttendanceList = () => {
 
   const handleSave = async (record) => {
     try {
-      console.log('💾 Saving update for:', editForm)
+      console.log('💾 Saving update for record:', record)
+      console.log('📝 Current editForm:', editForm)
       
-      const updateData = {
-        attendance_id: editForm.attendance_id,
-        status: editForm.status,
-        remarks: editForm.remarks
+      // ✅ Validate attendance_id exists
+      if (!editForm.attendance_id) {
+        showNotification('Error: attendance_id is required', 'error')
+        console.error('❌ Missing attendance_id in editForm')
+        return
       }
 
-      console.log('📤 Update payload to API:', updateData)
+      // ✅ Send only required fields with correct types
+      const updateData = {
+        attendance_id: Number(editForm.attendance_id),
+        status: editForm.status,
+        remarks: editForm.remarks || ''
+      }
 
-      const response = await teacherAttendanceService.updateTeacherAttendance(updateData)
+      console.log('📤 Sending update payload:', updateData)
+
+      const response = await accountantAttendanceService.updateAccountantAttendance(updateData)
       
       console.log('✅ Update response:', response)
       
       if (response.success) {
-        showNotification('Attendance updated successfully')
+        showNotification('✓ Attendance updated successfully')
         
-        // Refresh the list
+        // Refresh the list after a short delay
         setTimeout(async () => {
           await fetchAttendanceList()
           setEditingId(null)
@@ -171,17 +194,17 @@ const TeacherAttendanceList = () => {
       }
     } catch (error) {
       console.error('❌ Error updating attendance:', error)
-      showNotification(error.message || 'Failed to update attendance', 'error')
+      showNotification('Update failed: ' + error.message, 'error')
     }
   }
 
   const handleDelete = async (record) => {
     if (!record.attendance_id) {
-      showNotification('Cannot delete: attendance_id not available', 'error')
+      showNotification('Error: attendance_id not available', 'error')
       return
     }
 
-    if (!window.confirm(`Are you sure you want to delete attendance for ${record.teacher_name}?`)) {
+    if (!window.confirm(`Delete attendance for ${record.accountant_name}?\n\nThis action cannot be undone.`)) {
       return
     }
 
@@ -190,21 +213,23 @@ const TeacherAttendanceList = () => {
       
       console.log('🗑️ Deleting attendance ID:', record.attendance_id)
       
-      const response = await teacherAttendanceService.deleteTeacherAttendance(record.attendance_id)
+      const response = await accountantAttendanceService.deleteAccountantAttendance(record.attendance_id)
       
       console.log('✅ Delete response:', response)
       
       if (response.success) {
-        showNotification('Attendance deleted successfully')
+        showNotification('✓ Attendance deleted successfully')
         
         // Refresh the list
         setTimeout(async () => {
           await fetchAttendanceList()
         }, 500)
+      } else {
+        showNotification(response.message || 'Failed to delete attendance', 'error')
       }
     } catch (error) {
       console.error('❌ Error deleting attendance:', error)
-      showNotification(error.message || 'Failed to delete attendance', 'error')
+      showNotification('Delete failed: ' + error.message, 'error')
     } finally {
       setDeleteLoading(null)
     }
@@ -220,8 +245,8 @@ const TeacherAttendanceList = () => {
   return (
     <div className="max-w-7xl mx-auto p-4">
       {notification.show && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${notification.type === 'error' ? 'bg-red-100 text-red-800 border border-red-200' : notification.type === 'info' ? 'bg-blue-100 text-blue-800 border border-blue-200' : 'bg-green-100 text-green-800 border border-green-200'}`}>
-          <div className={`w-2 h-2 rounded-full ${notification.type === 'error' ? 'bg-red-500' : notification.type === 'info' ? 'bg-blue-500' : 'bg-green-500'}`}></div>
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${notification.type === 'error' ? 'bg-rose-100 text-rose-800 border border-rose-200' : notification.type === 'info' ? 'bg-sky-100 text-sky-800 border border-sky-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}`}>
+          <div className={`w-2 h-2 rounded-full ${notification.type === 'error' ? 'bg-rose-500' : notification.type === 'info' ? 'bg-sky-500' : 'bg-emerald-500'}`}></div>
           <span className="font-medium">{notification.message}</span>
         </div>
       )}
@@ -229,12 +254,12 @@ const TeacherAttendanceList = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">Teacher Attendance List</h1>
-            <p className="text-gray-600 mt-2">View and manage teacher attendance records</p>
+            <h1 className="text-3xl font-bold text-gray-800">Accountant Attendance List</h1>
+            <p className="text-gray-600 mt-2">View and manage accountant attendance records</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="bg-purple-50 p-3 rounded-lg">
-              <Users className="w-6 h-6 text-purple-600" />
+            <div className="bg-indigo-50 p-3 rounded-lg">
+              <Users className="w-6 h-6 text-indigo-600" />
             </div>
           </div>
         </div>
@@ -245,7 +270,7 @@ const TeacherAttendanceList = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
+              <Calendar className="w-4 h-4 text-indigo-600" />
               Select Date
             </label>
             <DatePicker
@@ -257,7 +282,7 @@ const TeacherAttendanceList = () => {
               }}
               dateFormat="dd/MM/yyyy"
               placeholderText="Choose date"
-              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-800"
+              className="w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800"
             />
           </div>
 
@@ -265,7 +290,7 @@ const TeacherAttendanceList = () => {
             <button
               onClick={fetchAttendanceList}
               disabled={loading}
-              className="w-full px-5 py-2.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full px-5 py-2.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 font-semibold shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {loading ? (
                 <>
@@ -288,10 +313,12 @@ const TeacherAttendanceList = () => {
         <h3 className="font-semibold text-gray-800 mb-3">Attendance Status Legend</h3>
         <div className="flex flex-wrap gap-3">
           {statusOptions.map(option => (
-            <div key={option.value} className={`px-3 py-2 rounded-lg ${option.color} flex items-center gap-2`}>
+            <div key={option.value} className={`px-3 py-2 rounded-lg border-2 ${option.color} flex items-center gap-2 shadow-sm`}>
               {option.icon}
               <span className="font-medium">{option.label}</span>
-              <span className="text-xs bg-white px-2 py-1 rounded">({option.value})</span>
+              <span className="text-xs bg-white px-2 py-1 rounded border border-gray-300 font-mono">
+                {option.value}
+              </span>
             </div>
           ))}
         </div>
@@ -313,66 +340,66 @@ const TeacherAttendanceList = () => {
             <p className="text-xs text-gray-500 mt-2">For selected date</p>
           </div>
           
-          <div className="bg-white rounded-xl border border-green-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-emerald-200 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 font-medium">Present</p>
-                <p className="text-2xl font-bold text-green-600">{presentCount}</p>
+                <p className="text-2xl font-bold text-emerald-600">{presentCount}</p>
               </div>
-              <div className="bg-green-50 p-2 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+              <div className="bg-emerald-50 p-2 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-emerald-600" />
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">Status: P</p>
           </div>
           
-          <div className="bg-white rounded-xl border border-red-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-rose-200 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 font-medium">Absent</p>
-                <p className="text-2xl font-bold text-red-600">{absentCount}</p>
+                <p className="text-2xl font-bold text-rose-600">{absentCount}</p>
               </div>
-              <div className="bg-red-50 p-2 rounded-lg">
-                <XCircle className="w-5 h-5 text-red-600" />
+              <div className="bg-rose-50 p-2 rounded-lg">
+                <XCircle className="w-5 h-5 text-rose-600" />
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">Status: A</p>
           </div>
           
-          <div className="bg-white rounded-xl border border-yellow-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-amber-200 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 font-medium">Late</p>
-                <p className="text-2xl font-bold text-yellow-600">{lateCount}</p>
+                <p className="text-2xl font-bold text-amber-600">{lateCount}</p>
               </div>
-              <div className="bg-yellow-50 p-2 rounded-lg">
-                <Clock className="w-5 h-5 text-yellow-600" />
+              <div className="bg-amber-50 p-2 rounded-lg">
+                <Clock className="w-5 h-5 text-amber-600" />
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">Status: L</p>
           </div>
           
-          <div className="bg-white rounded-xl border border-blue-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-sky-200 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 font-medium">Half Day</p>
-                <p className="text-2xl font-bold text-blue-600">{halfDayCount}</p>
+                <p className="text-2xl font-bold text-sky-600">{halfDayCount}</p>
               </div>
-              <div className="bg-blue-50 p-2 rounded-lg">
-                <Home className="w-5 h-5 text-blue-600" />
+              <div className="bg-sky-50 p-2 rounded-lg">
+                <Home className="w-5 h-5 text-sky-600" />
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">Status: H</p>
           </div>
           
-          <div className="bg-white rounded-xl border border-purple-200 p-4 shadow-sm">
+          <div className="bg-white rounded-xl border border-violet-200 p-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600 font-medium">On Leave</p>
-                <p className="text-2xl font-bold text-purple-600">{leaveCount}</p>
+                <p className="text-2xl font-bold text-violet-600">{leaveCount}</p>
               </div>
-              <div className="bg-purple-50 p-2 rounded-lg">
-                <Briefcase className="w-5 h-5 text-purple-600" />
+              <div className="bg-violet-50 p-2 rounded-lg">
+                <Briefcase className="w-5 h-5 text-violet-600" />
               </div>
             </div>
             <p className="text-xs text-gray-500 mt-2">Status: OL</p>
@@ -395,7 +422,7 @@ const TeacherAttendanceList = () => {
             </div>
             {isDataLoaded && attendanceList.length > 0 && (
               <div className="mt-2 md:mt-0">
-                <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg text-sm font-medium">
+                <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-lg text-sm font-medium">
                   Date: {formatDateForDisplay(dateFilter)}
                 </div>
               </div>
@@ -410,7 +437,7 @@ const TeacherAttendanceList = () => {
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4" />
-                    Teacher Name
+                    Accountant Name
                   </div>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -454,7 +481,7 @@ const TeacherAttendanceList = () => {
                 <tr>
                   <td colSpan="6" className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500 mb-4"></div>
+                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-500 mb-4"></div>
                       <p className="text-gray-700 font-medium">Loading attendance records for {formatDateForDisplay(dateFilter)}...</p>
                       <p className="text-sm text-gray-500 mt-1">Please wait</p>
                     </div>
@@ -481,14 +508,14 @@ const TeacherAttendanceList = () => {
                   <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center shadow-sm">
-                          <span className="text-purple-600 font-bold text-lg">
-                            {record.teacher_name?.[0]?.toUpperCase() || 'T'}
+                        <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center shadow-sm">
+                          <span className="text-indigo-600 font-bold text-lg">
+                            {record.accountant_name?.[0]?.toUpperCase() || 'A'}
                           </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-bold text-gray-800">
-                            {record.teacher_name}
+                            {record.accountant_name}
                           </div>
                           {/* ID नहीं दिखाएंगे */}
                         </div>
@@ -506,11 +533,11 @@ const TeacherAttendanceList = () => {
                         <select
                           value={editForm.status}
                           onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-800 bg-white"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 bg-white font-semibold"
                         >
                           {statusOptions.map(option => (
                             <option key={option.value} value={option.value} className="text-gray-800">
-                              {option.label}
+                              {option.label} ({option.value})
                             </option>
                           ))}
                         </select>
@@ -526,7 +553,7 @@ const TeacherAttendanceList = () => {
                           value={editForm.remarks}
                           onChange={(e) => setEditForm({ ...editForm, remarks: e.target.value })}
                           placeholder="Enter remarks..."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-800 bg-white"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none text-gray-800 bg-white"
                         />
                       ) : (
                         <div className={`text-sm font-medium ${record.remarks ? 'text-gray-800' : 'text-gray-400 italic'}`}>
@@ -573,7 +600,7 @@ const TeacherAttendanceList = () => {
                           <>
                             <button
                               onClick={() => handleEdit(record)}
-                              className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-lg hover:from-purple-600 hover:to-pink-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm hover:shadow transition-all duration-200"
+                              className="px-3 py-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg hover:from-indigo-600 hover:to-purple-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm hover:shadow transition-all duration-200"
                             >
                               <Edit className="w-3.5 h-3.5" />
                               Edit
@@ -581,7 +608,7 @@ const TeacherAttendanceList = () => {
                             <button
                               onClick={() => handleDelete(record)}
                               disabled={deleteLoading === record.id}
-                              className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-lg hover:from-red-600 hover:to-pink-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50"
+                              className="px-3 py-1.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white rounded-lg hover:from-rose-600 hover:to-pink-700 flex items-center gap-1.5 text-sm font-semibold shadow-sm hover:shadow transition-all duration-200 disabled:opacity-50"
                             >
                               {deleteLoading === record.id ? (
                                 <>
@@ -611,12 +638,12 @@ const TeacherAttendanceList = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="text-sm text-gray-700">
                 <span className="font-semibold">{attendanceList.length} records</span> displayed • 
-                Date: <span className="font-semibold text-blue-600">{formatDateForDisplay(dateFilter)}</span>
+                Date: <span className="font-semibold text-indigo-600">{formatDateForDisplay(dateFilter)}</span>
               </div>
               <div className="text-sm text-gray-700">
-                Present: <span className="font-semibold text-green-600">{presentCount}</span> • 
-                Absent: <span className="font-semibold text-red-600">{absentCount}</span> • 
-                Late: <span className="font-semibold text-yellow-600">{lateCount}</span>
+                Present: <span className="font-semibold text-emerald-600">{presentCount}</span> • 
+                Absent: <span className="font-semibold text-rose-600">{absentCount}</span> • 
+                Late: <span className="font-semibold text-amber-600">{lateCount}</span>
               </div>
             </div>
           </div>
@@ -635,4 +662,4 @@ const TeacherAttendanceList = () => {
   )
 }
 
-export default TeacherAttendanceList
+export default AccountantAttendanceList

@@ -148,9 +148,9 @@ const AttendanceList = () => {
         const seenStudentIds = new Set()
         
         const sortedStudents = [...filteredStudents].sort((a, b) => {
-          const dateA = new Date(a.marked_at || a.created_at || 0)
-          const dateB = new Date(b.marked_at || b.created_at || 0)
-          return dateB - dateA
+          const rollA = parseInt(a.roll_no) || 0
+          const rollB = parseInt(b.roll_no) || 0
+          return rollA - rollB // Roll number ke hisab se sort karo
         })
         
         for (const student of sortedStudents) {
@@ -167,17 +167,14 @@ const AttendanceList = () => {
           return {
             id: student.student_id,
             student_id: student.student_id,
-            admission_no: student.admission_no || 'N/A',
             roll_no: student.roll_no || 'N/A',
             student_name: student.student_name || student.name || 'Unknown',
             father_name: student.father_name || '',
-            user_email: student.user_email || '',
             status: student.status || student.attendance_status || 'P',
             remarks: student.remarks || student.remark || '',
             date: formattedDate,
             class_id: student.class_id || classFilter,
             section_id: student.section_id || sectionFilter,
-            marked_at: student.marked_at || student.created_at || null,
             attendance_id: student.attendance_id || student.id || null
           }
         })
@@ -351,7 +348,6 @@ const AttendanceList = () => {
     const searchLower = searchTerm.toLowerCase()
     return (
       student.student_name?.toLowerCase().includes(searchLower) ||
-      student.admission_no?.toLowerCase().includes(searchLower) ||
       student.roll_no?.toString().includes(searchTerm)
     )
   })
@@ -380,7 +376,7 @@ const AttendanceList = () => {
       </div>
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 mb-8 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
+        {/* <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Search & Filter</h2>
             <div className="relative">
@@ -389,7 +385,7 @@ const AttendanceList = () => {
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, admission no, or roll no..."
+                placeholder="Search by name or roll number..."
                 className="w-full pl-12 pr-4 py-3 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-800 placeholder-gray-500"
               />
             </div>
@@ -403,11 +399,11 @@ const AttendanceList = () => {
             <Download className="w-4 h-4" />
             Export Data
           </button>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               Select Date
             </label>
@@ -422,7 +418,7 @@ const AttendanceList = () => {
 
           {/* ✅ FIXED CLASS DROPDOWN */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <BookOpen className="w-4 h-4" />
               Class
             </label>
@@ -448,7 +444,7 @@ const AttendanceList = () => {
 
           {/* ✅ FIXED SECTION DROPDOWN */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               <Layers className="w-4 h-4" />
               Section
             </label>
@@ -554,6 +550,9 @@ const AttendanceList = () => {
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">
+                  Roll No.
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4" />
                     Student Details
@@ -564,9 +563,6 @@ const AttendanceList = () => {
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">
                   Remarks
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">
-                  Marked Time
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider bg-gray-50">
                   Actions
@@ -608,6 +604,16 @@ const AttendanceList = () => {
                 filteredAttendanceList.map((record) => (
                   <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4">
+                      <div className="text-center">
+                        <div className="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg shadow-sm">
+                          <span className="text-gray-800 font-bold text-lg">
+                            {record.roll_no || 'N/A'}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 h-12 w-12 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-xl flex items-center justify-center shadow-sm">
                           <span className="text-blue-600 font-bold text-lg">
@@ -618,14 +624,11 @@ const AttendanceList = () => {
                           <div className="text-sm font-bold text-gray-800">
                             {record.student_name || 'Student'}
                           </div>
-                          <div className="flex items-center gap-4 mt-1">
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-600">Roll: {record.roll_no || 'N/A'}</span>
+                          {record.father_name && (
+                            <div className="text-xs text-gray-600 mt-1">
+                              Father: {record.father_name}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-600">Admission: {record.admission_no || 'N/A'}</span>
-                            </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     </td>
@@ -661,25 +664,6 @@ const AttendanceList = () => {
                         <div className={`text-sm font-medium ${record.remarks ? 'text-gray-800' : 'text-gray-400 italic'}`}>
                           {record.remarks || 'No remarks'}
                         </div>
-                      )}
-                    </td>
-
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {record.marked_at ? (
-                        <div className="flex flex-col">
-                          <div className="text-sm font-semibold text-gray-800">
-                            {new Date(record.marked_at).toLocaleDateString('en-GB')}
-                          </div>
-                          <div className="text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded mt-1 inline-block">
-                            {new Date(record.marked_at).toLocaleTimeString('en-GB', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true
-                            })}
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-sm text-gray-400 italic">Not marked</span>
                       )}
                     </td>
 

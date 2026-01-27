@@ -245,7 +245,7 @@ const MarkTeacherAttendance = () => {
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Select Date</h2>
             <div className="flex items-center gap-4">
               <div className="flex-1">
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   Attendance Date
                 </label>

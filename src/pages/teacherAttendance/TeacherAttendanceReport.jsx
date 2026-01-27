@@ -186,7 +186,7 @@ const TeacherAttendanceReport = () => {
             <h2 className="text-lg font-semibold text-gray-800 mb-3">Date Range</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   Start Date
                 </label>
@@ -199,7 +199,7 @@ const TeacherAttendanceReport = () => {
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <label className=" text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                   <Calendar className="w-4 h-4" />
                   End Date
                 </label>
@@ -316,28 +316,28 @@ const TeacherAttendanceReport = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Teacher Name
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
                   Present
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
                   Absent
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
                   Late
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
                   Half Day
                 </th>
-                <th className="px6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
+                <th className="px6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
                   Leave
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider text-center">
                   Total Days
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th className="px-6 py-4  text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Attendance %
                 </th>
               </tr>
