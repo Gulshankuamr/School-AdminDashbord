@@ -574,7 +574,7 @@ const AttendanceList = () => {
                 <tr>
                   <td colSpan="5" className="px-6 py-16 text-center">
                     <div className="flex flex-col items-center justify-center">
-                      <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div>
+                      {/* <div className=" rounded-full h-10 w-10 border-b-2 border-blue-500 mb-4"></div> */}
                       <p className="text-gray-700 font-medium">Loading attendance records...</p>
                       <p className="text-sm text-gray-500 mt-1">Please wait</p>
                     </div>

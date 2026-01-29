@@ -74,6 +74,12 @@ import FeeHeads from './pages/fees/FeeHeads'
 import FineRule from './pages/fees/FineRule'
 import CreateFee from './pages/fees/CreateFee'
 import FeePreview from './pages/fees/FeePreview'
+// ================fee pymant mathed==============
+
+import CollectFee from './pages/feesPayment/CollectFee'
+import CollectFeePayment from './pages/feesPayment/CollectFeePayment'
+import FeeReceipt from './pages/feesPayment/FeeReceipt'
+
 
 
 
@@ -227,6 +233,13 @@ function App() {
           <Route path="fees/fine-rule" element={<FineRule />} />
           <Route path="fees/create" element={<CreateFee />} />
           <Route path="fees/preview" element={<FeePreview />} /> 
+
+          {/* ===== Fee Collection Flow ===== */}
+          <Route path="fees-payment/collect" element={<CollectFee />} />
+          <Route path="fees-payment/collect/:studentId" element={<CollectFeePayment />} />
+          <Route path="fees-payment/receipt/:receiptId" element={<FeeReceipt />} />
+
+          
           
 
 

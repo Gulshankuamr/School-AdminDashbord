@@ -249,8 +249,8 @@ const CreateFee = () => {
         
         // Redirect after 3 seconds
         setTimeout(() => {
-          navigate('/fee-list');
-        }, 3000);
+          navigate('/admin/fees/create');
+        }, 1500);
       }
     } catch (error) {
       console.error('Error creating fee:', error);

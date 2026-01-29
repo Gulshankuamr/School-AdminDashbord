@@ -160,7 +160,7 @@ export const sidebarMenuItems = [
 // src/components/SidebarMenuItems.js (or wherever you keep it)
 {
   id: 'fees',
-  label: 'Fees',
+  label: 'Fee Management',
   icon: DollarSign,
   hasDropdown: true,
   subItems: [
@@ -168,6 +168,7 @@ export const sidebarMenuItems = [
     { id: 'fee-fine-rules', label: 'Fine Rules', path: '/admin/fees/fine-rule' },
     { id: 'create-fee', label: 'Create Fee Structure', path: '/admin/fees/create' }, // ✅ Add this
     { id: 'fee-preview', label: 'View fee Structure ', path: '/admin/fees/preview' }, // ✅ Optional preview page
+    { label: 'Collect Fee', path: '/admin/fees-payment/collect' },
   ],
 },
 
