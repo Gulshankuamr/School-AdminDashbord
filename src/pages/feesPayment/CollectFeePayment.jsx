@@ -13,7 +13,7 @@ import {
   IndianRupee,
   Shield
 } from 'lucide-react';
-import feePaymentService from '../../services/feePaymentService';
+import feePaymentService from '../../services/feeallService/feePaymentService';
 
 const CollectFeePayment = () => {
   const navigate = useNavigate();

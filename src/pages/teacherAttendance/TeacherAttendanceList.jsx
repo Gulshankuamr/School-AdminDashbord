@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, Users, CheckCircle, XCircle, Clock, Home, Edit, Save, Trash2, X, User, Briefcase, RefreshCw } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { teacherAttendanceService } from '../../services/teacherAttendanceService'
+// import { teacherAttendanceService } from '../../services/teacherAttendanceService'
+import { teacherAttendanceService } from '../../services/teacherService/teacherAttendanceService'
+
 
 const TeacherAttendanceList = () => {
   const [attendanceList, setAttendanceList] = useState([])

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2 } from 'lucide-react'
-import { accountantService } from '../../services/accountantService'
+import { accountantService } from '../../services/accountendService/accountantService'
 import Modal from '../../components/Modal'
 import AccountantDetailsModal from './AccountantDetailsModal'
 

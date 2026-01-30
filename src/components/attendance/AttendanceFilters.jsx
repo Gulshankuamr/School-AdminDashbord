@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react'
 import { Calendar } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { attendanceService } from '../../services/attendanceService'
+// import { attendanceService } from '../../services/attendanceService'
+import { attendanceService } from '../../services/studentService/attendanceService'
+
 
 const AttendanceFilters = ({ onShowList, initialFilters = {} }) => {
   const [filters, setFilters] = useState({

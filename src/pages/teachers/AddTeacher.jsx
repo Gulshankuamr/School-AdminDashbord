@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload, CheckCircle, AlertCircle } from 'lucide-react'
-import { teacherService } from '../../services/teacherService'
+import { teacherService } from '../../services/teacherService/teacherService'
 
 const AddTeacher = () => {
   const navigate = useNavigate()

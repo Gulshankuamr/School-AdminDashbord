@@ -81,6 +81,12 @@ import CollectFeePayment from './pages/feesPayment/CollectFeePayment'
 import FeeReceipt from './pages/feesPayment/FeeReceipt'
 
 
+// =======================profile===================
+// import
+import Profile from './pages/profile/Profile'
+
+
+
 
 
 
@@ -161,6 +167,13 @@ function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
+
+
+          {/* ======================= Profile ======================= */}
+            <Route path="profile" element={<Profile />} />
+
+
+          {/* student */}
           <Route path="students" element={<StudentList />} />
           <Route path="students/add" element={<AddStudent />} />
           <Route path="students/edit/:id" element={<EditStudent />} />

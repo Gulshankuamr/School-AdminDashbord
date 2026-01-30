@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Trash2, Edit2, Eye } from 'lucide-react'
 import Modal from '../../components/Modal'
 import ClassDetailsModal from './ClassDetailsModal'
-import { classService } from '../../services/classService'
+// import { classService } from '../../services/classService'
+import { classService } from '../../services/classService/classService'
 import { toast } from 'sonner'
 
 function ClassList() {

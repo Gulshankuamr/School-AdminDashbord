@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiEdit2, FiTrash2, FiSave, FiX, FiSearch, FiCheckCircle, FiList } from 'react-icons/fi';
 import { HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
-import { feeHeadService } from '../../services/feeHeadService';
+import { feeHeadService } from '../../services/feeallService/feeHeadService';
 
 const FeeHeads = () => {
   // State for fee heads data

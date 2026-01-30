@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, Save, Loader2, Users, User, CheckCircle, XCircle, Clock, Home, ClipboardCheck, AlertCircle } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { teacherAttendanceService } from '../../services/teacherAttendanceService'
+// import { teacherAttendanceService } from '../../services/teacherAttendanceService'
+import { teacherAttendanceService } from '../../services/teacherService/teacherAttendanceService'
+
 
 const MarkTeacherAttendance = () => {
   const [selectedDate, setSelectedDate] = useState(new Date())

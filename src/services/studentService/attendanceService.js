@@ -1,5 +1,5 @@
 // src/services/attendanceService.js
-import { API_BASE_URL, getAuthToken } from './api'
+import { API_BASE_URL, getAuthToken } from '../api'
 
 export const attendanceService = {
   // ✅ Get all classes

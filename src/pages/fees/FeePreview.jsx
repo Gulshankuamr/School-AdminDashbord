@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Filter, Plus, Search, AlertCircle, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { feecreateService } from '../../services/feecreateService';
+import { feecreateService } from '../../services/feeallService/feecreateService';
 
 const FeeList = () => {
   const navigate = useNavigate();

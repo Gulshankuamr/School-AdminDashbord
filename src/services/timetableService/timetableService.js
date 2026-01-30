@@ -1,5 +1,5 @@
 
-import { API_BASE_URL, getAuthToken } from './api';
+import { API_BASE_URL, getAuthToken } from '../api.js';
 
 const timetableService = {
   // ============ CREATE TIMETABLE ============

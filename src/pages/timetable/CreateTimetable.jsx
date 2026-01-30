@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Save, Calendar, BookOpen, User, Clock, ArrowLeft } from 'lucide-react';
-import timetableService from '../../services/timetableService';
+import timetableService from '../../services/timetableService/timetableService';
 import { useToast } from '../../components/ui/toast';
 import { useNavigate } from 'react-router-dom'
 

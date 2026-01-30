@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, BookOpen, Loader } from 'lucide-react'
-import { subjectService } from '../../services/subjectService'
+// import { subjectService } from '../../services/subjectService'
+import { subjectService } from '../../services/subjectService/subjectService'
+
 
 const EditSubject = () => {
   const navigate = useNavigate()

@@ -1,5 +1,5 @@
 // src/services/teacherAttendanceService.js
-import { API_BASE_URL, getAuthToken } from './api'
+import { API_BASE_URL, getAuthToken } from '../api'
 
 export const teacherAttendanceService = {
   // ✅ Get all teachers list

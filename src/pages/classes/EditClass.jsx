@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
-import { classService } from '../../services/classService'
+// import { classService } from '../../services/classService'
+import { classService } from '../../services/classService/classService'
 
 const EditClass = () => {
   const navigate = useNavigate()

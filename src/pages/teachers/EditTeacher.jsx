@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Upload } from 'lucide-react'
-import { teacherService } from '../../services/teacherService'
+// import { teacherService } from '../../services/teacherService'
+import { teacherService } from '../../services/teacherService/teacherService'
+
 
 const EditTeacher = () => {
   const navigate = useNavigate()

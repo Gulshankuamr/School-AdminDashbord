@@ -1,5 +1,5 @@
 // src/services/accountantAttendanceService.js
-import { API_BASE_URL, getAuthToken } from './api'
+import { API_BASE_URL, getAuthToken } from '../api'
 
 export const accountantAttendanceService = {
   // ✅ Get all accountants list

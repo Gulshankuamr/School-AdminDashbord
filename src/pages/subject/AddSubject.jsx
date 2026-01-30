@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, BookOpen, Loader } from 'lucide-react'
-import { subjectService } from '../../services/subjectService'
+import { subjectService } from '../../services/subjectService/subjectService'
 
 const AddSubject = () => {
   const navigate = useNavigate()
@@ -144,7 +144,7 @@ const AddSubject = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/admin/subjects')}
+              onClick={() => navigate('/admin/subject')}
               className="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold"
             >
               Cancel

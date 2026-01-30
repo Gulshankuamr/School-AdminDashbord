@@ -3,7 +3,8 @@ import {
   Calendar, Trash2, Edit2, Save, X, Clock, Filter, RefreshCw,
   Eye, EyeOff, BookOpen, User, AlertCircle, Download, Printer
 } from 'lucide-react';
-import timetableService from '../../services/timetableService';
+// import timetableService from '../../services/timetableService';
+import timetableService from '../../services/timetableService/timetableService';
 import { useToast } from '../../components/ui/toast';
 
 

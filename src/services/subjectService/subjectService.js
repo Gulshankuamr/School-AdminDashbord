@@ -1,5 +1,5 @@
 // src/services/subjectService.js
-import { API_BASE_URL, getAuthToken } from "./api.js"
+import { API_BASE_URL, getAuthToken } from "../api.js"
 
 export const subjectService = {
   // ===============================

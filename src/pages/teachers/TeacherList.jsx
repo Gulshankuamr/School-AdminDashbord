@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { teacherService } from '../../services/teacherService'
+// import { teacherService } from '../../services/teacherService'
+import { teacherService } from '../../services/teacherService/teacherService'
 import Modal from '../../components/Modal'
 import TeacherDetailsModal from './TeacherDetailsModal'
 

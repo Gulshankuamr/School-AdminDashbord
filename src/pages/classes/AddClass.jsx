@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
-import { classService } from '../../services/classService' // आपको यह service create करनी होगी
+import { classService } from '../../services/classService/classService' // आपको यह service create करनी होगी
 
 const AddClass = () => {
   const navigate = useNavigate()

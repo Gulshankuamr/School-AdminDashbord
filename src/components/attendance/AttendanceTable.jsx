@@ -1,7 +1,9 @@
 // src/components/attendance/AttendanceTable.jsx
 import { useState, useEffect } from 'react'
 import { CheckCircle, XCircle, Clock, Home, Save, Loader2 } from 'lucide-react'
-import { attendanceService } from '../../services/attendanceService'
+// import { attendanceService } from '../../services/attendanceService'
+import { attendanceService } from '../../services/studentService/attendanceService'
+
 
 const AttendanceTable = ({ date, classId, sectionId, onUpdate }) => {
   const [students, setStudents] = useState([])

@@ -2,7 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Trash2, BookOpen, Edit, Eye, Plus, Search, Loader } from 'lucide-react'
-import { subjectService } from '../../services/subjectService'
+// import { subjectService } from '../../services/subjectService'
+import { subjectService } from '../../services/subjectService/subjectService'
 import Modal from '../../components/Modal'
 import SubjectDetailsModal from './SubjectDetailsModal'
 
@@ -126,7 +127,7 @@ function SubjectList() {
                 </p>
               </div>
               <button
-                onClick={() => navigate('/admin/subjects/add')}
+                onClick={() => navigate('/admin/subject/add')}
                 className="px-5 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"
               >
                 <Plus className="w-5 h-5" />
@@ -160,7 +161,7 @@ function SubjectList() {
                 </p>
                 {!searchTerm && (
                   <button
-                    onClick={() => navigate('/admin/subjects/add')}
+                    onClick={() => navigate('/admin/subject/add')}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
                     Add First Subject

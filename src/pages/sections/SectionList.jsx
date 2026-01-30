@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Trash2, Edit2, Eye, Filter, CheckCircle, AlertCircle } from 'lucide-react'
 import Modal from '../../components/Modal'
 import SectionDetailsModal from './SectionDetailsModal'
-import { sectionService } from '../../services/sectionService'
+// import { sectionService } from '../../services/sectionService'
+import { sectionService } from '../../services/sectionService/sectionService'
 import { useLocation } from 'react-router-dom'
 
 function SectionList() {

@@ -1,4 +1,4 @@
-import { getAuthToken, API_BASE_URL } from './api';
+import { getAuthToken, API_BASE_URL } from '../api';
 
 const feePaymentService = {
   // ===============================

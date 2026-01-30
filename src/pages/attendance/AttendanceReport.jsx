@@ -3,7 +3,9 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, 
 import { Calendar, TrendingUp, Users, CheckCircle, XCircle, Clock, Home, Download, Filter, Activity } from 'lucide-react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
-import { attendanceService } from '../../services/attendanceService'
+// import { attendanceService } from '../../services/attendanceService'
+import { attendanceService } from '../../services/studentService/attendanceService'
+
 
 const AttendanceReport = () => {
   const [reportData, setReportData] = useState(null)

@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, Copy, Calendar, Check, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { feecreateService } from '../../services/feecreateService';
+import { feecreateService } from '../../services/feeallService/feecreateService';
 
 const CreateFee = () => {
   const navigate = useNavigate();

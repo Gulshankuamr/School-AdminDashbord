@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
-import { sectionService } from '../../services/sectionService'
+// import { sectionService } from '../../services/sectionService'
+import { sectionService } from '../../services/sectionService/sectionService'
+
 
 const EditSection = () => {
   const navigate = useNavigate()

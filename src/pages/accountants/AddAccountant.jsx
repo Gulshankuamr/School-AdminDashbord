@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload, CheckCircle, AlertCircle } from 'lucide-react'
-import { accountantService } from '../../services/accountantService'
+// import { accountantService } from '../../services/accountantService'
+import { accountantService } from '../../services/accountendService/accountantService'
+
 
 const AddAccountant = () => {
   const navigate = useNavigate()
