@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react'
-import { classService } from '../../services/classService/classService' // आपको यह service create करनी होगी
+import { classService } from '../../services/classService/classService' //
 
 const AddClass = () => {
   const navigate = useNavigate()
@@ -74,7 +74,7 @@ const AddClass = () => {
         class_details: formData.class_details.trim(),
       }
 
-      await classService.createClass(classData) // आपको यह service method create करनी होगी
+      await classService.createClass(classData) 
 
       // Success
       setShowSuccess(true)
@@ -82,7 +82,7 @@ const AddClass = () => {
       // Redirect after 2 seconds
       setTimeout(() => {
         setShowSuccess(false)
-        navigate('/admin/classes') // यह route आपके app के according adjust करें
+        navigate('/admin/classes') 
       }, 2000)
     } catch (error) {
       console.error('Error adding class:', error)

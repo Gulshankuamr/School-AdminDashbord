@@ -81,6 +81,23 @@ import CollectFeePayment from './pages/feesPayment/CollectFeePayment'
 import FeeReceipt from './pages/feesPayment/FeeReceipt'
 
 
+// ================= Exams =================
+import ExamTypeList from './pages/exams/ExamTypeList'
+import CreateExamType from './pages/exams/CreateExamType'
+import ExamList from './pages/exams/ExamList'
+import CreateExam from './pages/exams/CreateExam'
+import CreateExamTimetable from './pages/exams/CreateExamTimetable'
+import ViewExamTimetable from './pages/exams/ViewExamTimetable'
+import TimetablePreview from './pages/exams/TimetablePreview'
+
+// ✅ Marks (inside exams folder)
+import AssignMarks from './pages/exams/AssignMarks'
+import MarksList from './pages/exams/MarksList'
+import PrintMarksheet from './pages/exams/PrintMarksheet'
+
+
+
+
 // =======================profile===================
 // import
 import Profile from './pages/profile/Profile'
@@ -127,19 +144,18 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar 
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)} 
+      <Navbar
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         isCollapsed={isCollapsed}
       />
-      <Sidebar 
-        isOpen={sidebarOpen} 
+      <Sidebar
+        isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
         isCollapsed={isCollapsed}
       />
-      <main className={`pt-20 transition-all duration-300 ${
-        isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-      } p-6`}>
+      <main className={`pt-20 transition-all duration-300 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+        } p-6`}>
         <Outlet />
       </main>
     </div>
@@ -161,7 +177,7 @@ function App() {
             //   <AdminLayout />
             // </ProtectedRoute>
             <ProtectedRoute allowedRoles={['admin']}>
-            <AdminLayout />
+              <AdminLayout />
             </ProtectedRoute>
 
           }
@@ -170,7 +186,7 @@ function App() {
 
 
           {/* ======================= Profile ======================= */}
-            <Route path="profile" element={<Profile />} />
+          <Route path="profile" element={<Profile />} />
 
 
           {/* student */}
@@ -195,68 +211,87 @@ function App() {
           <Route path="classes/add" element={<AddClass />} />
           <Route path="classes/edit/:id" element={<EditClass />} />
 
-           {/* sections------------------------------------------------ */}
+          {/* sections------------------------------------------------ */}
 
-           <Route path="sections" element={<SectionList />} />
-           <Route path="sections/add" element={<AddSection />} />
-           <Route path="sections/edit/:id" element={<EditSection />} />
+          <Route path="sections" element={<SectionList />} />
+          <Route path="sections/add" element={<AddSection />} />
+          <Route path="sections/edit/:id" element={<EditSection />} />
 
-           {/* subject-------------------------------------------------- */}
+          {/* subject-------------------------------------------------- */}
 
-           <Route path="subject" element={<SubjectList/>}/>
-           <Route path="subject/add" element={<AddSubject/>}/>
-           <Route path="subject/edit/:id" element={<EditSubject/>}/>
-           
-               {/* =================studentAttendance ================= */}
+          <Route path="subject" element={<SubjectList />} />
+          <Route path="subject/add" element={<AddSubject />} />
+          <Route path="subject/edit/:id" element={<EditSubject />} />
 
-           <Route path="attendance" element={<MarkAttendance />} />
-           <Route path="attendance/list" element={<AttendanceList />} />
-           <Route path="attendance/report" element={<AttendanceReport />} />
+          {/* =================studentAttendance ================= */}
 
-
-           {/* ================= Teacher Attendance ================= */}
-
-            <Route path="teacher-attendance" element={<MarkTeacherAttendance />} />
-            <Route path="teacher-attendance/list" element={<TeacherAttendanceList />} />
-            <Route path="teacher-attendance/report" element={<TeacherAttendanceReport />} />
-
-          
-           {/* ================= accountend Attendance ================= */}
+          <Route path="attendance" element={<MarkAttendance />} />
+          <Route path="attendance/list" element={<AttendanceList />} />
+          <Route path="attendance/report" element={<AttendanceReport />} />
 
 
-           <Route path="accountant-attendance" element={<MarkAccountantAttendance />} />
-           <Route path="accountant-attendance/list" element={<AccountantAttendanceList />} />
-           <Route path="accountant-attendance/report" element={<AccountantAttendanceReport />} />
+          {/* ================= Teacher Attendance ================= */}
+
+          <Route path="teacher-attendance" element={<MarkTeacherAttendance />} />
+          <Route path="teacher-attendance/list" element={<TeacherAttendanceList />} />
+          <Route path="teacher-attendance/report" element={<TeacherAttendanceReport />} />
 
 
-         {/* Report's--------------------- */}
-           
-        
-         
+          {/* ================= accountend Attendance ================= */}
 
-           {/* ================= Timetable ================= */}
 
-         <Route path="timetable/create" element={<CreateTimetable />} />
-         <Route path="timetable/view" element={<ViewTimetable />} />
+          <Route path="accountant-attendance" element={<MarkAccountantAttendance />} />
+          <Route path="accountant-attendance/list" element={<AccountantAttendanceList />} />
+          <Route path="accountant-attendance/report" element={<AccountantAttendanceReport />} />
+
+
+          {/* Report's--------------------- */}
+
+
+
+
+          {/* ================= Timetable ================= */}
+
+          <Route path="timetable/create" element={<CreateTimetable />} />
+          <Route path="timetable/view" element={<ViewTimetable />} />
 
           {/* ===========================fees=============================== */}
 
-         {/* ================= Fees ================= */}
+          {/* ================= Fees ================= */}
           <Route path="fees/heads" element={<FeeHeads />} />
           <Route path="fees/fine-rule" element={<FineRule />} />
           <Route path="fees/create" element={<CreateFee />} />
-          <Route path="fees/preview" element={<FeePreview />} /> 
+          <Route path="fees/preview" element={<FeePreview />} />
+
+
+          {/* ================= Exams ================= */}
+          <Route path="exams/types" element={<ExamTypeList />} />
+          <Route path="exams/types/add" element={<CreateExamType />} />
+
+          <Route path="exams" element={<ExamList />} />
+          <Route path="exams/add" element={<CreateExam />} />
+
+          {/* ================= Exam Timetable ================= */}
+          <Route path="exams/timetable" element={<ViewExamTimetable />} />
+          <Route path="exams/timetable/create" element={<CreateExamTimetable />} />
+          <Route path="exams/timetable/edit/:id" element={<CreateExamTimetable />} />
+          <Route path="exams/timetable/preview/:id" element={<TimetablePreview />} />
+
+          {/* ================= Marks ================= */}
+          <Route path="exams/assign-marks" element={<AssignMarks />} />
+          <Route path="exams/marks" element={<MarksList />} />
+          <Route path="exams/print-marksheet" element={<PrintMarksheet />} />
 
           {/* ===== Fee Collection Flow ===== */}
           <Route path="fees-payment/collect" element={<CollectFee />} />
           <Route path="fees-payment/collect/:studentId" element={<CollectFeePayment />} />
           <Route path="fees-payment/receipt/:receiptId" element={<FeeReceipt />} />
 
-          
-          
 
 
-            
+
+
+
           {/* Placeholder pages */}
           <Route
             path="classes"
@@ -290,8 +325,8 @@ function App() {
               </div>
             }
           />
-           {/* ================= Reports ================= */}
-           <Route path="reports" element={<Report />} />
+          {/* ================= Reports ================= */}
+          <Route path="reports" element={<Report />} />
 
           <Route
             path="settings"
@@ -302,11 +337,11 @@ function App() {
             }
           />
         </Route>
-      <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Redirect root to admin */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   )

@@ -173,6 +173,48 @@ export const sidebarMenuItems = [
 },
 
 
+//  ========================Exam==================================================
+// {
+//   id: 'exams',
+//   label: 'Exams',
+//   icon: FileText,
+//   hasDropdown: true,
+//   subItems: [
+//     { label: 'Exam Types', path: '/admin/exams/types' },
+
+//     { label: 'Create Exam', path: '/admin/exams' },  // ✅ NEW
+
+//     { label: 'Create Exam Timetable', path: '/admin/exams/timetable/create' },  // ✅
+
+//     { label: 'View Exam Timetable', path: '/admin/exams/timetable/view' },  // ✅
+
+//     { label: 'Assign Marks', path: '/admin/exams/assign-marks' },
+//   ],
+// },
+
+
+{
+  id: 'exams',
+  label: 'Exams',
+  icon: FileText,
+  hasDropdown: true,
+  subItems: [
+    { id: 'exam-types', label: 'Exam Types List', path: '/admin/exams/types' },
+    { id: 'add-exam-type', label: 'Create Exam Type', path: '/admin/exams/types/add' },
+
+    { id: 'exam-list', label: 'Exam List', path: '/admin/exams' },
+    { id: 'create-exam', label: 'Create Exam', path: '/admin/exams/add' },
+
+    { id: 'exam-timetable-create', label: 'Create Exam Timetable', path: '/admin/exams/timetable/create' },
+    // { id: 'exam-timetable-view', label: 'View Exam Timetable', path: '/admin/exams/timetable/view' },
+    // { id: 'exam-timetable-preview', label: 'Timetable Preview', path: '/admin/exams/timetable/preview' },
+
+    // ✅ ENABLE MARKS
+    { id: 'assign-marks', label: 'Assign Marks', path: '/admin/exams/assign-marks' },
+    { id: 'marks-list', label: 'Marks List', path: '/admin/exams/marks-list' },
+    
+  ],
+},
 
     
   // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },

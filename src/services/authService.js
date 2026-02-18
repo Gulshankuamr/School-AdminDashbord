@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './api'
+import { API_BASE_URL } from "./api";
 
 /**
  * Authentication Service
@@ -14,58 +14,58 @@ export const authService = {
   login: async (email, password) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           user_email: email,
           password: password,
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok || !data.success) {
         return {
           success: false,
-          error: data.message || 'Login failed',
-        }
+          error: data.message || "Login failed",
+        };
       }
 
-      const token = data.data.token
-      const userFromApi = data.data.user
+      const token = data.data.token;
+      const userFromApi = data.data.user;
 
       const userData = {
         id: userFromApi.id,
         name: userFromApi.name,
         email: userFromApi.email || email,
         role: userFromApi.role,
-      }
+      };
 
       // Only allow school_admin
-      if (userData.role !== 'school_admin') {
+      if (userData.role !== "school_admin") {
         return {
           success: false,
-          error: 'Access Denied: Only admin users allowed',
-        }
+          error: "Access Denied: Only admin users allowed",
+        };
       }
 
       // Store user and token in localStorage
-      localStorage.setItem('auth_token', token)
-      localStorage.setItem('user', JSON.stringify(userData))
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("user", JSON.stringify(userData));
 
       return {
         success: true,
         user: userData,
         token: token,
-      }
+      };
     } catch (error) {
-      console.error('Login API Error:', error)
+      console.error("Login API Error:", error);
       return {
         success: false,
-        error: 'Something went wrong. Please try again.',
-      }
+        error: "Something went wrong. Please try again.",
+      };
     }
   },
 
@@ -75,22 +75,22 @@ export const authService = {
    */
   logout: async () => {
     try {
-      const token = localStorage.getItem('auth_token')
+      const token = localStorage.getItem("auth_token");
 
       if (token) {
         await fetch(`${API_BASE_URL}/auth/logout`, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        })
+        });
       }
     } catch (error) {
-      console.error('Logout API Error:', error)
+      console.error("Logout API Error:", error);
     } finally {
-      localStorage.removeItem('auth_token')
-      localStorage.removeItem('user')
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user");
     }
   },
 
@@ -99,8 +99,8 @@ export const authService = {
    * @returns {Object|null} - user data or null
    */
   getCurrentUser: () => {
-    const user = localStorage.getItem('user')
-    return user ? JSON.parse(user) : null
+    const user = localStorage.getItem("user");
+    return user ? JSON.parse(user) : null;
   },
 
   /**
@@ -108,6 +108,6 @@ export const authService = {
    * @returns {string|null} - token or null
    */
   getToken: () => {
-    return localStorage.getItem('auth_token') || null
+    return localStorage.getItem("auth_token") || null;
   },
-}
+};
