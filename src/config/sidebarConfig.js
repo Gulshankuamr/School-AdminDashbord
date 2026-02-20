@@ -10,9 +10,11 @@ import {
   BarChart3,
   Settings,
   Layers,
- 
+ Inbox,
   List,
- 
+ Bell,
+   Send,
+
  
  
   PlusCircle,
@@ -36,6 +38,39 @@ export const sidebarMenuItems = [
     path: '/admin',
     hasDropdown: false,
   },
+  
+// ✅ NEW NOTIFICATIONS SECTION
+{
+    id: 'notifications',
+    label: 'Notifications',
+    icon: Bell,
+    hasDropdown: true,
+    subItems: [
+      {
+        id: 'create-notification',
+        label: 'Send Notification',
+        path: '/admin/notifications/create',
+        icon: Send,
+      },
+      {
+        id: 'sent-notifications',
+        label: 'Sent Box',
+        path: '/admin/notifications',
+        icon: List,
+      },
+      {
+        id: 'my-notifications',
+        label: 'My Inbox',
+        path: '/admin/my-notifications',
+        icon: Inbox,
+        // badge: true  ← Sidebar mein badge show karne ke liye
+        //               Sidebar.jsx mein useNotifications().unreadCount use karo
+      },
+    ],
+  },
+
+
+
   {
     id: 'students',
     label: 'Students',
@@ -199,8 +234,8 @@ export const sidebarMenuItems = [
   icon: FileText,
   hasDropdown: true,
   subItems: [
-    { id: 'exam-types', label: 'Exam Types List', path: '/admin/exams/types' },
-    { id: 'add-exam-type', label: 'Create Exam Type', path: '/admin/exams/types/add' },
+    // { id: 'exam-types', label: 'Exam Types List', path: '/admin/exams/types' },
+    // { id: 'add-exam-type', label: 'Create Exam Type', path: '/admin/exams/types/add' },
 
     { id: 'exam-list', label: 'Exam List', path: '/admin/exams' },
     { id: 'create-exam', label: 'Create Exam', path: '/admin/exams/add' },

@@ -18,6 +18,7 @@ const ExamList = () => {
     end_date: '',
     result_date: ''
   });
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -30,15 +31,13 @@ const ExamList = () => {
         createExamService.getAllExams(),
         examTypesService.getAllExamTypes()
       ]);
-      
-      console.log('📥 Fetched exams:', examsRes);
-      
+
       if (examsRes && examsRes.success) {
         setExams(examsRes.data || []);
       } else {
         toast.error(examsRes?.message || 'Failed to load exams');
       }
-      
+
       if (typesRes && typesRes.success) {
         setExamTypes(typesRes.data || []);
       }
@@ -53,9 +52,9 @@ const ExamList = () => {
   const handleEdit = (exam) => {
     setEditingId(exam.exam_id);
     setEditFormData({
-      exam_name: exam.exam_name,
-      exam_type_id: exam.exam_type_id,
-      academic_year: exam.academic_year,
+      exam_name: exam.exam_name || '',
+      exam_type_id: exam.exam_type_id || '',
+      academic_year: exam.academic_year || '',
       start_date: exam.start_date ? exam.start_date.split('T')[0] : '',
       end_date: exam.end_date ? exam.end_date.split('T')[0] : '',
       result_date: exam.result_date ? exam.result_date.split('T')[0] : ''
@@ -64,65 +63,64 @@ const ExamList = () => {
 
   const handleEditChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData({ ...editFormData, [name]: value });
+    setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // ✅ FIXED: Using async handler with proper error handling and button type="button"
   const handleSave = async (examId) => {
+    if (saving) return; // prevent double click
+
+    // Validation
+    if (!editFormData.exam_name || !editFormData.exam_name.trim()) {
+      toast.error('Exam name is required');
+      return;
+    }
+    if (!editFormData.exam_type_id) {
+      toast.error('Exam type is required');
+      return;
+    }
+    if (!editFormData.academic_year) {
+      toast.error('Academic year is required');
+      return;
+    }
+    if (!editFormData.start_date) {
+      toast.error('Start date is required');
+      return;
+    }
+    if (!editFormData.end_date) {
+      toast.error('End date is required');
+      return;
+    }
+    if (new Date(editFormData.end_date) < new Date(editFormData.start_date)) {
+      toast.error('End date must be after start date');
+      return;
+    }
+    if (editFormData.result_date && new Date(editFormData.result_date) < new Date(editFormData.end_date)) {
+      toast.error('Result date must be after end date');
+      return;
+    }
+
+    const payload = {
+      exam_id: examId,
+      exam_type_id: parseInt(editFormData.exam_type_id),
+      exam_name: editFormData.exam_name.trim(),
+      academic_year: editFormData.academic_year,
+      start_date: editFormData.start_date,
+      end_date: editFormData.end_date,
+      result_date: editFormData.result_date || null
+    };
+
+    console.log('📤 Sending update payload:', payload);
+
     try {
-      // Validation
-      if (!editFormData.exam_name.trim()) {
-        toast.error('Exam name is required');
-        return;
-      }
-      if (!editFormData.exam_type_id) {
-        toast.error('Exam type is required');
-        return;
-      }
-      if (!editFormData.academic_year) {
-        toast.error('Academic year is required');
-        return;
-      }
-      if (!editFormData.start_date) {
-        toast.error('Start date is required');
-        return;
-      }
-      if (!editFormData.end_date) {
-        toast.error('End date is required');
-        return;
-      }
-
-      // Date validation
-      if (new Date(editFormData.end_date) < new Date(editFormData.start_date)) {
-        toast.error('End date must be after start date');
-        return;
-      }
-
-      if (editFormData.result_date && new Date(editFormData.result_date) < new Date(editFormData.end_date)) {
-        toast.error('Result date must be after end date');
-        return;
-      }
-
-      const payload = {
-        exam_id: examId,
-        exam_type_id: parseInt(editFormData.exam_type_id),
-        exam_name: editFormData.exam_name.trim(),
-        academic_year: editFormData.academic_year,
-        start_date: editFormData.start_date,
-        end_date: editFormData.end_date,
-        result_date: editFormData.result_date || null
-      };
-
-      console.log('📤 Sending update payload:', payload);
-
+      setSaving(true);
       const response = await createExamService.updateExam(payload);
-      
       console.log('📥 Update response:', response);
 
       if (response && response.success === true) {
         toast.success('Exam updated successfully!');
         setEditingId(null);
-        
-        // Fetch fresh data
+        setEditFormData({});
         await fetchData();
       } else {
         toast.error(response?.message || 'Failed to update exam');
@@ -130,6 +128,8 @@ const ExamList = () => {
     } catch (err) {
       console.error('❌ Error updating exam:', err);
       toast.error(err.message || 'Failed to update exam');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -145,15 +145,12 @@ const ExamList = () => {
 
     try {
       console.log('📤 Deleting exam with ID:', examId);
-
       const response = await createExamService.deleteExam(examId);
-      
       console.log('📥 Delete response:', response);
 
-      // ✅ FIX: Handle different response formats
       const isSuccess = response && (
-        response.success === true || 
-        response.success === 'true' || 
+        response.success === true ||
+        response.success === 'true' ||
         response.success === 1 ||
         response.status === 'success' ||
         response.message?.toLowerCase().includes('success')
@@ -161,23 +158,15 @@ const ExamList = () => {
 
       if (isSuccess) {
         toast.success('Exam deleted successfully!');
-        
-        // ✅ CRITICAL: Remove from local state immediately
         setExams(prevExams => prevExams.filter(exam => Number(exam.exam_id) !== Number(examId)));
-        
-        // Also fetch fresh data to be sure
         setTimeout(() => fetchData(), 500);
       } else {
         toast.error(response?.message || 'Failed to delete exam');
       }
     } catch (err) {
       console.error('❌ Error deleting exam:', err);
-      
-      // ✅ FIX: Even if API fails, remove from UI (optimistic delete)
       setExams(prevExams => prevExams.filter(exam => Number(exam.exam_id) !== Number(examId)));
       toast.success('Exam removed from list');
-      
-      // Still try to fetch fresh data
       setTimeout(() => fetchData(), 1000);
     }
   };
@@ -220,8 +209,9 @@ const ExamList = () => {
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb */}
         <div className="text-sm text-gray-500 mb-4">
-          <button 
-            onClick={() => navigate('/admin')} 
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
             className="hover:text-gray-700"
           >
             Dashboard
@@ -235,12 +225,11 @@ const ExamList = () => {
           <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Exams</h1>
-              <p className="text-sm text-gray-500 mt-1">
-                Manage and schedule examinations
-              </p>
+              <p className="text-sm text-gray-500 mt-1">Manage and schedule examinations</p>
             </div>
             <div className="flex gap-3 w-full md:w-auto">
               <button
+                type="button"
                 onClick={() => navigate('/admin/exams/create')}
                 className="flex-1 md:flex-none bg-orange-500 text-white px-6 py-2.5 rounded-xl hover:bg-orange-600 transition-colors flex items-center justify-center gap-2"
               >
@@ -260,6 +249,7 @@ const ExamList = () => {
               <p className="text-lg mb-2 font-medium">No exams found</p>
               <p className="text-sm">Create your first exam to get started</p>
               <button
+                type="button"
                 onClick={() => navigate('/admin/exams/create')}
                 className="mt-4 bg-orange-500 text-white px-6 py-2.5 rounded-xl hover:bg-orange-600 transition-colors inline-flex items-center gap-2"
               >
@@ -288,7 +278,7 @@ const ExamList = () => {
                   {exams.map((exam, index) => (
                     <tr key={exam.exam_id} className="hover:bg-gray-50 transition-colors">
                       {editingId === exam.exam_id ? (
-                        // Edit Mode
+                        // ✅ EDIT MODE
                         <>
                           <td className="p-4 text-gray-700">{String(index + 1).padStart(2, '0')}</td>
                           <td className="p-4">
@@ -323,6 +313,7 @@ const ExamList = () => {
                               onChange={handleEditChange}
                               className="w-full border border-gray-300 rounded-lg p-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
                             >
+                              <option value="">Select Year</option>
                               <option value="2024-2025">2024-2025</option>
                               <option value="2025-2026">2025-2026</option>
                               <option value="2026-2027">2026-2027</option>
@@ -357,17 +348,46 @@ const ExamList = () => {
                           </td>
                           <td className="p-4">
                             <div className="flex items-center justify-center gap-2">
+                              {/* ✅ FIXED: type="button" + onMouseDown fallback + disabled during save */}
                               <button
-                                onClick={() => handleSave(exam.exam_id)}
-                                className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                type="button"
+                                disabled={saving}
+                                onMouseDown={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleSave(exam.exam_id);
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleSave(exam.exam_id);
+                                }}
+                                className={`p-2 rounded-lg transition-colors flex items-center justify-center ${
+                                  saving
+                                    ? 'text-gray-400 cursor-not-allowed bg-gray-100'
+                                    : 'text-green-600 hover:bg-green-50 cursor-pointer'
+                                }`}
                                 title="Save"
                               >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
+                                {saving ? (
+                                  <svg className="animate-spin w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                  </svg>
+                                ) : (
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                )}
                               </button>
                               <button
-                                onClick={handleCancel}
+                                type="button"
+                                disabled={saving}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleCancel();
+                                }}
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Cancel"
                               >
@@ -379,7 +399,7 @@ const ExamList = () => {
                           </td>
                         </>
                       ) : (
-                        // View Mode
+                        // VIEW MODE
                         <>
                           <td className="p-4 text-gray-700">{String(index + 1).padStart(2, '0')}</td>
                           <td className="p-4">
@@ -393,6 +413,7 @@ const ExamList = () => {
                           <td className="p-4">
                             <div className="flex items-center justify-center gap-2">
                               <button
+                                type="button"
                                 onClick={() => handleEdit(exam)}
                                 className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                                 title="Edit"
@@ -402,6 +423,7 @@ const ExamList = () => {
                                 </svg>
                               </button>
                               <button
+                                type="button"
                                 onClick={() => handleDelete(exam.exam_id)}
                                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Delete"

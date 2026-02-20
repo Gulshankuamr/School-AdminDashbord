@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, CheckCircle, AlertCircle } from 'lucide-react'
+import { ArrowLeft, Upload, CheckCircle, AlertCircle, Phone, MapPin, User, Users } from 'lucide-react'
 import { teacherService } from '../../services/teacherService/teacherService'
 
 const AddTeacher = () => {
@@ -14,6 +14,10 @@ const AddTeacher = () => {
     qualification: '',
     experience_years: '',
     joining_date: '',
+    mobile_number: '',
+    address: '',
+    father_name: '',
+    mother_name: '',
     teacher_photo: null,
     aadhar_card: null,
   })
@@ -37,7 +41,6 @@ const AddTeacher = () => {
     if (files && files[0]) {
       const file = files[0]
 
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('File size should not exceed 5MB')
         return
@@ -45,7 +48,6 @@ const AddTeacher = () => {
 
       setFormData({ ...formData, [name]: file })
 
-      // Create preview for images
       if (file.type.startsWith('image/')) {
         const reader = new FileReader()
         reader.onloadend = () => {
@@ -80,7 +82,6 @@ const AddTeacher = () => {
       return false
     }
 
-    // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(formData.user_email)) {
       setErrorMessage('Please enter a valid email')
@@ -93,7 +94,6 @@ const AddTeacher = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validate form
     if (!validateForm()) {
       setShowError(true)
       setTimeout(() => setShowError(false), 3000)
@@ -106,10 +106,8 @@ const AddTeacher = () => {
     try {
       await teacherService.addTeacher(formData)
 
-      // Success
       setShowSuccess(true)
       
-      // Reset form after 2 seconds
       setTimeout(() => {
         setShowSuccess(false)
         navigate('/admin/teachers')
@@ -133,6 +131,10 @@ const AddTeacher = () => {
       qualification: '',
       experience_years: '',
       joining_date: '',
+      mobile_number: '',
+      address: '',
+      father_name: '',
+      mother_name: '',
       teacher_photo: null,
       aadhar_card: null,
     })
@@ -178,7 +180,10 @@ const AddTeacher = () => {
         {/* Form */}
         <form onSubmit={handleSubmit}>
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            {/* Basic Information */}
+
+            {/* ========================= 
+                Basic Information
+            ========================= */}
             <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-green-500">
               Basic Information
             </h2>
@@ -190,6 +195,7 @@ const AddTeacher = () => {
                 { label: 'Qualification', name: 'qualification', type: 'text', placeholder: 'e.g., M.Ed, B.Sc', required: true },
                 { label: 'Experience (Years)', name: 'experience_years', type: 'text', placeholder: 'e.g., 5', required: false },
                 { label: 'Joining Date', name: 'joining_date', type: 'date', placeholder: '', required: false },
+                { label: 'Mobile Number', name: 'mobile_number', type: 'tel', placeholder: 'Enter mobile number', required: false },
               ].map((field) => (
                 <div key={field.name}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -225,9 +231,63 @@ const AddTeacher = () => {
                   <option value="Other">Other</option>
                 </select>
               </div>
+
+              {/* Address - full width */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Address
+                </label>
+                <textarea
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full px-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition resize-none"
+                  placeholder="Enter full address"
+                />
+              </div>
             </div>
 
-            {/* File Uploads */}
+
+            {/* ========================= 
+                Family Information
+            ========================= */}
+            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-green-500">
+              Family Information
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Father's Name
+                </label>
+                <input
+                  type="text"
+                  name="father_name"
+                  value={formData.father_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                  placeholder="Enter father's full name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mother's Name
+                </label>
+                <input
+                  type="text"
+                  name="mother_name"
+                  value={formData.mother_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
+                  placeholder="Enter mother's full name"
+                />
+              </div>
+            </div>
+
+
+            {/* ========================= 
+                Documents & Photos
+            ========================= */}
             <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-green-500">
               Documents & Photos
             </h2>

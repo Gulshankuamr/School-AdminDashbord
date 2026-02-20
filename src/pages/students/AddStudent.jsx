@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, CheckCircle, User, Mail, Lock, IdCard, Users, BookOpen, Layers } from 'lucide-react'
+import { ArrowLeft, Upload, CheckCircle, User, Mail, Lock, IdCard, Users, BookOpen, Layers, Phone, MapPin, Calendar, Heart, GraduationCap, Hash, DollarSign, X } from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
 
 
@@ -17,9 +17,18 @@ const AddStudent = () => {
     user_email: '',
     password: '',
     admission_no: '',
+    roll_no: '',
     gender: '',
     class_id: '',
     section_id: '',
+    academic_year: '',
+    dob: '',
+    mobile_number: '',
+    father_name: '',
+    mother_name: '',
+    address: '',
+    religion: '',
+    selected_fee_heads: '',  // single fee head id as string (dropdown)
     student_photo: null,
     aadhar_card: null,
     father_photo: null,
@@ -35,11 +44,13 @@ const AddStudent = () => {
 
   const [showSuccess, setShowSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
-  
+
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
+  const [feeHeads, setFeeHeads] = useState([])
   const [loadingClasses, setLoadingClasses] = useState(false)
   const [loadingSections, setLoadingSections] = useState(false)
+  const [loadingFeeHeads, setLoadingFeeHeads] = useState(false)
 
 
   /* ========================= 
@@ -59,8 +70,32 @@ const AddStudent = () => {
         setLoadingClasses(false)
       }
     }
-    
+
     fetchClasses()
+  }, [])
+
+
+  /* ========================= 
+     Fetch Fee Heads on Mount
+     API: GET /schooladmin/getAllFeeHeads
+     Response: { data: { fee_heads: [ { fee_head_id, head_name } ] } }
+  ========================= */
+
+  useEffect(() => {
+    const fetchFeeHeads = async () => {
+      try {
+        setLoadingFeeHeads(true)
+        const data = await studentService.getAllFeeHeads()
+        setFeeHeads(Array.isArray(data) ? data : [])
+      } catch (error) {
+        console.error('Error fetching fee heads:', error)
+        setFeeHeads([])
+      } finally {
+        setLoadingFeeHeads(false)
+      }
+    }
+
+    fetchFeeHeads()
   }, [])
 
 
@@ -74,7 +109,7 @@ const AddStudent = () => {
         setSections([])
         return
       }
-      
+
       try {
         setLoadingSections(true)
         const data = await studentService.getSectionsByClassId(formData.class_id)
@@ -86,7 +121,7 @@ const AddStudent = () => {
         setLoadingSections(false)
       }
     }
-    
+
     fetchSections()
   }, [formData.class_id])
 
@@ -97,10 +132,10 @@ const AddStudent = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    
+
     if (name === 'class_id') {
-      setFormData({ 
-        ...formData, 
+      setFormData({
+        ...formData,
         [name]: value,
         section_id: ''
       })
@@ -133,9 +168,18 @@ const AddStudent = () => {
       user_email: '',
       password: '',
       admission_no: '',
+      roll_no: '',
       gender: '',
       class_id: '',
       section_id: '',
+      academic_year: '',
+      dob: '',
+      mobile_number: '',
+      father_name: '',
+      mother_name: '',
+      address: '',
+      religion: '',
+      selected_fee_heads: '',
       student_photo: null,
       aadhar_card: null,
       father_photo: null,
@@ -154,14 +198,22 @@ const AddStudent = () => {
     setLoading(true)
 
     try {
-      const result = await studentService.addStudent(formData)
+      // selected_fee_heads → wrap in JSON array string e.g. "[41]" as API expects
+      const submitData = {
+        ...formData,
+        selected_fee_heads: formData.selected_fee_heads
+          ? JSON.stringify([Number(formData.selected_fee_heads)])
+          : JSON.stringify([]),
+      }
+
+      const result = await studentService.addStudent(submitData)
 
       setShowSuccess(true)
       resetForm()
 
       setTimeout(() => {
         setShowSuccess(false)
-      }, 500)
+      }, 3000)
 
     } catch (error) {
       console.error('Error adding student:', error)
@@ -183,11 +235,11 @@ const AddStudent = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 py-8 px-4 sm:px-6 lg:px-8">
-      
+
       {/* ========================= 
           Success Toast Notification
       ========================= */}
-      
+
       {showSuccess && (
         <div className="fixed top-6 right-6 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 z-50 animate-slide-in-right">
           <div className="bg-white/20 rounded-full p-1">
@@ -202,11 +254,11 @@ const AddStudent = () => {
 
 
       <div className="max-w-6xl mx-auto">
-        
+
         {/* ========================= 
             Page Header with Breadcrumb
         ========================= */}
-        
+
         <div className="mb-8">
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
@@ -236,13 +288,13 @@ const AddStudent = () => {
         {/* ========================= 
             Main Form Card
         ========================= */}
-        
+
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          
+
           {/* ========================= 
               Basic Information Section
           ========================= */}
-          
+
           <div className="p-6 sm:p-8">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-blue-500">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -252,8 +304,8 @@ const AddStudent = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
-              {/* Full Name Input */}
+
+              {/* Full Name */}
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Full Name <span className="text-red-500">*</span>
@@ -263,19 +315,14 @@ const AddStudent = () => {
                     <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
+                    type="text" name="name" value={formData.name} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
-                    required
-                    placeholder="Enter student's full name"
+                    required placeholder="Enter student's full name"
                   />
                 </div>
               </div>
 
-
-              {/* Email Input */}
+              {/* Email */}
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Email Address <span className="text-red-500">*</span>
@@ -285,19 +332,14 @@ const AddStudent = () => {
                     <Mail className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <input
-                    type="email"
-                    name="user_email"
-                    value={formData.user_email}
-                    onChange={handleChange}
+                    type="email" name="user_email" value={formData.user_email} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
-                    required
-                    placeholder="student@example.com"
+                    required placeholder="student@example.com"
                   />
                 </div>
               </div>
 
-
-              {/* Password Input */}
+              {/* Password */}
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Password <span className="text-red-500">*</span>
@@ -307,19 +349,14 @@ const AddStudent = () => {
                     <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <input
-                    type="password"
-                    name="password"
-                    value={formData.password}
-                    onChange={handleChange}
+                    type="password" name="password" value={formData.password} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
-                    required
-                    placeholder="Enter secure password"
+                    required placeholder="Enter secure password"
                   />
                 </div>
               </div>
 
-
-              {/* Admission Number Input */}
+              {/* Admission Number */}
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Admission Number <span className="text-red-500">*</span>
@@ -329,17 +366,80 @@ const AddStudent = () => {
                     <IdCard className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <input
-                    type="text"
-                    name="admission_no"
-                    value={formData.admission_no}
-                    onChange={handleChange}
+                    type="text" name="admission_no" value={formData.admission_no} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
-                    required
-                    placeholder="e.g., 2024001"
+                    required placeholder="e.g., ADM-2026-6"
                   />
                 </div>
               </div>
 
+              {/* Roll Number */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Roll Number
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Hash className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="text" name="roll_no" value={formData.roll_no} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
+                    placeholder="e.g., 01"
+                  />
+                </div>
+              </div>
+
+              {/* Academic Year */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Academic Year <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <GraduationCap className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="text" name="academic_year" value={formData.academic_year} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
+                    required placeholder="e.g., 2024-25"
+                  />
+                </div>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Date of Birth <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Calendar className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="date" name="dob" value={formData.dob} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Mobile Number */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Mobile Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Phone className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="tel" name="mobile_number" value={formData.mobile_number} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
+                    required placeholder="Enter mobile number"
+                  />
+                </div>
+              </div>
 
               {/* Class Dropdown */}
               <div className="group">
@@ -351,12 +451,9 @@ const AddStudent = () => {
                     <BookOpen className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <select
-                    name="class_id"
-                    value={formData.class_id}
-                    onChange={handleChange}
+                    name="class_id" value={formData.class_id} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 appearance-none cursor-pointer bg-white"
-                    required
-                    disabled={loadingClasses}
+                    required disabled={loadingClasses}
                   >
                     <option value="">Select Class</option>
                     {loadingClasses ? (
@@ -377,7 +474,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-
               {/* Section Dropdown */}
               <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -388,12 +484,9 @@ const AddStudent = () => {
                     <Layers className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <select
-                    name="section_id"
-                    value={formData.section_id}
-                    onChange={handleChange}
+                    name="section_id" value={formData.section_id} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 appearance-none cursor-pointer bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
-                    required
-                    disabled={!formData.class_id || loadingSections}
+                    required disabled={!formData.class_id || loadingSections}
                   >
                     <option value="">Select Section</option>
                     {!formData.class_id ? (
@@ -418,20 +511,58 @@ const AddStudent = () => {
                 </div>
               </div>
 
+              {/* ✅ Fee Head Dropdown - after Section, same style as Class/Section */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Fee Head <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <DollarSign className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <select
+                    name="selected_fee_heads"
+                    value={formData.selected_fee_heads}
+                    onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 appearance-none cursor-pointer bg-white disabled:bg-gray-50 disabled:cursor-not-allowed"
+                    required
+                    disabled={loadingFeeHeads}
+                  >
+                    <option value="">Select Fee Head</option>
+                    {loadingFeeHeads ? (
+                      <option disabled>Loading fee heads...</option>
+                    ) : feeHeads.length === 0 ? (
+                      <option disabled>No fee heads available</option>
+                    ) : (
+                      feeHeads.map((feeHead) => (
+                        <option
+                          key={feeHead.fee_head_id}
+                          value={feeHead.fee_head_id}
+                        >
+                          {feeHead.head_name || `Fee Head ${feeHead.fee_head_id}`}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
 
               {/* Gender Dropdown */}
-              <div className="group md:col-span-2">
+              <div className="group">
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Gender <span className="text-red-500">*</span>
                 </label>
-                <div className="relative max-w-md">
+                <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Users className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
                   </div>
                   <select
-                    name="gender"
-                    value={formData.gender}
-                    onChange={handleChange}
+                    name="gender" value={formData.gender} onChange={handleChange}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 appearance-none cursor-pointer bg-white"
                     required
                   >
@@ -448,6 +579,96 @@ const AddStudent = () => {
                 </div>
               </div>
 
+              {/* Religion */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Religion
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Heart className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="text" name="religion" value={formData.religion} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
+                    placeholder="e.g., Hindu, Muslim, Christian"
+                  />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+
+          {/* Divider */}
+          <div className="border-t border-gray-100"></div>
+
+
+          {/* ========================= 
+              Family Information Section
+          ========================= */}
+
+          <div className="p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-green-500">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <Users className="w-5 h-5 text-green-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900">Family & Contact Information</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              {/* Father Name */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Father's Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="text" name="father_name" value={formData.father_name} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
+                    required placeholder="Enter father's full name"
+                  />
+                </div>
+              </div>
+
+              {/* Mother Name */}
+              <div className="group">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Mother's Name <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <input
+                    type="text" name="mother_name" value={formData.mother_name} onChange={handleChange}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400"
+                    required placeholder="Enter mother's full name"
+                  />
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="group md:col-span-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Address <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                    <MapPin className="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition" />
+                  </div>
+                  <textarea
+                    name="address" value={formData.address} onChange={handleChange} rows={3}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-gray-900 placeholder-gray-400 resize-none"
+                    required placeholder="Enter full address"
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -459,7 +680,7 @@ const AddStudent = () => {
           {/* ========================= 
               Documents & Photos Section
           ========================= */}
-          
+
           <div className="p-6 sm:p-8">
             <div className="flex items-center gap-3 mb-6 pb-4 border-b-2 border-purple-500">
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -469,7 +690,7 @@ const AddStudent = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              
+
               {[
                 { label: 'Student Photo', name: 'student_photo', accept: 'image/*', icon: User },
                 { label: 'Aadhar Card', name: 'aadhar_card', accept: 'image/*,.pdf', icon: IdCard },
@@ -480,27 +701,19 @@ const AddStudent = () => {
                   <label className="block text-sm font-semibold text-gray-700 mb-3">
                     {file.label}
                   </label>
-                  
+
                   <div className="relative border-2 border-dashed border-gray-300 rounded-2xl p-6 hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200 bg-gray-50/50 cursor-pointer group-hover:shadow-md h-full min-h-[200px] flex flex-col justify-center">
                     <input
-                      type="file"
-                      name={file.name}
-                      id={file.name}
-                      onChange={handleFileChange}
-                      accept={file.accept}
-                      className="hidden"
+                      type="file" name={file.name} id={file.name}
+                      onChange={handleFileChange} accept={file.accept} className="hidden"
                     />
-                    
-                    <label 
-                      htmlFor={file.name} 
-                      className="cursor-pointer flex flex-col items-center justify-center h-full"
-                    >
+
+                    <label htmlFor={file.name} className="cursor-pointer flex flex-col items-center justify-center h-full">
                       {filePreviews[file.name] ? (
                         typeof filePreviews[file.name] === 'string' && filePreviews[file.name].startsWith('data:') ? (
                           <>
                             <img
-                              src={filePreviews[file.name]}
-                              alt="Preview"
+                              src={filePreviews[file.name]} alt="Preview"
                               className="w-28 h-28 object-cover rounded-xl mb-3 shadow-lg border-2 border-blue-200"
                             />
                             <span className="text-xs text-green-600 font-semibold bg-green-50 px-3 py-1.5 rounded-full">
@@ -512,9 +725,7 @@ const AddStudent = () => {
                             <div className="bg-green-100 rounded-full p-3 mb-3 mx-auto w-fit">
                               <CheckCircle className="w-8 h-8 text-green-600" />
                             </div>
-                            <span className="text-sm text-green-600 font-semibold">
-                              {filePreviews[file.name]}
-                            </span>
+                            <span className="text-sm text-green-600 font-semibold">{filePreviews[file.name]}</span>
                           </div>
                         )
                       ) : (
@@ -522,9 +733,7 @@ const AddStudent = () => {
                           <div className="bg-blue-100 rounded-full p-4 mb-4 group-hover:bg-blue-200 transition">
                             <Upload className="w-10 h-10 text-blue-600" />
                           </div>
-                          <span className="text-sm text-gray-700 font-medium mb-1 text-center">
-                            Click to upload
-                          </span>
+                          <span className="text-sm text-gray-700 font-medium mb-1 text-center">Click to upload</span>
                           <span className="text-xs text-gray-500 text-center">
                             JPG, PNG{file.accept.includes('pdf') ? ', PDF' : ''} (Max 5MB)
                           </span>
@@ -546,20 +755,18 @@ const AddStudent = () => {
           {/* ========================= 
               Action Buttons Footer
           ========================= */}
-          
+
           <div className="p-6 sm:p-8 bg-gray-50/50">
             <div className="flex flex-col sm:flex-row gap-4 justify-end">
               <button
-                type="button"
-                onClick={() => window.history.back()}
+                type="button" onClick={() => window.history.back()}
                 className="px-8 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition font-semibold shadow-sm order-2 sm:order-1"
               >
                 Cancel
               </button>
-              
+
               <button
-                type="submit"
-                disabled={loading}
+                type="submit" disabled={loading}
                 className={`px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-xl transition font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2 order-1 sm:order-2 ${
                   loading ? 'opacity-70 cursor-not-allowed' : 'hover:from-blue-700 hover:to-blue-800'
                 }`}
@@ -584,9 +791,7 @@ const AddStudent = () => {
 
         </form>
 
-
       </div>
-
 
     </div>
   )

@@ -26,7 +26,7 @@ export const studentService = {
   },
 
   // ===============================
-  // 2️⃣ GET STUDENT BY ID ✅ FINAL
+  // 2️⃣ GET STUDENT BY ID
   // ===============================
   getStudentById: async (studentId) => {
     const token = getAuthToken()
@@ -191,5 +191,31 @@ export const studentService = {
     if (!response.ok) throw new Error(data.message || 'Could not fetch sections')
 
     return data.data || data
+  },
+
+  // ===============================
+  // 8️⃣ GET ALL FEE HEADS ✅ FIXED
+  // API Response:
+  // { "success": true, "data": { "count": 1, "fee_heads": [ { "fee_head_id": 41, "head_name": "Late fee" } ] } }
+  // ===============================
+  getAllFeeHeads: async () => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
+
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/getAllFeeHeads`,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
+
+    const data = await response.json()
+    if (!response.ok) throw new Error(data.message || 'Could not fetch fee heads')
+
+    // ✅ FIXED: Correctly extract fee_heads array from nested response
+    return data?.data?.fee_heads || []
   },
 }

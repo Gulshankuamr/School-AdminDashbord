@@ -8,8 +8,18 @@ import Sidebar from './components/Sidebar'
 import Unauthorized from './pages/Unauthorized'
 import Report from './pages/Report'
 
-
+ 
 // Pages
+
+
+// ── Notifications ──────────────────────────────────────────────
+import CreateNotification from './pages/notifications/CreateNotification'
+import NotificationList from './pages/notifications/NotificationList'
+import NotificationDetails from './pages/notifications/NotificationDetails'
+import MyNotificationsPage from './pages/notifications/MyNotificationsPage'  
+
+
+
 import AdminDashboard from './pages/admin/AdminDashboard'
 import StudentList from './pages/students/StudentList'
 import AddStudent from './pages/students/AddStudent'
@@ -187,7 +197,22 @@ function App() {
 
           {/* ======================= Profile ======================= */}
           <Route path="profile" element={<Profile />} />
+            
 
+            {/* // AdminLayout ke routes mein yeh add karo (profile route ke baad) */}
+
+
+            {/* ======================= Notifications ======================= */}
+
+
+   {/* ── Notifications (Admin Sent Box) ── */}
+          <Route path="notifications"        element={<NotificationList />} />
+          <Route path="notifications/create" element={<CreateNotification />} />
+          <Route path="notifications/:id"    element={<NotificationDetails />} />
+
+          {/* ── My Notifications (Recipient Inbox) ──
+              Admin bhi apni received notifications dekh sakta hai */}
+          <Route path="my-notifications" element={<MyNotificationsPage />} />
 
           {/* student */}
           <Route path="students" element={<StudentList />} />

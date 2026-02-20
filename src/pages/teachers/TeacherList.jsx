@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-// import { teacherService } from '../../services/teacherService'
 import { teacherService } from '../../services/teacherService/teacherService'
 import Modal from '../../components/Modal'
 import TeacherDetailsModal from './TeacherDetailsModal'
@@ -8,7 +7,6 @@ import TeacherDetailsModal from './TeacherDetailsModal'
 function TeacherList() {
   const navigate = useNavigate()
   
-  // Backend pagination states
   const [teachers, setTeachers] = useState([])
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -16,39 +14,27 @@ function TeacherList() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
-  // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedTeacher, setSelectedTeacher] = useState(null)
   
-  // Delete confirmation modal
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [teacherToDelete, setTeacherToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  // Fetch teachers with pagination
   const fetchTeachers = async (pageNumber) => {
     try {
       setLoading(true)
       setError(null)
 
-      console.log('🔍 Fetching teachers for page:', pageNumber)
-      
       const res = await teacherService.getAllTeachers(pageNumber)
-      
-      console.log('✅ Teachers response:', res)
 
       const teachersData = res?.data || []
-      const paginationData = res?.pagination || {
-        page: 1,
-        totalPages: 1,
-        total: 0
-      }
+      const paginationData = res?.pagination || { page: 1, totalPages: 1, total: 0 }
 
       setTeachers(teachersData)
       setPage(paginationData.page)
       setTotalPages(paginationData.totalPages)
       setTotalTeachers(paginationData.total)
-
     } catch (err) {
       console.error('❌ Error fetching teachers:', err)
       setError(err.message || 'Failed to load teachers. Please check your connection.')
@@ -57,12 +43,10 @@ function TeacherList() {
     }
   }
 
-  // Fetch teachers on page change
   useEffect(() => {
     fetchTeachers(page)
   }, [page])
 
-  // Modal functions
   const handleViewTeacher = (teacher) => {
     setSelectedTeacher(teacher)
     setIsModalOpen(true)
@@ -73,76 +57,34 @@ function TeacherList() {
     setSelectedTeacher(null)
   }
 
-  // Delete functions
   const handleDeleteClick = (teacher) => {
     setTeacherToDelete(teacher)
     setIsDeleteModalOpen(true)
   }
 
-  // const handleDeleteConfirm = async () => {
-  //   if (!teacherToDelete) return
-
-  //   try {
-  //     setDeleting(true)
-      
-  //     console.log('🗑️ Deleting teacher:', teacherToDelete.teacher_id)
-      
-  //     // await teacherService.deleteTeacher(teacher.teacher_id)
-  //     await teacherService.deleteTeacher(teacherToDelete.teacher_id)
-
-
-      
-  //     console.log('✅ Teacher deleted successfully')
-      
-  //     // Close modal
-  //     setIsDeleteModalOpen(false)
-  //     setTeacherToDelete(null)
-      
-  //     // Refresh the list
-  //     await fetchTeachers(page)
-      
-  //     alert('Teacher deleted successfully!')
-      
-  //   } catch (err) {
-  //     console.error('❌ Error deleting teacher:', err)
-  //     alert('Error: ' + (err.message || 'Failed to delete teacher'))
-  //   } finally {
-  //     setDeleting(false)
-  //   }
-  // }
-
-
   const handleDeleteConfirm = async () => {
-  if (!teacherToDelete) return
+    if (!teacherToDelete) return
 
-  try {
-    setDeleting(true)
-
-    console.log('🗑️ Deleting teacher:', teacherToDelete.teacher_id)
-
-    await teacherService.deleteTeacher(teacherToDelete.teacher_id)
-
-    setIsDeleteModalOpen(false)
-    setTeacherToDelete(null)
-
-    await fetchTeachers(page)
-
-    alert('Teacher deleted successfully!')
-  } catch (err) {
-    console.error(err)
-    alert(err.message || 'Delete failed')
-  } finally {
-    setDeleting(false)
+    try {
+      setDeleting(true)
+      await teacherService.deleteTeacher(teacherToDelete.teacher_id)
+      setIsDeleteModalOpen(false)
+      setTeacherToDelete(null)
+      await fetchTeachers(page)
+      alert('Teacher deleted successfully!')
+    } catch (err) {
+      console.error(err)
+      alert(err.message || 'Delete failed')
+    } finally {
+      setDeleting(false)
+    }
   }
-}
-
 
   const handleDeleteCancel = () => {
     setIsDeleteModalOpen(false)
     setTeacherToDelete(null)
   }
 
-  // Show loading spinner
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -154,7 +96,6 @@ function TeacherList() {
     )
   }
 
-  // Show error message
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -185,7 +126,6 @@ function TeacherList() {
     )
   }
 
-  // Show empty state
   if (teachers.length === 0 && !loading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -224,7 +164,6 @@ function TeacherList() {
     )
   }
 
-  // Show teachers table with pagination
   return (
     <>
       <div className="min-h-screen bg-gray-50 p-6">
@@ -252,27 +191,13 @@ function TeacherList() {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Photo
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Qualification
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Experience
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qualification</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Experience</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -294,19 +219,13 @@ function TeacherList() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {teacher.name || 'N/A'}
-                        </div>
+                        <div className="text-sm font-medium text-gray-900">{teacher.name || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {teacher.user_email || 'N/A'}
-                        </div>
+                        <div className="text-sm text-gray-900">{teacher.user_email || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">
-                          {teacher.qualification || 'N/A'}
-                        </div>
+                        <div className="text-sm text-gray-900">{teacher.qualification || 'N/A'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
@@ -315,9 +234,7 @@ function TeacherList() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          teacher.status === 1 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
+                          teacher.status === 1 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                         }`}>
                           {teacher.status === 1 ? 'Active' : 'Inactive'}
                         </span>
@@ -348,14 +265,13 @@ function TeacherList() {
               </table>
             </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination */}
             {totalPages > 1 && (
               <div className="bg-gray-50 px-6 py-4 flex items-center justify-between border-t border-gray-200">
                 <div className="text-sm text-gray-700">
                   Showing page <span className="font-medium">{page}</span> of{' '}
                   <span className="font-medium">{totalPages}</span>
                 </div>
-                
                 <div className="flex gap-2">
                   <button
                     disabled={page === 1}
@@ -364,7 +280,6 @@ function TeacherList() {
                   >
                     Previous
                   </button>
-                  
                   <button
                     disabled={page === totalPages}
                     onClick={() => setPage(page + 1)}
@@ -380,16 +295,9 @@ function TeacherList() {
       </div>
 
       {/* Teacher Details Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={closeModal}
-        title="Teacher Details"
-      >
+      <Modal isOpen={isModalOpen} onClose={closeModal} title="Teacher Details">
         {selectedTeacher && (
-          <TeacherDetailsModal 
-            teacher={selectedTeacher} 
-            onClose={closeModal}
-          />
+          <TeacherDetailsModal teacher={selectedTeacher} onClose={closeModal} />
         )}
       </Modal>
 
@@ -403,14 +311,11 @@ function TeacherList() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Delete Teacher
-              </h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Teacher</h3>
               <p className="text-gray-600 mb-4">
                 Are you sure you want to delete <strong>{teacherToDelete?.name}</strong>? This action cannot be undone.
               </p>
             </div>
-            
             <div className="flex gap-3">
               <button
                 onClick={handleDeleteCancel}

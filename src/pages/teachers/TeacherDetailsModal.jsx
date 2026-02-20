@@ -1,4 +1,4 @@
-import { User, Mail, Phone, BookOpen, Award, Calendar, Briefcase, FileText, Edit } from 'lucide-react'
+import { User, Mail, Phone, BookOpen, Award, Calendar, Briefcase, FileText, Edit, MapPin, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import ImageModal from '../../components/ImageModal'
@@ -18,7 +18,7 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
 
   const handleEdit = () => {
     if (onClose) {
-      onClose() // Close modal first
+      onClose()
     }
     navigate(`/admin/teachers/edit/${teacher.teacher_id}`)
   }
@@ -28,7 +28,10 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
       <div className="bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Profile Card */}
+
+            {/* ========================= 
+                Profile Card
+            ========================= */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-md p-6">
                 <div className="text-center">
@@ -37,7 +40,8 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                     <img
                       src={teacher.teacher_photo_url}
                       alt={teacher.name}
-                      className="w-32 h-32 rounded-full mx-auto object-cover mb-4 border-4 border-green-100"
+                      className="w-32 h-32 rounded-full mx-auto object-cover mb-4 border-4 border-green-100 cursor-pointer hover:opacity-90 transition"
+                      onClick={() => openImageModal(teacher.teacher_photo_url, 'Teacher Photo')}
                     />
                   ) : (
                     <div className="w-32 h-32 rounded-full mx-auto bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center mb-4 border-4 border-green-100">
@@ -62,15 +66,27 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                   </span>
 
                   {/* Quick Info */}
-                  <div className="bg-gray-50 rounded-lg p-4 text-left mt-4">
-                    <div className="flex items-center gap-2 text-sm mb-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span className="text-gray-600 break-all">{teacher.user_email}</span>
+                  <div className="bg-gray-50 rounded-lg p-4 text-left mt-4 space-y-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                      <span className="text-gray-600 break-all">{teacher.user_email || 'N/A'}</span>
                     </div>
+                    {teacher.mobile_number && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-gray-600">{teacher.mobile_number}</span>
+                      </div>
+                    )}
                     {teacher.phone && (
                       <div className="flex items-center gap-2 text-sm">
-                        <Phone className="w-4 h-4 text-gray-400" />
+                        <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <span className="text-gray-600">{teacher.phone}</span>
+                      </div>
+                    )}
+                    {teacher.address && (
+                      <div className="flex items-start gap-2 text-sm">
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-600">{teacher.address}</span>
                       </div>
                     )}
                   </div>
@@ -78,8 +94,11 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
               </div>
             </div>
 
-            {/* Details */}
+            {/* ========================= 
+                Details Section
+            ========================= */}
             <div className="lg:col-span-2 space-y-6">
+
               {/* Personal Info */}
               <div className="bg-white rounded-xl shadow-md p-6">
                 <div className="flex items-center gap-2 mb-4">
@@ -87,21 +106,23 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                   <h3 className="text-xl font-bold text-gray-900">Personal Information</h3>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="text-xs font-semibold text-gray-500 uppercase">Full Name</label>
-                    <p className="text-gray-900 font-semibold mt-1">{teacher.name}</p>
+                    <p className="text-gray-900 font-semibold mt-1">{teacher.name || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-xs font-semibold text-gray-500 uppercase">Email</label>
-                    <p className="text-gray-900 font-semibold mt-1 break-all">{teacher.user_email}</p>
+                    <p className="text-gray-900 font-semibold mt-1 break-all">{teacher.user_email || 'N/A'}</p>
                   </div>
-                  {teacher.phone && (
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 uppercase">Phone</label>
-                      <p className="text-gray-900 font-semibold mt-1">{teacher.phone}</p>
-                    </div>
-                  )}
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Mobile Number</label>
+                    <p className="text-gray-900 font-semibold mt-1">{teacher.mobile_number || teacher.phone || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase">Gender</label>
+                    <p className="text-gray-900 font-semibold mt-1 capitalize">{teacher.gender || 'N/A'}</p>
+                  </div>
                   {teacher.address && (
                     <div className="md:col-span-2">
                       <label className="text-xs font-semibold text-gray-500 uppercase">Address</label>
@@ -118,7 +139,7 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                   <h3 className="text-xl font-bold text-gray-900">Professional Information</h3>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <div>
                     <label className="text-xs font-semibold text-gray-500 uppercase">Qualification</label>
                     <p className="text-gray-900 font-semibold mt-1">{teacher.qualification || 'Not Specified'}</p>
@@ -146,7 +167,32 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                 </div>
               </div>
 
-              {/* Documents Section (if available) */}
+              {/* Family Information */}
+              {(teacher.father_name || teacher.mother_name) && (
+                <div className="bg-white rounded-xl shadow-md p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Users className="w-5 h-5 text-green-600" />
+                    <h3 className="text-xl font-bold text-gray-900">Family Information</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {teacher.father_name && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase">Father's Name</label>
+                        <p className="text-gray-900 font-semibold mt-1">{teacher.father_name}</p>
+                      </div>
+                    )}
+                    {teacher.mother_name && (
+                      <div>
+                        <label className="text-xs font-semibold text-gray-500 uppercase">Mother's Name</label>
+                        <p className="text-gray-900 font-semibold mt-1">{teacher.mother_name}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents */}
               {(teacher.teacher_document_url || teacher.aadhar_card_url) && (
                 <div className="bg-white rounded-xl shadow-md p-6">
                   <div className="flex items-center gap-2 mb-6">
@@ -155,7 +201,6 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Teacher Document */}
                     {teacher.teacher_document_url && (
                       <div className="border-2 border-gray-200 rounded-lg p-4">
                         <label className="text-sm font-semibold text-gray-700 mb-3 block">Teacher Document</label>
@@ -163,7 +208,6 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                           <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                             <FileText className="w-16 h-16 text-gray-400" />
                           </div>
-                          <p className="text-gray-700 mb-3 text-center">Teacher's Document</p>
                           <button
                             onClick={() => openImageModal(teacher.teacher_document_url, "Teacher's Document")}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition w-full justify-center"
@@ -175,7 +219,6 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                       </div>
                     )}
 
-                    {/* Aadhar Card */}
                     {teacher.aadhar_card_url && (
                       <div className="border-2 border-gray-200 rounded-lg p-4">
                         <label className="text-sm font-semibold text-gray-700 mb-3 block">Aadhar Card</label>
@@ -183,7 +226,6 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                           <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
                             <FileText className="w-16 h-16 text-gray-400" />
                           </div>
-                          <p className="text-gray-700 mb-3 text-center">Aadhar Card Document</p>
                           <button
                             onClick={() => openImageModal(teacher.aadhar_card_url, "Aadhar Card")}
                             className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition w-full justify-center"
@@ -203,13 +245,14 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
                 <div className="flex justify-end">
                   <button
                     onClick={handleEdit}
-                    className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                    className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
                   >
                     <Edit className="w-4 h-4" />
                     Edit Teacher
                   </button>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
