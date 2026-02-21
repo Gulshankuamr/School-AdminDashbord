@@ -15,7 +15,7 @@ import {
  Bell,
    Send,
 
- 
+ ShieldCheck,
  
   PlusCircle,
 } from 'lucide-react'
@@ -251,11 +251,26 @@ export const sidebarMenuItems = [
   ],
 },
 
-    
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: Settings,
+    hasDropdown: true,
+    subItems: [
+      {
+        id: 'role-permissions',
+        label: 'Role Permissions',
+        path: '/admin/settings/role-permissions',
+        icon: ShieldCheck,
+      },
+    ],
+  },
   // { id: 'classes', label: 'Classes', icon: Calendar, path: '/admin/classes', hasDropdown: false },
   // { id: 'fees', label: 'Fees', icon: DollarSign, path: '/admin/fees', hasDropdown: false },
   // { id: 'attendance', label: 'Attendance', icon: ClipboardCheck, path: '/admin/attendance', hasDropdown: false },
   // { id: 'exams', label: 'Exams', icon: FileText, path: '/admin/exams', hasDropdown: false },
-  { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports', hasDropdown: false },
+  // { id: 'reports', label: 'Reports', icon: BarChart3, path: '/admin/reports', hasDropdown: false },
   // { id: 'settings', label: 'Settings', icon: Settings, path: '/admin/settings', hasDropdown: false },
+  
+  // ── Settings (with Role Permissions) ───────────────────────
 ]
