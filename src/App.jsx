@@ -78,6 +78,13 @@ import AssignMarks from './pages/exams/AssignMarks'
 import MarksList from './pages/exams/MarksList'
 import PrintMarksheet from './pages/exams/PrintMarksheet'
 
+
+
+import HomeworkList from './pages/homework/HomeworkList'
+import CreateHomework from './pages/homework/CreateHomework'
+import HomeworkDetails from './pages/homework/HomeworkDetails'
+import EditHomework from './pages/homework/EditHomework'
+
 import Profile from './pages/profile/Profile'
 
 // ── Admin Layout ───────────────────────────────────────────────
@@ -205,6 +212,14 @@ function App() {
           <Route path="exams/assign-marks"          element={<AssignMarks />} />
           <Route path="exams/marks"                 element={<MarksList />} />
           <Route path="exams/print-marksheet"       element={<PrintMarksheet />} />
+
+
+
+          {/* Homework */}
+<Route path="homework" element={<HomeworkList />} />
+<Route path="homework/create" element={<CreateHomework />} />
+<Route path="homework/:id" element={<HomeworkDetails />} />
+<Route path="homework/edit/:id" element={<EditHomework />} />
 
           {/* Reports */}
           <Route path="reports" element={<Report />} />

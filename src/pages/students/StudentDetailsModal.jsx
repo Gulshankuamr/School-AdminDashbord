@@ -1,321 +1,307 @@
-import { User, Mail, BookOpen, FileText, Edit, Phone, MapPin, Calendar, Heart, Users, Hash, GraduationCap, DollarSign } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import ImageModal from '../../components/ImageModal'
+import { useNavigate } from 'react-router-dom'
+import {
+  Edit, Trash2, X, Download, User, DollarSign,
+  FileText, Users, Copy, CheckCircle
+} from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
+import ImageModal from '../../components/ImageModal'
 
-// Inline Layers icon
-function LayersIcon({ className }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-    </svg>
-  )
+function parseFeeHeadIds(raw) {
+  if (!raw) return []
+  if (Array.isArray(raw)) {
+    return raw.map(item =>
+      typeof item === 'object' ? Number(item.fee_head_id || item.id || 0) : Number(item)
+    ).filter(n => n > 0)
+  }
+  if (typeof raw === 'string') {
+    const t = raw.trim()
+    if (t.startsWith('[')) {
+      try {
+        const p = JSON.parse(t)
+        return Array.isArray(p)
+          ? p.map(item => typeof item === 'object' ? Number(item.fee_head_id || item.id) : Number(item)).filter(n => n > 0)
+          : []
+      } catch {}
+    }
+    const parts = t.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n) && n > 0)
+    if (parts.length) return parts
+  }
+  const n = Number(raw)
+  return n > 0 ? [n] : []
 }
 
-function StudentDetailsModal({ student: initialStudent, onClose }) {
+function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
   const navigate = useNavigate()
-
-  // ✅ Full student data — fetched fresh from getStudentById API
-  const [student, setStudent] = useState(initialStudent)
-  const [loadingDetails, setLoadingDetails] = useState(true)
-  const [fetchError, setFetchError] = useState(null)
-
+  const [student, setStudent] = useState(listStudent)
+  const [extraLoading, setExtraLoading] = useState(true)
+  const [allFeeHeads, setAllFeeHeads] = useState([])
+  const [copied, setCopied] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState('')
   const [selectedImageTitle, setSelectedImageTitle] = useState('')
 
-  // ✅ Fetch FULL student data on modal open — fixes all N/A fields
   useEffect(() => {
-    const fetchFullData = async () => {
-      if (!initialStudent?.student_id) {
-        setLoadingDetails(false)
-        return
-      }
+    if (!listStudent?.student_id) { setExtraLoading(false); return }
+    const fetchExtra = async () => {
       try {
-        setLoadingDetails(true)
-        setFetchError(null)
-        const fullData = await studentService.getStudentById(initialStudent.student_id)
-        // Merge: API full data takes priority, list data as fallback
-        setStudent({ ...initialStudent, ...fullData })
+        const [detailData, feeHeadsData] = await Promise.all([
+          studentService.getStudentById(listStudent.student_id).catch(() => null),
+          studentService.getAllFeeHeads().catch(() => []),
+        ])
+        if (detailData) setStudent(prev => ({ ...prev, ...detailData }))
+        setAllFeeHeads(Array.isArray(feeHeadsData) ? feeHeadsData : [])
       } catch (err) {
-        console.error('Error loading full student details:', err)
-        setFetchError('Could not load complete details')
-        setStudent(initialStudent) // fallback to list data
+        console.error('Extra details error:', err)
       } finally {
-        setLoadingDetails(false)
+        setExtraLoading(false)
       }
     }
-    fetchFullData()
-  }, [initialStudent?.student_id])
+    fetchExtra()
+  }, [listStudent?.student_id])
 
-  const openImageModal = (url, title) => {
-    setSelectedImage(url)
-    setSelectedImageTitle(title)
-    setImageModalOpen(true)
-  }
+  const feeHeadsList = (() => {
+    const ids = parseFeeHeadIds(student?.selected_fee_heads)
+    return ids.map(id => {
+      const match = allFeeHeads.find(fh => Number(fh.fee_head_id) === id)
+      return { id, name: match?.head_name || match?.fee_head_name || null }
+    })
+  })()
 
   const handleEdit = () => {
     if (onClose) onClose()
     navigate(`/admin/students/edit/${student.student_id}`)
   }
 
-  const parseFeeHeads = () => {
-    if (!student?.selected_fee_heads) return []
-    if (Array.isArray(student.selected_fee_heads)) return student.selected_fee_heads
-    try {
-      const parsed = JSON.parse(student.selected_fee_heads)
-      return Array.isArray(parsed) ? parsed : []
-    } catch { return [] }
+  const handleCopyEmail = () => {
+    if (student?.user_email) {
+      navigator.clipboard.writeText(student.user_email)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
-  const feeHeadsList = parseFeeHeads()
-
-  // ✅ Field component
-  const InfoField = ({ icon: Icon, label, value, colSpan = false }) => (
-    <div className={colSpan ? 'sm:col-span-2' : ''}>
-      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">{label}</p>
-      <div className="flex items-start gap-2">
-        <Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
-        <p className={`text-sm font-medium break-words ${value ? 'text-gray-800' : 'text-gray-400 italic'}`}>
-          {value || 'N/A'}
-        </p>
-      </div>
-    </div>
-  )
-
-  // Loading state
-  if (loadingDetails) {
-    return (
-      <div className="bg-gray-50 flex items-center justify-center" style={{ minHeight: 400 }}>
-        <div className="text-center">
-          <div className="relative mx-auto w-12 h-12 mb-3">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-            <User className="w-5 h-5 text-blue-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-          </div>
-          <p className="text-gray-500 text-sm">Loading full details...</p>
-        </div>
-      </div>
-    )
+  const openImage = (url, title) => {
+    setSelectedImage(url); setSelectedImageTitle(title); setImageModalOpen(true)
   }
+
+  const classSection = [student?.class_name, student?.section_name].filter(Boolean).join(' - ')
 
   return (
     <>
-      <div className="bg-gray-50 p-4 sm:p-5">
-        <div className="max-w-5xl mx-auto">
+      <div className="bg-white rounded-2xl overflow-hidden w-full">
 
-          {/* Non-blocking error banner */}
-          {fetchError && (
-            <div className="mb-3 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
-              <span className="text-amber-600 text-xs">⚠ {fetchError} — showing partial data</span>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+              <User className="w-5 h-5 text-orange-500" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Student Details</h2>
+              <p className="text-xs text-gray-500">Manage and view complete profile information</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleEdit}
+              className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition">
+              <Edit className="w-3.5 h-3.5" /> Edit
+            </button>
+            {onDelete && (
+              <button onClick={() => onDelete(student)}
+                className="flex items-center gap-1.5 px-4 py-2 border border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-lg text-sm font-semibold transition">
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="px-6 py-5">
+
+          {/* Profile Section */}
+          <div className="flex items-start gap-5 pb-5 border-b border-gray-100">
+            {/* Avatar */}
+            <div className="flex-shrink-0 text-center">
+              {student?.student_photo_url ? (
+                <img src={student.student_photo_url} alt={student.name}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 shadow cursor-pointer hover:opacity-90 transition"
+                  onClick={() => openImage(student.student_photo_url, 'Student Photo')} />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow">
+                  <span className="text-white text-2xl font-bold">
+                    {student?.name?.charAt(0)?.toUpperCase() || 'S'}
+                  </span>
+                </div>
+              )}
+              <div className="mt-1.5 flex justify-center">
+                <span className={`inline-flex items-center gap-1 text-xs font-medium ${
+                  student?.status === 1 ? 'text-green-600' : 'text-red-500'}`}>
+                  <span className={`w-2 h-2 rounded-full ${student?.status === 1 ? 'bg-green-500' : 'bg-red-400'}`}></span>
+                </span>
+              </div>
+            </div>
+
+            {/* Info Grid */}
+            <div className="flex-1 grid grid-cols-3 gap-x-8 gap-y-4">
+              <InfoCell label="Full Name" value={student?.name} />
+              <InfoCell label="Admission No" value={student?.admission_no} />
+              <InfoCell label="Email Address">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-gray-900 truncate">{student?.user_email || '—'}</span>
+                  {student?.user_email && (
+                    <button onClick={handleCopyEmail} className="flex-shrink-0 text-gray-400 hover:text-blue-500 transition">
+                      {copied ? <CheckCircle className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                </div>
+              </InfoCell>
+
+              <InfoCell label="Gender" value={student?.gender ? student.gender.charAt(0).toUpperCase() + student.gender.slice(1) : null} />
+              <InfoCell label="Class & Section" value={classSection} />
+              <InfoCell label="Status">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                  student?.status === 1 ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-600 border-red-200'
+                }`}>
+                  {student?.status === 1 ? 'Active' : 'Inactive'}
+                </span>
+              </InfoCell>
+
+              {/* Extra fields */}
+              {!extraLoading && (
+                <>
+                  {student?.mobile_number && <InfoCell label="Mobile Number" value={student.mobile_number} />}
+                  {student?.dob && <InfoCell label="Date of Birth" value={student.dob.split('T')[0]} />}
+                  {student?.academic_year && <InfoCell label="Academic Year" value={student.academic_year} />}
+                  {student?.roll_no && <InfoCell label="Roll Number" value={student.roll_no} />}
+                  {student?.religion && <InfoCell label="Religion" value={student.religion} />}
+                  {student?.father_name && <InfoCell label="Father's Name" value={student.father_name} />}
+                  {student?.mother_name && <InfoCell label="Mother's Name" value={student.mother_name} />}
+                  {student?.address && (
+                    <div className="col-span-3">
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Address</p>
+                      <p className="text-sm font-semibold text-gray-900">{student.address}</p>
+                    </div>
+                  )}
+                </>
+              )}
+              {extraLoading && (
+                <div className="col-span-3 flex items-center gap-2 text-gray-400 text-xs">
+                  <div className="animate-spin rounded-full h-3 w-3 border border-gray-300 border-t-gray-500"></div>
+                  Loading more details...
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Fee Heads */}
+          {feeHeadsList.length > 0 && (
+            <div className="mt-4 mb-0 p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
+              <p className="text-xs font-bold text-yellow-700 uppercase tracking-wide mb-2">
+                Fee Structure — {feeHeadsList.length} head{feeHeadsList.length > 1 ? 's' : ''}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {feeHeadsList.map(fee => (
+                  <span key={fee.id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-yellow-200 text-yellow-800 rounded-full text-xs font-semibold">
+                    <DollarSign className="w-3 h-3 text-yellow-500" />
+                    {fee.name || `Fee Head #${fee.id}`}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-
-            {/* ====== LEFT: Profile Card ====== */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="text-center">
-
-                  {/* Avatar / Photo */}
-                  {student?.student_photo_url ? (
-                    <img
-                      src={student.student_photo_url}
-                      alt={student.name}
-                      className="w-24 h-24 rounded-full mx-auto object-cover mb-3 border-2 border-gray-200 shadow cursor-pointer hover:opacity-90 transition"
-                      onClick={() => openImageModal(student.student_photo_url, 'Student Photo')}
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full mx-auto bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-3 border-2 border-blue-100 shadow">
-                      <span className="text-white text-3xl font-bold">
-                        {student?.name?.charAt(0)?.toUpperCase() || 'S'}
-                      </span>
-                    </div>
-                  )}
-
-                  <h2 className="text-lg font-bold text-gray-900 mb-1">{student?.name || 'N/A'}</h2>
-                  <p className="text-xs text-gray-500 mb-0.5">
-                    Adm: <span className="font-semibold text-gray-700">{student?.admission_no || 'N/A'}</span>
-                  </p>
-                  {student?.roll_no && (
-                    <p className="text-xs text-gray-500 mb-2">
-                      Roll: <span className="font-semibold text-gray-700">{student.roll_no}</span>
-                    </p>
-                  )}
-
-                  {/* Status */}
-                  <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold mb-4 ${
-                    student?.status === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${student?.status === 1 ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    {student?.status === 1 ? 'Active' : 'Inactive'}
-                  </span>
-
-                  {/* Quick info */}
-                  <div className="bg-gray-50 rounded-lg p-3 text-left space-y-2 mb-4">
-                    {[
-                      { icon: Mail,          val: student?.user_email,      break: true },
-                      { icon: User,          val: student?.gender,           cap: true },
-                      { icon: Phone,         val: student?.mobile_number },
-                      { icon: Calendar,      val: student?.dob },
-                      { icon: GraduationCap, val: student?.academic_year },
-                      { icon: BookOpen,      val: student?.class_name ? `${student.class_name}${student?.section_name ? ` — ${student.section_name}` : ''}` : null },
-                    ].filter(r => r.val).map((row, i) => (
-                      <div key={i} className="flex items-start gap-2 text-xs">
-                        <row.icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
-                        <span className={`text-gray-600 ${row.break ? 'break-all' : ''} ${row.cap ? 'capitalize' : ''}`}>
-                          {row.val}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={handleEdit}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
-                  >
-                    <Edit className="w-3.5 h-3.5" /> Edit Student
-                  </button>
-                </div>
+          {/* Parent & Document Information */}
+          <div className="mt-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 bg-orange-100 rounded-md flex items-center justify-center">
+                <Users className="w-3.5 h-3.5 text-orange-500" />
               </div>
+              <h3 className="text-sm font-bold text-gray-800">Parent & Document Information</h3>
             </div>
 
-            {/* ====== RIGHT: Detail Cards ====== */}
-            <div className="lg:col-span-2 space-y-4">
-
-              {/* Personal Information */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                  <div className="p-1.5 bg-blue-50 rounded-lg"><User className="w-4 h-4 text-blue-600" /></div>
-                  <h3 className="font-semibold text-gray-800">Personal Information</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InfoField icon={User}     label="Full Name"     value={student?.name} />
-                  <InfoField icon={User}     label="Gender"        value={student?.gender} />
-                  <InfoField icon={Calendar} label="Date of Birth" value={student?.dob} />
-                  <InfoField icon={Phone}    label="Mobile Number" value={student?.mobile_number} />
-                  <InfoField icon={Heart}    label="Religion"      value={student?.religion} />
-                  <InfoField icon={Mail}     label="Email"         value={student?.user_email} />
-                  {student?.address && (
-                    <InfoField icon={MapPin} label="Address" value={student.address} colSpan />
-                  )}
-                </div>
-              </div>
-
-              {/* Academic Information */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                  <div className="p-1.5 bg-purple-50 rounded-lg"><BookOpen className="w-4 h-4 text-purple-600" /></div>
-                  <h3 className="font-semibold text-gray-800">Academic Information</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InfoField icon={Hash}          label="Admission No"  value={student?.admission_no} />
-                  <InfoField icon={Hash}          label="Roll No"       value={student?.roll_no} />
-                  <InfoField icon={BookOpen}      label="Class"         value={student?.class_name} />
-                  <InfoField icon={LayersIcon}    label="Section"       value={student?.section_name} />
-                  <InfoField icon={GraduationCap} label="Academic Year" value={student?.academic_year} />
-                </div>
-              </div>
-
-              {/* Family Information */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                  <div className="p-1.5 bg-green-50 rounded-lg"><Users className="w-4 h-4 text-green-600" /></div>
-                  <h3 className="font-semibold text-gray-800">Family Information</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <InfoField icon={User} label="Father's Name" value={student?.father_name} />
-                  <InfoField icon={User} label="Mother's Name" value={student?.mother_name} />
-                </div>
-              </div>
-
-              {/* Fee Structure */}
-              {feeHeadsList.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                  <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                    <div className="p-1.5 bg-yellow-50 rounded-lg"><DollarSign className="w-4 h-4 text-yellow-600" /></div>
-                    <h3 className="font-semibold text-gray-800">Fee Structure</h3>
-                    <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
-                      {feeHeadsList.length} Selected
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {feeHeadsList.map((fee, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-800 border border-yellow-200 rounded-full text-xs font-semibold">
-                        <DollarSign className="w-3 h-3 text-yellow-600" />
-                        {typeof fee === 'object'
-                          ? (fee.fee_head_name || fee.head_name || fee.name || `Fee #${fee.fee_head_id || fee.id}`)
-                          : `Fee Head #${fee}`}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Documents */}
-              <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100">
-                  <div className="p-1.5 bg-indigo-50 rounded-lg"><FileText className="w-4 h-4 text-indigo-600" /></div>
-                  <h3 className="font-semibold text-gray-800">Documents & Photos</h3>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {[
-                    { label: "Father's Photo", urlKey: 'father_photo_url', title: "Father's Photo" },
-                    { label: "Mother's Photo", urlKey: 'mother_photo_url', title: "Mother's Photo" },
-                    { label: "Aadhar Card",    urlKey: 'aadhar_card_url',  title: "Aadhar Card" },
-                  ].map((doc) => {
-                    const url = student?.[doc.urlKey]
-                    const isImage = url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url)
-                    return (
-                      <div key={doc.label} className="border border-gray-200 rounded-xl p-3">
-                        <p className="text-xs font-semibold text-gray-600 mb-2">{doc.label}</p>
-                        {url ? (
-                          <div className="flex flex-col gap-2">
-                            {isImage ? (
-                              <img
-                                src={url} alt={doc.label}
-                                className="w-full h-28 object-cover rounded-lg cursor-pointer hover:opacity-90 transition border border-gray-100"
-                                onClick={() => openImageModal(url, doc.title)}
-                              />
-                            ) : (
-                              <div className="w-full h-28 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100">
-                                <FileText className="w-10 h-10 text-gray-300" />
-                              </div>
-                            )}
-                            <button
-                              onClick={() => openImageModal(url, doc.title)}
-                              className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition text-xs font-medium"
-                            >
-                              <FileText className="w-3.5 h-3.5" /> View Document
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="w-full h-28 bg-gray-50 rounded-lg flex items-center justify-center border border-dashed border-gray-200">
-                            <div className="text-center text-gray-300">
-                              <FileText className="w-8 h-8 mx-auto mb-1" />
-                              <span className="text-xs">Not Uploaded</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-
+            <div className="grid grid-cols-3 gap-4">
+              <DocCard label="Father's Photo" url={student?.father_photo_url} onView={openImage} title="Father's Photo" />
+              <DocCard label="Mother's Photo" url={student?.mother_photo_url} onView={openImage} title="Mother's Photo" />
+              <DocCard label="Aadhaar Card (ID)" url={student?.aadhar_card_url} onView={openImage} title="Aadhaar Card" isAadhar />
             </div>
           </div>
         </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-3.5 border-t border-gray-100 bg-gray-50/50">
+          <button
+            onClick={() => {
+              [student?.father_photo_url, student?.mother_photo_url, student?.aadhar_card_url, student?.student_photo_url]
+                .filter(Boolean).forEach(url => window.open(url, '_blank'))
+            }}
+            className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-blue-600 transition">
+            <Download className="w-4 h-4" /> Download All Docs
+          </button>
+          <button onClick={onClose}
+            className="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-bold transition">
+            Close Profile
+          </button>
+        </div>
       </div>
 
-      <ImageModal
-        isOpen={imageModalOpen}
-        onClose={() => setImageModalOpen(false)}
-        imageUrl={selectedImage}
-        title={selectedImageTitle}
-      />
+      <ImageModal isOpen={imageModalOpen} onClose={() => setImageModalOpen(false)} imageUrl={selectedImage} title={selectedImageTitle} />
     </>
+  )
+}
+
+function InfoCell({ label, value, children }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+      {children || <p className="text-sm font-bold text-gray-900">{value || '—'}</p>}
+    </div>
+  )
+}
+
+function DocCard({ label, url, onView, title, isAadhar }) {
+  const isImg = url && /\.(jpg|jpeg|png|gif|webp)/i.test(url)
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-500 mb-1.5">{label}</p>
+      <div
+        onClick={() => url && onView(url, title)}
+        className={`h-32 rounded-xl border overflow-hidden flex items-center justify-center transition ${
+          url ? 'cursor-pointer border-gray-200 hover:border-blue-300 hover:shadow-md' : 'border-dashed border-gray-200 bg-gray-50/80'
+        }`}
+      >
+        {url ? (
+          isImg ? (
+            <img src={url} alt={label} className="w-full h-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 w-full h-full bg-gray-50">
+              {isAadhar ? (
+                <>
+                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-red-500" />
+                  </div>
+                  <p className="text-xs text-gray-500 font-bold tracking-widest">**** **** 1234</p>
+                </>
+              ) : (
+                <>
+                  <FileText className="w-8 h-8 text-gray-300" />
+                  <p className="text-xs text-gray-400">View File</p>
+                </>
+              )}
+            </div>
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1.5">
+            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+              <User className="w-4 h-4 text-gray-300" />
+            </div>
+            <p className="text-xs text-gray-400 font-medium">Not Uploaded</p>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

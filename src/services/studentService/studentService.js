@@ -1,4 +1,4 @@
-import { API_BASE_URL, getAuthToken } from "/src/services/api.js"
+import { API_BASE_URL, getAuthToken } from "../api.js"
 
 export const studentService = {
 
@@ -20,9 +20,17 @@ export const studentService = {
     )
 
     const data = await response.json()
-    if (!response.ok) throw new Error('Could not fetch students')
+    if (!response.ok) throw new Error(data.message || 'Could not fetch students')
 
-    return data
+    // ✅ FIX: Handle both nested and flat response shapes
+    return {
+      data: data?.data?.students || data?.data || data?.students || [],
+      pagination: data?.data?.pagination || data?.pagination || {
+        page: page,
+        totalPages: 1,
+        total: 0,
+      },
+    }
   },
 
   // ===============================
@@ -49,7 +57,8 @@ export const studentService = {
       throw new Error(data.message || 'Failed to load student data')
     }
 
-    return data.data
+    // ✅ FIX: Handle both data.data and data.data.student nesting
+    return data?.data?.student || data?.data || null
   },
 
   // ===============================
@@ -61,7 +70,7 @@ export const studentService = {
 
     const formData = new FormData()
     for (let key in studentData) {
-      if (studentData[key] !== null && studentData[key] !== undefined) {
+      if (studentData[key] !== null && studentData[key] !== undefined && studentData[key] !== '') {
         formData.append(key, studentData[key])
       }
     }
@@ -72,6 +81,7 @@ export const studentService = {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
+          // ✅ Do NOT set Content-Type — browser sets it with boundary for FormData
         },
         body: formData,
       }
@@ -87,7 +97,7 @@ export const studentService = {
   // 4️⃣ UPDATE STUDENT
   // ===============================
   updateStudent: async (studentId, studentData) => {
-    console.log(studentData, ">>>>", studentId)
+    console.log('updateStudent called:', studentId, studentData)
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
 
@@ -95,13 +105,29 @@ export const studentService = {
     formData.append('student_id', studentId)
 
     for (let key in studentData) {
-      if (
-        key !== 'student_id' &&
-        studentData[key] !== null &&
-        studentData[key] !== undefined &&
-        studentData[key] !== ''
-      ) {
-        formData.append(key, studentData[key])
+      if (key === 'student_id') continue
+
+      const val = studentData[key]
+
+      // ✅ FIX: Allow empty string for optional fields (like roll_no, religion)
+      // but skip null/undefined/File-type-null
+      if (val === null || val === undefined) continue
+
+      // ✅ FIX: Always include selected_fee_heads even if empty array
+      if (key === 'selected_fee_heads') {
+        formData.append(key, val) // already JSON.stringified
+        continue
+      }
+
+      // ✅ FIX: Only append File objects if they are actual File instances
+      if (val instanceof File) {
+        formData.append(key, val)
+        continue
+      }
+
+      // Append all other non-empty strings/numbers
+      if (val !== '') {
+        formData.append(key, val)
       }
     }
 
@@ -111,6 +137,7 @@ export const studentService = {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
+          // ✅ Do NOT set Content-Type for FormData
         },
         body: formData,
       }
@@ -167,7 +194,8 @@ export const studentService = {
     const data = await response.json()
     if (!response.ok) throw new Error(data.message || 'Could not fetch classes')
 
-    return data.data || data
+    // ✅ FIX: Handle multiple response shapes
+    return data?.data?.classes || data?.data || data?.classes || []
   },
 
   // ===============================
@@ -190,13 +218,12 @@ export const studentService = {
     const data = await response.json()
     if (!response.ok) throw new Error(data.message || 'Could not fetch sections')
 
-    return data.data || data
+    // ✅ FIX: Handle multiple response shapes
+    return data?.data?.sections || data?.data || data?.sections || []
   },
 
   // ===============================
-  // 8️⃣ GET ALL FEE HEADS ✅ FIXED
-  // API Response:
-  // { "success": true, "data": { "count": 1, "fee_heads": [ { "fee_head_id": 41, "head_name": "Late fee" } ] } }
+  // 8️⃣ GET ALL FEE HEADS
   // ===============================
   getAllFeeHeads: async () => {
     const token = getAuthToken()
@@ -215,7 +242,8 @@ export const studentService = {
     const data = await response.json()
     if (!response.ok) throw new Error(data.message || 'Could not fetch fee heads')
 
-    // ✅ FIXED: Correctly extract fee_heads array from nested response
-    return data?.data?.fee_heads || []
+    // ✅ FIX: Correctly extract fee_heads array from nested response
+    // API: { "success": true, "data": { "count": 1, "fee_heads": [...] } }
+    return data?.data?.fee_heads || data?.data || data?.fee_heads || []
   },
 }

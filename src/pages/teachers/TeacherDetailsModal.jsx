@@ -1,264 +1,227 @@
-import { User, Mail, Phone, BookOpen, Award, Calendar, Briefcase, FileText, Edit, MapPin, Users } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import {
+  Edit, Trash2, X, Download, User, Briefcase,
+  FileText, Users, Copy, CheckCircle, Mail, Phone,
+  MapPin, GraduationCap, Calendar, Award
+} from 'lucide-react'
 import ImageModal from '../../components/ImageModal'
 
-function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
+function TeacherDetailsModal({ teacher, onClose, onDelete }) {
   const navigate = useNavigate()
-  
+  const [copied, setCopied] = useState(false)
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState('')
   const [selectedImageTitle, setSelectedImageTitle] = useState('')
 
-  const openImageModal = (imageUrl, title) => {
-    setSelectedImage(imageUrl)
+  const handleEdit = () => {
+    if (onClose) onClose()
+    navigate(`/admin/teachers/edit/${teacher.teacher_id}`)
+  }
+
+  const handleCopyEmail = () => {
+    if (teacher?.user_email) {
+      navigator.clipboard.writeText(teacher.user_email)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  const openImage = (url, title) => {
+    setSelectedImage(url)
     setSelectedImageTitle(title)
     setImageModalOpen(true)
   }
 
-  const handleEdit = () => {
-    if (onClose) {
-      onClose()
-    }
-    navigate(`/admin/teachers/edit/${teacher.teacher_id}`)
-  }
+  const joiningDate = teacher?.joining_date
+    ? new Date(teacher.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null
 
   return (
     <>
-      <div className="bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="bg-white rounded-2xl overflow-hidden w-full">
 
-            {/* ========================= 
-                Profile Card
-            ========================= */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <div className="text-center">
-                  {/* Photo */}
-                  {teacher.teacher_photo_url ? (
-                    <img
-                      src={teacher.teacher_photo_url}
-                      alt={teacher.name}
-                      className="w-32 h-32 rounded-full mx-auto object-cover mb-4 border-4 border-green-100 cursor-pointer hover:opacity-90 transition"
-                      onClick={() => openImageModal(teacher.teacher_photo_url, 'Teacher Photo')}
-                    />
-                  ) : (
-                    <div className="w-32 h-32 rounded-full mx-auto bg-gradient-to-br from-green-500 to-green-700 flex items-center justify-center mb-4 border-4 border-green-100">
-                      <User className="w-16 h-16 text-white" />
-                    </div>
-                  )}
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+              <User className="w-5 h-5 text-emerald-600" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Teacher Details</h2>
+              <p className="text-xs text-gray-500">Manage and view complete profile information</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleEdit}
+              className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold transition">
+              <Edit className="w-3.5 h-3.5" /> Edit
+            </button>
+            {onDelete && (
+              <button onClick={() => onDelete(teacher)}
+                className="flex items-center gap-1.5 px-4 py-2 border border-red-200 bg-white hover:bg-red-50 text-red-600 rounded-lg text-sm font-semibold transition">
+                <Trash2 className="w-3.5 h-3.5" /> Delete
+              </button>
+            )}
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg transition text-gray-400">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
 
-                  {/* Name */}
-                  <h2 className="text-2xl font-bold text-gray-900 mb-1">{teacher.name}</h2>
-                  <p className="text-gray-600 text-sm mb-3">
-                    Teacher ID: <span className="font-semibold">{teacher.teacher_id}</span>
-                  </p>
+        <div className="px-6 py-5">
 
-                  {/* Status */}
-                  <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold mb-4 ${
-                    teacher.status === 1 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-red-100 text-red-700'
-                  }`}>
-                    <span className={`w-2 h-2 rounded-full ${teacher.status === 1 ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                    {teacher.status === 1 ? 'Active' : 'Inactive'}
+          {/* ── Profile Section ── */}
+          <div className="flex items-start gap-5 pb-5 border-b border-gray-100">
+
+            {/* Avatar */}
+            <div className="flex-shrink-0 text-center">
+              {teacher?.teacher_photo_url ? (
+                <img src={teacher.teacher_photo_url} alt={teacher.name}
+                  className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 shadow cursor-pointer hover:opacity-90 transition"
+                  onClick={() => openImage(teacher.teacher_photo_url, 'Teacher Photo')} />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow">
+                  <span className="text-white text-2xl font-bold">
+                    {teacher?.name?.charAt(0)?.toUpperCase() || 'T'}
                   </span>
-
-                  {/* Quick Info */}
-                  <div className="bg-gray-50 rounded-lg p-4 text-left mt-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <Mail className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                      <span className="text-gray-600 break-all">{teacher.user_email || 'N/A'}</span>
-                    </div>
-                    {teacher.mobile_number && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-600">{teacher.mobile_number}</span>
-                      </div>
-                    )}
-                    {teacher.phone && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                        <span className="text-gray-600">{teacher.phone}</span>
-                      </div>
-                    )}
-                    {teacher.address && (
-                      <div className="flex items-start gap-2 text-sm">
-                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-600">{teacher.address}</span>
-                      </div>
-                    )}
-                  </div>
                 </div>
+              )}
+              <div className="mt-1.5 flex justify-center">
+                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                  teacher?.status === 1 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'
+                }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${teacher?.status === 1 ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
+                  {teacher?.status === 1 ? 'Active' : 'Inactive'}
+                </span>
               </div>
             </div>
 
-            {/* ========================= 
-                Details Section
-            ========================= */}
-            <div className="lg:col-span-2 space-y-6">
+            {/* Info Grid — 3 columns matching student modal */}
+            <div className="flex-1 grid grid-cols-3 gap-x-8 gap-y-4">
 
-              {/* Personal Info */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <User className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-xl font-bold text-gray-900">Personal Information</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Full Name</label>
-                    <p className="text-gray-900 font-semibold mt-1">{teacher.name || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Email</label>
-                    <p className="text-gray-900 font-semibold mt-1 break-all">{teacher.user_email || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Mobile Number</label>
-                    <p className="text-gray-900 font-semibold mt-1">{teacher.mobile_number || teacher.phone || 'N/A'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Gender</label>
-                    <p className="text-gray-900 font-semibold mt-1 capitalize">{teacher.gender || 'N/A'}</p>
-                  </div>
-                  {teacher.address && (
-                    <div className="md:col-span-2">
-                      <label className="text-xs font-semibold text-gray-500 uppercase">Address</label>
-                      <p className="text-gray-900 font-semibold mt-1">{teacher.address}</p>
-                    </div>
+              <InfoCell label="Full Name" value={teacher?.name} />
+
+              <InfoCell label="Teacher ID">
+                <span className="text-sm font-bold text-gray-900">#{teacher?.teacher_id || '—'}</span>
+              </InfoCell>
+
+              <InfoCell label="Email Address">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-semibold text-gray-900 truncate">{teacher?.user_email || '—'}</span>
+                  {teacher?.user_email && (
+                    <button onClick={handleCopyEmail} className="flex-shrink-0 text-gray-400 hover:text-emerald-500 transition">
+                      {copied ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
                   )}
                 </div>
-              </div>
+              </InfoCell>
 
-              {/* Professional Info */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <Briefcase className="w-5 h-5 text-purple-600" />
-                  <h3 className="text-xl font-bold text-gray-900">Professional Information</h3>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Qualification</label>
-                    <p className="text-gray-900 font-semibold mt-1">{teacher.qualification || 'Not Specified'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-gray-500 uppercase">Experience</label>
-                    <p className="text-gray-900 font-semibold mt-1">
-                      {teacher.experience_years ? `${teacher.experience_years} years` : 'Not Specified'}
-                    </p>
-                  </div>
-                  {teacher.subject_specialization && (
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 uppercase">Subject Specialization</label>
-                      <p className="text-gray-900 font-semibold mt-1">{teacher.subject_specialization}</p>
-                    </div>
-                  )}
-                  {teacher.joining_date && (
-                    <div>
-                      <label className="text-xs font-semibold text-gray-500 uppercase">Joining Date</label>
-                      <p className="text-gray-900 font-semibold mt-1">
-                        {new Date(teacher.joining_date).toLocaleDateString('en-IN')}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <InfoCell label="Gender" value={teacher?.gender
+                ? teacher.gender.charAt(0).toUpperCase() + teacher.gender.slice(1)
+                : null} />
 
-              {/* Family Information */}
-              {(teacher.father_name || teacher.mother_name) && (
-                <div className="bg-white rounded-xl shadow-md p-6">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Users className="w-5 h-5 text-green-600" />
-                    <h3 className="text-xl font-bold text-gray-900">Family Information</h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {teacher.father_name && (
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase">Father's Name</label>
-                        <p className="text-gray-900 font-semibold mt-1">{teacher.father_name}</p>
-                      </div>
-                    )}
-                    {teacher.mother_name && (
-                      <div>
-                        <label className="text-xs font-semibold text-gray-500 uppercase">Mother's Name</label>
-                        <p className="text-gray-900 font-semibold mt-1">{teacher.mother_name}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <InfoCell label="Mobile Number" value={teacher?.mobile_number || teacher?.phone || null} />
+
+              <InfoCell label="Status">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                  teacher?.status === 1
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-red-50 text-red-600 border-red-200'
+                }`}>
+                  {teacher?.status === 1 ? 'Active' : 'Inactive'}
+                </span>
+              </InfoCell>
+
+              {teacher?.qualification && (
+                <InfoCell label="Qualification" value={teacher.qualification} />
+              )}
+              {teacher?.experience_years != null && (
+                <InfoCell label="Experience" value={`${teacher.experience_years} year${teacher.experience_years !== 1 ? 's' : ''}`} />
+              )}
+              {joiningDate && (
+                <InfoCell label="Joining Date" value={joiningDate} />
               )}
 
-              {/* Documents */}
-              {(teacher.teacher_document_url || teacher.aadhar_card_url) && (
-                <div className="bg-white rounded-xl shadow-md p-6">
-                  <div className="flex items-center gap-2 mb-6">
-                    <FileText className="w-5 h-5 text-green-600" />
-                    <h3 className="text-xl font-bold text-gray-900">Documents</h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {teacher.teacher_document_url && (
-                      <div className="border-2 border-gray-200 rounded-lg p-4">
-                        <label className="text-sm font-semibold text-gray-700 mb-3 block">Teacher Document</label>
-                        <div className="flex flex-col items-center">
-                          <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                            <FileText className="w-16 h-16 text-gray-400" />
-                          </div>
-                          <button
-                            onClick={() => openImageModal(teacher.teacher_document_url, "Teacher's Document")}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition w-full justify-center"
-                          >
-                            <FileText className="w-4 h-4" />
-                            View Document
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {teacher.aadhar_card_url && (
-                      <div className="border-2 border-gray-200 rounded-lg p-4">
-                        <label className="text-sm font-semibold text-gray-700 mb-3 block">Aadhar Card</label>
-                        <div className="flex flex-col items-center">
-                          <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-                            <FileText className="w-16 h-16 text-gray-400" />
-                          </div>
-                          <button
-                            onClick={() => openImageModal(teacher.aadhar_card_url, "Aadhar Card")}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition w-full justify-center"
-                          >
-                            <FileText className="w-4 h-4" />
-                            View Document
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+              {teacher?.address && (
+                <div className="col-span-3">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">Address</p>
+                  <p className="text-sm font-semibold text-gray-900">{teacher.address}</p>
                 </div>
               )}
-
-              {/* Edit Button */}
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleEdit}
-                    className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-semibold"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit Teacher
-                  </button>
-                </div>
-              </div>
 
             </div>
           </div>
+
+          {/* ── Family Information ── */}
+          {(teacher?.father_name || teacher?.mother_name) && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-100 rounded-xl">
+              <p className="text-xs font-bold text-blue-700 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" /> Family Information
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                {teacher.father_name && (
+                  <div>
+                    <p className="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-0.5">Father's Name</p>
+                    <p className="text-sm font-bold text-gray-900">{teacher.father_name}</p>
+                  </div>
+                )}
+                {teacher.mother_name && (
+                  <div>
+                    <p className="text-xs font-semibold text-blue-500 uppercase tracking-wide mb-0.5">Mother's Name</p>
+                    <p className="text-sm font-bold text-gray-900">{teacher.mother_name}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── Documents Section ── */}
+          <div className="mt-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 bg-emerald-100 rounded-md flex items-center justify-center">
+                <FileText className="w-3.5 h-3.5 text-emerald-600" />
+              </div>
+              <h3 className="text-sm font-bold text-gray-800">Documents & Photos</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <DocCard
+                label="Teacher Photo"
+                url={teacher?.teacher_photo_url}
+                onView={openImage}
+                title="Teacher Photo"
+              />
+              <DocCard
+                label="Aadhaar Card"
+                url={teacher?.aadhar_card_url}
+                onView={openImage}
+                title="Aadhaar Card"
+                isAadhar
+              />
+            </div>
+          </div>
+
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="flex items-center justify-between px-6 py-3.5 border-t border-gray-100 bg-gray-50/50">
+          <button
+            onClick={() => {
+              [teacher?.teacher_photo_url, teacher?.aadhar_card_url]
+                .filter(Boolean)
+                .forEach(url => window.open(url, '_blank'))
+            }}
+            className="flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-emerald-600 transition">
+            <Download className="w-4 h-4" /> Download All Docs
+          </button>
+          <button onClick={onClose}
+            className="px-5 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-bold transition">
+            Close Profile
+          </button>
         </div>
       </div>
 
-      {/* Image Modal */}
       <ImageModal
         isOpen={imageModalOpen}
         onClose={() => setImageModalOpen(false)}
@@ -266,6 +229,61 @@ function TeacherDetailsModal({ teacher, onClose, isModal = true }) {
         title={selectedImageTitle}
       />
     </>
+  )
+}
+
+function InfoCell({ label, value, children }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+      {children || <p className="text-sm font-bold text-gray-900">{value || '—'}</p>}
+    </div>
+  )
+}
+
+function DocCard({ label, url, onView, title, isAadhar }) {
+  const isImg = url && /\.(jpg|jpeg|png|gif|webp)/i.test(url)
+  return (
+    <div>
+      <p className="text-xs font-semibold text-gray-500 mb-1.5">{label}</p>
+      <div
+        onClick={() => url && onView(url, title)}
+        className={`h-32 rounded-xl border overflow-hidden flex items-center justify-center transition ${
+          url
+            ? 'cursor-pointer border-gray-200 hover:border-emerald-300 hover:shadow-md'
+            : 'border-dashed border-gray-200 bg-gray-50/80'
+        }`}
+      >
+        {url ? (
+          isImg ? (
+            <img src={url} alt={label} className="w-full h-full object-cover" />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-2 w-full h-full bg-gray-50">
+              {isAadhar ? (
+                <>
+                  <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-red-500" />
+                  </div>
+                  <p className="text-xs text-gray-500 font-bold tracking-widest">**** **** 1234</p>
+                </>
+              ) : (
+                <>
+                  <FileText className="w-8 h-8 text-gray-300" />
+                  <p className="text-xs text-gray-400">View File</p>
+                </>
+              )}
+            </div>
+          )
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-1.5">
+            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+              <User className="w-4 h-4 text-gray-300" />
+            </div>
+            <p className="text-xs text-gray-400 font-medium">Not Uploaded</p>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

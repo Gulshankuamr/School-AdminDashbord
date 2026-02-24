@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, CheckCircle, User, Mail, Lock, IdCard, Users, BookOpen, Layers, Phone, MapPin, Calendar, Heart, GraduationCap, Hash, DollarSign, Eye, EyeOff } from 'lucide-react'
+import {
+  ArrowLeft, Upload, CheckCircle, User, Mail, Lock, Users, BookOpen, Layers,
+  Phone, MapPin, Calendar, Heart, GraduationCap, Hash, DollarSign, Eye, EyeOff, IdCard, X
+} from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
-
 
 const AddStudent = () => {
   const navigate = useNavigate()
@@ -11,7 +13,6 @@ const AddStudent = () => {
     name: '',
     user_email: '',
     password: '',
-    admission_no: '',
     roll_no: '',
     gender: '',
     class_id: '',
@@ -23,7 +24,7 @@ const AddStudent = () => {
     mother_name: '',
     address: '',
     religion: '',
-    selected_fee_heads: '',
+    selected_fee_heads: [],
     student_photo: null,
     aadhar_card: null,
     father_photo: null,
@@ -37,9 +38,10 @@ const AddStudent = () => {
     mother_photo: null,
   })
 
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [successInfo, setSuccessInfo] = useState(null)
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState(null)
 
   const [classes, setClasses] = useState([])
   const [sections, setSections] = useState([])
@@ -48,90 +50,99 @@ const AddStudent = () => {
   const [loadingSections, setLoadingSections] = useState(false)
   const [loadingFeeHeads, setLoadingFeeHeads] = useState(false)
 
+  // Fetch classes
   useEffect(() => {
-    const fetchClasses = async () => {
+    const run = async () => {
       try {
         setLoadingClasses(true)
         const data = await studentService.getAllClasses()
         setClasses(Array.isArray(data) ? data : [])
-      } catch (error) {
-        console.error('Error fetching classes:', error)
+      } catch (err) {
+        console.error('Classes fetch error:', err)
         setClasses([])
       } finally {
         setLoadingClasses(false)
       }
     }
-    fetchClasses()
+    run()
   }, [])
 
+  // Fetch fee heads
   useEffect(() => {
-    const fetchFeeHeads = async () => {
+    const run = async () => {
       try {
         setLoadingFeeHeads(true)
         const data = await studentService.getAllFeeHeads()
         setFeeHeads(Array.isArray(data) ? data : [])
-      } catch (error) {
-        console.error('Error fetching fee heads:', error)
+      } catch (err) {
+        console.error('Fee heads fetch error:', err)
         setFeeHeads([])
       } finally {
         setLoadingFeeHeads(false)
       }
     }
-    fetchFeeHeads()
+    run()
   }, [])
 
+  // Fetch sections when class changes
   useEffect(() => {
-    const fetchSections = async () => {
-      if (!formData.class_id) {
-        setSections([])
-        return
-      }
+    const run = async () => {
+      if (!formData.class_id) { setSections([]); return }
       try {
         setLoadingSections(true)
         const data = await studentService.getSectionsByClassId(formData.class_id)
         setSections(Array.isArray(data) ? data : [])
-      } catch (error) {
-        console.error('Error fetching sections:', error)
+      } catch (err) {
+        console.error('Sections fetch error:', err)
         setSections([])
       } finally {
         setLoadingSections(false)
       }
     }
-    fetchSections()
+    run()
   }, [formData.class_id])
 
   const handleChange = (e) => {
     const { name, value } = e.target
     if (name === 'class_id') {
-      setFormData({ ...formData, [name]: value, section_id: '' })
+      setFormData(prev => ({ ...prev, class_id: value, section_id: '' }))
     } else {
-      setFormData({ ...formData, [name]: value })
+      setFormData(prev => ({ ...prev, [name]: value }))
     }
+  }
+
+  const handleFeeHeadToggle = (feeHeadId) => {
+    const numId = Number(feeHeadId)
+    setFormData(prev => {
+      const current = prev.selected_fee_heads
+      if (current.includes(numId)) {
+        return { ...prev, selected_fee_heads: current.filter(x => x !== numId) }
+      }
+      return { ...prev, selected_fee_heads: [...current, numId] }
+    })
   }
 
   const handleFileChange = (e) => {
     const { name, files } = e.target
     if (files && files[0]) {
       const file = files[0]
-      setFormData({ ...formData, [name]: file })
+      setFormData(prev => ({ ...prev, [name]: file }))
       if (file.type.startsWith('image/')) {
         const reader = new FileReader()
-        reader.onloadend = () => {
-          setFilePreviews((prev) => ({ ...prev, [name]: reader.result }))
-        }
+        reader.onloadend = () => setFilePreviews(prev => ({ ...prev, [name]: reader.result }))
         reader.readAsDataURL(file)
       } else {
-        setFilePreviews((prev) => ({ ...prev, [name]: file.name }))
+        setFilePreviews(prev => ({ ...prev, [name]: file.name }))
       }
     }
   }
 
   const resetForm = () => {
     setFormData({
-      name: '', user_email: '', password: '', admission_no: '', roll_no: '',
+      name: '', user_email: '', password: '', roll_no: '',
       gender: '', class_id: '', section_id: '', academic_year: '', dob: '',
       mobile_number: '', father_name: '', mother_name: '', address: '',
-      religion: '', selected_fee_heads: '', student_photo: null,
+      religion: '', selected_fee_heads: [], student_photo: null,
       aadhar_card: null, father_photo: null, mother_photo: null,
     })
     setFilePreviews({ student_photo: null, aadhar_card: null, father_photo: null, mother_photo: null })
@@ -140,25 +151,36 @@ const AddStudent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
+    setError(null)
     try {
       const submitData = {
         ...formData,
-        selected_fee_heads: formData.selected_fee_heads
-          ? JSON.stringify([Number(formData.selected_fee_heads)])
-          : JSON.stringify([]),
+        selected_fee_heads: JSON.stringify(formData.selected_fee_heads),
       }
-      await studentService.addStudent(submitData)
-      setShowSuccess(true)
+      const response = await studentService.addStudent(submitData)
+
+      console.log('✅ addStudent response:', response)
+
+      // ✅ Try every possible location where backend might put admission_no
+      const admission_no =
+        response?.data?.admission_no         ||
+        response?.data?.student?.admission_no ||
+        response?.admission_no               ||
+        response?.student?.admission_no      ||
+        null
+
+      console.log('✅ Extracted admission_no:', admission_no)
+
+      setSuccessInfo({
+        name: formData.name,
+        admission_no,
+      })
+
       resetForm()
-      setTimeout(() => setShowSuccess(false), 3000)
-    } catch (error) {
-      console.error('Error adding student:', error)
-      const message = error?.message || 'Failed to add student. Please try again.'
-      if (message.toLowerCase().includes('duplicate')) {
-        alert('Admission number already exists. Please use a unique one.')
-      } else {
-        alert(message)
-      }
+      setTimeout(() => setSuccessInfo(null), 10000)
+    } catch (err) {
+      console.error('Error adding student:', err)
+      setError(err?.message || 'Failed to add student. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -167,18 +189,67 @@ const AddStudent = () => {
   const inputClass = "w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 placeholder-gray-400 text-sm"
   const selectClass = "w-full pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 text-sm appearance-none cursor-pointer"
   const iconClass = "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+  const ChevronDown = () => (
+    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+      <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-3 sm:px-4 lg:px-6">
 
-      {showSuccess && (
-        <div className="fixed top-5 right-5 bg-white border border-green-200 shadow-xl px-5 py-3.5 rounded-xl flex items-center gap-3 z-50">
-          <div className="bg-green-100 rounded-full p-1.5">
-            <CheckCircle className="w-4 h-4 text-green-600" />
+      {/* ✅ Error Toast */}
+      {error && (
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full">
+          <div className="bg-white border border-red-200 shadow-2xl rounded-xl overflow-hidden">
+            <div className="bg-red-500 px-4 py-2 flex items-center justify-between">
+              <span className="text-white font-semibold text-sm">Error</span>
+              <button onClick={() => setError(null)} className="text-white hover:text-red-200 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700 text-sm">{error}</p>
+            </div>
           </div>
-          <div>
-            <p className="font-semibold text-gray-900 text-sm">Student Added!</p>
-            <p className="text-xs text-gray-500">Record saved successfully</p>
+        </div>
+      )}
+
+      {/* ✅ Success Toast */}
+      {successInfo && (
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full">
+          <div className="bg-white border border-green-200 shadow-2xl rounded-xl overflow-hidden">
+            <div className="bg-green-500 px-4 py-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-white" />
+                <span className="text-white font-semibold text-sm">Student Enrolled Successfully!</span>
+              </div>
+              <button onClick={() => setSuccessInfo(null)} className="text-white hover:text-green-200 transition">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700 text-sm mb-3">
+                <span className="font-bold">{successInfo.name}</span> has been registered.
+              </p>
+              {successInfo.admission_no ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3">
+                  <div className="bg-blue-100 rounded-full p-2 flex-shrink-0">
+                    <IdCard className="w-4 h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-blue-500 font-medium">Admission Number Generated</p>
+                    <p className="text-lg font-bold text-blue-700 tracking-wide">{successInfo.admission_no}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic">
+                  Admission number will be visible in student list.
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -188,17 +259,15 @@ const AddStudent = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
-            <span className="hover:text-blue-500 cursor-pointer">Dashboard</span>
+            <span className="hover:text-blue-500 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>Dashboard</span>
             <span>/</span>
-            <span className="hover:text-blue-500 cursor-pointer">Students</span>
+            <span className="hover:text-blue-500 cursor-pointer" onClick={() => navigate('/admin/students')}>Students</span>
             <span>/</span>
             <span className="text-gray-600 font-medium">Enroll New Student</span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => window.history.back()}
-              className="p-2 bg-white hover:bg-gray-100 rounded-lg transition border border-gray-200 group"
-            >
+            <button onClick={() => navigate('/admin/students')}
+              className="p-2 bg-white hover:bg-gray-100 rounded-lg transition border border-gray-200 group">
               <ArrowLeft className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
             </button>
             <div>
@@ -213,15 +282,11 @@ const AddStudent = () => {
           {/* Basic Information */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
-              <div className="p-1.5 bg-blue-50 rounded-lg">
-                <User className="w-4 h-4 text-blue-600" />
-              </div>
+              <div className="p-1.5 bg-blue-50 rounded-lg"><User className="w-4 h-4 text-blue-600" /></div>
               <h2 className="font-semibold text-gray-800 text-base">Basic Information</h2>
             </div>
-
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-              {/* Full Name */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Full Name <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -230,7 +295,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Address <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -239,7 +303,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Password <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -257,16 +320,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* Admission No */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Admission Number <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={iconClass}><IdCard className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="admission_no" value={formData.admission_no} onChange={handleChange} className={inputClass} required placeholder="ADM-2026-001" />
-                </div>
-              </div>
-
-              {/* Roll No */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Roll Number</label>
                 <div className="relative">
@@ -275,7 +328,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* Academic Year */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Academic Year <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -284,7 +336,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* DOB */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date of Birth <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -293,7 +344,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* Mobile */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mobile Number <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -302,24 +352,20 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* Class */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Class <span className="text-red-400">*</span></label>
                 <div className="relative">
                   <div className={iconClass}><BookOpen className="h-4 w-4 text-gray-400" /></div>
                   <select name="class_id" value={formData.class_id} onChange={handleChange} className={selectClass} required disabled={loadingClasses}>
-                    <option value="">Select Class</option>
-                    {loadingClasses ? <option disabled>Loading...</option> : classes.map((cls) => (
+                    <option value="">{loadingClasses ? 'Loading...' : 'Select Class'}</option>
+                    {classes.map(cls => (
                       <option key={cls.class_id} value={cls.class_id}>{cls.class_name || `Class ${cls.class_id}`}</option>
                     ))}
                   </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                  <ChevronDown />
                 </div>
               </div>
 
-              {/* Section */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Section <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -327,37 +373,20 @@ const AddStudent = () => {
                   <select name="section_id" value={formData.section_id} onChange={handleChange}
                     className={`${selectClass} disabled:opacity-60 disabled:cursor-not-allowed`}
                     required disabled={!formData.class_id || loadingSections}>
-                    <option value="">{!formData.class_id ? 'Select class first' : 'Select Section'}</option>
-                    {loadingSections ? <option disabled>Loading...</option> : sections.length === 0 ? <option disabled>No sections</option> : sections.map((s) => (
-                      <option key={s.section_id} value={s.section_id}>{s.section_name || `Section ${s.section_id}`}</option>
-                    ))}
+                    <option value="">
+                      {!formData.class_id ? 'Select class first' : loadingSections ? 'Loading...' : 'Select Section'}
+                    </option>
+                    {sections.length === 0 && formData.class_id && !loadingSections
+                      ? <option disabled>No sections found</option>
+                      : sections.map(s => (
+                          <option key={s.section_id} value={s.section_id}>{s.section_name || `Section ${s.section_id}`}</option>
+                        ))
+                    }
                   </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                  <ChevronDown />
                 </div>
               </div>
 
-              {/* Fee Head */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Fee Head <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={iconClass}><DollarSign className="h-4 w-4 text-gray-400" /></div>
-                  <select name="selected_fee_heads" value={formData.selected_fee_heads} onChange={handleChange}
-                    className={`${selectClass} disabled:opacity-60 disabled:cursor-not-allowed`}
-                    required disabled={loadingFeeHeads}>
-                    <option value="">Select Fee Head</option>
-                    {loadingFeeHeads ? <option disabled>Loading...</option> : feeHeads.length === 0 ? <option disabled>No fee heads</option> : feeHeads.map((fh) => (
-                      <option key={fh.fee_head_id} value={fh.fee_head_id}>{fh.head_name || `Fee Head ${fh.fee_head_id}`}</option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Gender */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -368,13 +397,10 @@ const AddStudent = () => {
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
-                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                  </div>
+                  <ChevronDown />
                 </div>
               </div>
 
-              {/* Religion */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Religion</label>
                 <div className="relative">
@@ -389,14 +415,10 @@ const AddStudent = () => {
           {/* Family & Contact */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
-              <div className="p-1.5 bg-green-50 rounded-lg">
-                <Users className="w-4 h-4 text-green-600" />
-              </div>
+              <div className="p-1.5 bg-green-50 rounded-lg"><Users className="w-4 h-4 text-green-600" /></div>
               <h2 className="font-semibold text-gray-800 text-base">Family & Contact Information</h2>
             </div>
-
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Name <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -404,7 +426,6 @@ const AddStudent = () => {
                   <input type="text" name="father_name" value={formData.father_name} onChange={handleChange} className={inputClass} required placeholder="Father's full name" />
                 </div>
               </div>
-
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Name <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -412,7 +433,6 @@ const AddStudent = () => {
                   <input type="text" name="mother_name" value={formData.mother_name} onChange={handleChange} className={inputClass} required placeholder="Mother's full name" />
                 </div>
               </div>
-
               <div className="sm:col-span-2">
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Address <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -422,25 +442,70 @@ const AddStudent = () => {
                     required placeholder="Enter complete address" />
                 </div>
               </div>
+            </div>
+          </div>
 
+          {/* Fee Heads */}
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
+              <div className="p-1.5 bg-yellow-50 rounded-lg"><DollarSign className="w-4 h-4 text-yellow-600" /></div>
+              <h2 className="font-semibold text-gray-800 text-base">Fee Heads</h2>
+              {formData.selected_fee_heads.length > 0 && (
+                <span className="ml-auto bg-yellow-100 text-yellow-700 text-xs font-bold px-2.5 py-0.5 rounded-full">
+                  {formData.selected_fee_heads.length} Selected
+                </span>
+              )}
+            </div>
+            <div className="p-5">
+              {loadingFeeHeads ? (
+                <p className="text-sm text-gray-400">Loading fee heads...</p>
+              ) : feeHeads.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">No fee heads available</p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {feeHeads.map((fh) => {
+                    const isChecked = formData.selected_fee_heads.includes(Number(fh.fee_head_id))
+                    return (
+                      <label key={fh.fee_head_id}
+                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all select-none text-sm font-medium ${
+                          isChecked
+                            ? 'border-yellow-400 bg-yellow-50 text-yellow-800'
+                            : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-yellow-300 hover:bg-yellow-50/50'
+                        }`}
+                      >
+                        <input type="checkbox" className="hidden" checked={isChecked}
+                          onChange={() => handleFeeHeadToggle(fh.fee_head_id)} />
+                        <span className={`w-4 h-4 rounded flex items-center justify-center border-2 flex-shrink-0 ${
+                          isChecked ? 'bg-yellow-500 border-yellow-500' : 'border-gray-300 bg-white'
+                        }`}>
+                          {isChecked && (
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </span>
+                        <DollarSign className="w-3.5 h-3.5 text-yellow-600" />
+                        {fh.head_name || `Fee Head #${fh.fee_head_id}`}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
           {/* Documents */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
-              <div className="p-1.5 bg-purple-50 rounded-lg">
-                <Upload className="w-4 h-4 text-purple-600" />
-              </div>
+              <div className="p-1.5 bg-purple-50 rounded-lg"><Upload className="w-4 h-4 text-purple-600" /></div>
               <h2 className="font-semibold text-gray-800 text-base">Documents & Photos</h2>
             </div>
-
             <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Student Photo', name: 'student_photo', accept: 'image/*' },
-                { label: 'Aadhar Card', name: 'aadhar_card', accept: 'image/*,.pdf' },
-                { label: "Father's Photo", name: 'father_photo', accept: 'image/*' },
-                { label: "Mother's Photo", name: 'mother_photo', accept: 'image/*' },
+                { label: 'Student Photo',  name: 'student_photo', accept: 'image/*' },
+                { label: 'Aadhar Card',    name: 'aadhar_card',   accept: 'image/*,.pdf' },
+                { label: "Father's Photo", name: 'father_photo',  accept: 'image/*' },
+                { label: "Mother's Photo", name: 'mother_photo',  accept: 'image/*' },
               ].map((file) => (
                 <div key={file.name}>
                   <label className="block text-xs font-semibold text-gray-600 mb-1.5">{file.label}</label>
@@ -475,7 +540,7 @@ const AddStudent = () => {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 justify-end pb-6">
-            <button type="button" onClick={() => window.history.back()}
+            <button type="button" onClick={() => navigate('/admin/students')}
               className="px-6 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 transition font-medium text-sm order-2 sm:order-1">
               Cancel
             </button>
@@ -483,9 +548,9 @@ const AddStudent = () => {
               className={`px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 order-1 sm:order-2 shadow-sm hover:bg-blue-700 transition ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
               {loading ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   <span>Adding...</span>
                 </>

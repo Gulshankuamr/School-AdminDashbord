@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Trash2, Eye, Edit, Plus, ChevronLeft, ChevronRight,
-  Users, Eye as EyeIcon, EyeOff
-} from 'lucide-react'
+import { Trash2, Eye, Edit, Plus, ChevronLeft, ChevronRight, Users } from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
-import Modal from '../../components/Modal'
 import StudentDetailsModal from './StudentDetailsModal'
-
 
 function StudentList() {
   const navigate = useNavigate()
 
-  /* ========================= State ========================= */
   const [students, setStudents] = useState([])
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -27,32 +21,20 @@ function StudentList() {
   const [studentToDelete, setStudentToDelete] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  // ✅ Per-row password visibility — key: student_id, value: boolean
-  const [visiblePasswords, setVisiblePasswords] = useState({})
-
-  const togglePassword = (studentId) => {
-    setVisiblePasswords(prev => ({ ...prev, [studentId]: !prev[studentId] }))
-  }
-
-  // ✅ Get display password — tries multiple possible field names from API
-  const getPassword = (student) => {
-    return student?.password
-      || student?.plain_password
-      || student?.user_password
-      || student?.pass
-      || null
-  }
-
-  /* ========================= Fetch ========================= */
   const fetchStudents = async (pageNumber) => {
     try {
       setLoading(true)
       setError(null)
       const res = await studentService.getAllStudents(pageNumber)
-      setStudents(res.data || [])
-      setPage(res.pagination.page)
-      setTotalPages(res.pagination.totalPages)
-      setTotalStudents(res.pagination.total)
+
+      // ✅ FIX: Safely extract students array and pagination
+      const studentList = Array.isArray(res.data) ? res.data : []
+      const pagination = res.pagination || {}
+
+      setStudents(studentList)
+      setPage(pagination.page || pageNumber)
+      setTotalPages(pagination.totalPages || 1)
+      setTotalStudents(pagination.total || studentList.length)
     } catch (err) {
       console.error('Error fetching students:', err)
       setError(err.message || 'Failed to load students')
@@ -63,7 +45,6 @@ function StudentList() {
 
   useEffect(() => { fetchStudents(page) }, [page])
 
-  /* ========================= Handlers ========================= */
   const handleViewStudent = (student) => {
     setSelectedStudent(student)
     setIsModalOpen(true)
@@ -72,6 +53,12 @@ function StudentList() {
   const closeModal = () => {
     setIsModalOpen(false)
     setSelectedStudent(null)
+  }
+
+  const handleDeleteFromModal = (student) => {
+    closeModal()
+    setStudentToDelete(student)
+    setShowDeleteConfirm(true)
   }
 
   const handleDeleteClick = (student) => {
@@ -84,10 +71,11 @@ function StudentList() {
     try {
       setDeleting(true)
       await studentService.deleteStudent(studentToDelete.student_id)
-      alert('Student deleted successfully!')
       setShowDeleteConfirm(false)
       setStudentToDelete(null)
-      fetchStudents(page)
+      // ✅ FIX: If last item on page, go back a page
+      const newPage = students.length === 1 && page > 1 ? page - 1 : page
+      fetchStudents(newPage)
     } catch (error) {
       console.error('Error deleting student:', error)
       alert(error.message || 'Failed to delete student')
@@ -101,7 +89,6 @@ function StudentList() {
     setStudentToDelete(null)
   }
 
-  /* ========================= Loading ========================= */
   if (loading && students.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -116,7 +103,6 @@ function StudentList() {
     )
   }
 
-  /* ========================= Error ========================= */
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -128,7 +114,7 @@ function StudentList() {
           </div>
           <h2 className="text-lg font-bold text-gray-900 mb-2">Something went wrong</h2>
           <p className="text-gray-500 text-sm mb-5">{error}</p>
-          <button onClick={() => window.location.reload()}
+          <button onClick={() => fetchStudents(page)}
             className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm">
             Try Again
           </button>
@@ -137,8 +123,7 @@ function StudentList() {
     )
   }
 
-  /* ========================= Empty ========================= */
-  if (students.length === 0) {
+  if (!loading && students.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
         <div className="max-w-5xl mx-auto">
@@ -168,7 +153,6 @@ function StudentList() {
     )
   }
 
-  /* ========================= Main UI ========================= */
   return (
     <>
       <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6">
@@ -176,7 +160,7 @@ function StudentList() {
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
-            <span className="hover:text-blue-500 cursor-pointer">Dashboard</span>
+            <span className="hover:text-blue-500 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>Dashboard</span>
             <span>/</span>
             <span className="hover:text-blue-500 cursor-pointer">Students</span>
             <span>/</span>
@@ -207,7 +191,6 @@ function StudentList() {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                    {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Password</th> */}
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Admission No</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class</th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
@@ -216,109 +199,62 @@ function StudentList() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {students.map((student) => {
-                    const pwd = getPassword(student)
-                    const isVisible = visiblePasswords[student.student_id]
-
-                    return (
-                      <tr key={student.student_id} className="hover:bg-gray-50 transition-colors">
-
-                        {/* Student Name + Avatar */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-2.5">
-                            {student.student_photo_url ? (
-                              <img src={student.student_photo_url} alt={student.name}
-                                className="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0" />
-                            ) : (
-                              <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
-                                <span className="text-white font-bold text-xs">
-                                  {student.name?.charAt(0)?.toUpperCase() || 'S'}
-                                </span>
-                              </div>
-                            )}
-                            <span className="text-sm font-semibold text-gray-900">{student.name || 'N/A'}</span>
-                          </div>
-                        </td>
-
-                        {/* Email */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-sm text-gray-600">{student.user_email || 'N/A'}</span>
-                        </td>
-
-                        {/* ✅ Password with show/hide toggle */}
-                        {/* <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            {pwd ? (
-                              <>
-                                <span className="text-sm font-mono text-gray-700 tracking-wider">
-                                  {isVisible ? pwd : '••••••••'}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => togglePassword(student.student_id)}
-                                  className="p-1 rounded text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition flex-shrink-0"
-                                  title={isVisible ? 'Hide password' : 'Show password'}
-                                >
-                                  {isVisible
-                                    ? <EyeOff className="w-3.5 h-3.5" />
-                                    : <EyeIcon className="w-3.5 h-3.5" />}
-                                </button>
-                              </>
-                            ) : (
-                              <span className="text-xs text-gray-400 italic bg-gray-50 px-2 py-0.5 rounded">
-                                Not available
+                  {students.map((student) => (
+                    <tr key={student.student_id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center gap-2.5">
+                          {student.student_photo_url ? (
+                            <img src={student.student_photo_url} alt={student.name}
+                              className="w-9 h-9 rounded-full object-cover border border-gray-200 flex-shrink-0" />
+                          ) : (
+                            <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-bold text-xs">
+                                {student.name?.charAt(0)?.toUpperCase() || 'S'}
                               </span>
-                            )}
-                          </div>
-                        </td> */}
-
-                        {/* Admission No */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700">
-                            {student.admission_no || 'N/A'}
-                          </span>
-                        </td>
-
-                        {/* Class */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700">
-                            {student.class_name || 'N/A'}
-                          </span>
-                        </td>
-
-                        {/* Section */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-green-50 text-green-700">
-                            {student.section_name || 'N/A'}
-                          </span>
-                        </td>
-
-                        {/* Gender */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <span className="text-sm text-gray-600 capitalize">{student.gender || 'N/A'}</span>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <button onClick={() => handleViewStudent(student)}
-                              className="p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition" title="View Details">
-                              <Eye className="w-3.5 h-3.5 text-blue-600" />
-                            </button>
-                            <button onClick={() => navigate(`/admin/students/edit/${student.student_id}`)}
-                              className="p-1.5 bg-green-50 hover:bg-green-100 rounded-lg transition" title="Edit">
-                              <Edit className="w-3.5 h-3.5 text-green-600" />
-                            </button>
-                            <button onClick={() => handleDeleteClick(student)}
-                              className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg transition" title="Delete">
-                              <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                            </button>
-                          </div>
-                        </td>
-
-                      </tr>
-                    )
-                  })}
+                            </div>
+                          )}
+                          <span className="text-sm font-semibold text-gray-900">{student.name || 'N/A'}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">{student.user_email || 'N/A'}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-purple-50 text-purple-700">
+                          {student.admission_no || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-700">
+                          {student.class_name || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="inline-flex px-2 py-0.5 rounded-md text-xs font-semibold bg-green-50 text-green-700">
+                          {student.section_name || 'N/A'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600 capitalize">{student.gender || 'N/A'}</span>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button onClick={() => handleViewStudent(student)}
+                            className="p-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition" title="View Details">
+                            <Eye className="w-3.5 h-3.5 text-blue-600" />
+                          </button>
+                          <button onClick={() => navigate(`/admin/students/edit/${student.student_id}`)}
+                            className="p-1.5 bg-green-50 hover:bg-green-100 rounded-lg transition" title="Edit">
+                            <Edit className="w-3.5 h-3.5 text-green-600" />
+                          </button>
+                          <button onClick={() => handleDeleteClick(student)}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 rounded-lg transition" title="Delete">
+                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -331,27 +267,32 @@ function StudentList() {
                 <span className="text-gray-400 ml-2">({totalStudents} total)</span>
               </p>
               <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => setPage(page - 1)}
+                <button disabled={page === 1 || loading} onClick={() => setPage(page - 1)}
                   className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-sm flex items-center gap-1 font-medium shadow-sm">
                   <ChevronLeft className="w-3.5 h-3.5" /> Previous
                 </button>
-                <button disabled={page === totalPages} onClick={() => setPage(page + 1)}
+                <button disabled={page === totalPages || loading} onClick={() => setPage(page + 1)}
                   className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition text-sm flex items-center gap-1 font-medium shadow-sm">
                   Next <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
       {/* View Details Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} title="Student Details">
-        {selectedStudent && (
-          <StudentDetailsModal student={selectedStudent} onClose={closeModal} />
-        )}
-      </Modal>
+      {isModalOpen && selectedStudent && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl shadow-2xl">
+            <StudentDetailsModal
+              student={selectedStudent}
+              onClose={closeModal}
+              onDelete={handleDeleteFromModal}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirm Modal */}
       {showDeleteConfirm && (
@@ -387,7 +328,6 @@ function StudentList() {
           </div>
         </div>
       )}
-
     </>
   )
 }

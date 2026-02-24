@@ -251,6 +251,18 @@ export const sidebarMenuItems = [
   ],
 },
 
+
+{
+  id: 'homework',
+  label: 'Homework',
+  icon: BookOpen,
+  hasDropdown: true,
+  subItems: [
+     { id: 'create-homework', label: 'Create Homework', path: '/admin/homework/create' },
+    { id: 'homework-list', label: 'View Homework', path: '/admin/homework' },
+  ],
+},
+
   {
     id: 'settings',
     label: 'Settings',
