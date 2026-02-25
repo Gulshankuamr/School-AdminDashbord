@@ -102,25 +102,26 @@ export const sidebarMenuItems = [
     ],
   },
 
-  {
-  id: 'classes',
-  label: 'Classes',
-  icon: Calendar,
-  hasDropdown: true,
-  subItems: [
-    { id: 'class-list', label: 'View All Classes', path: '/admin/classes' ,  icon: List, },
-    { id: 'add-class', label: 'Add Class', path: '/admin/classes/add' },
-  ],
-},
+//   {
+//   id: 'classes',
+//   label: 'Classes',
+//   icon: Calendar,
+//   hasDropdown: true,
+//   subItems: [
+//     { id: 'class-list', label: 'All Classes', path: '/admin/classes' ,  icon: List, },
+//     // { id: 'add-class', label: 'Add Class', path: '/admin/classes/add' },
+//   ],
+// },
 
 {
   id: 'sections',
-  label: 'Sections',
+  label: 'Class-Sections',
   icon: Layers,
   hasDropdown: true,
   subItems: [
-    { id: 'section-list', label: 'View All Sections', path: '/admin/sections' },
-    { id: 'add-section', label: 'Add Section', path: '/admin/sections/add' },
+    { id: 'class-list', label: 'All Classes', path: '/admin/classes' ,  icon: List, },
+    { id: 'section-list', label: ' All Sections', path: '/admin/sections' },
+    // { id: 'add-section', label: 'Add Section', path: '/admin/sections/add' },
   ],
 },
 

@@ -1,163 +1,117 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Trash2, Edit2, Eye } from 'lucide-react'
+import { Trash2, Pencil, Search, ChevronDown, AlertCircle, SlidersHorizontal, GraduationCap, Plus } from 'lucide-react'
 import Modal from '../../components/Modal'
 import ClassDetailsModal from './ClassDetailsModal'
-// import { classService } from '../../services/classService'
+import EditClass from './EditClass'
 import { classService } from '../../services/classService/classService'
 import { toast } from 'sonner'
 
 function ClassList() {
   const navigate = useNavigate()
-  
-  const [classes, setClasses] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  
-  // Modal states
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [selectedClass, setSelectedClass] = useState(null)
-  
-  // Delete confirmation modal
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [classToDelete, setClassToDelete] = useState(null)
-  const [deleting, setDeleting] = useState(false)
 
-  // Fetch classes
+  const [classes, setClasses]                     = useState([])
+  const [loading, setLoading]                     = useState(true)
+  const [error, setError]                         = useState(null)
+  const [search, setSearch]                       = useState('')
+  const [sortOrder, setSortOrder]                 = useState('newest')
+  const [showSortDropdown, setShowSortDropdown]   = useState(false)
+  const [isViewOpen, setIsViewOpen]               = useState(false)
+  const [selectedClass, setSelectedClass]         = useState(null)
+  const [isEditOpen, setIsEditOpen]               = useState(false)
+  const [editingClass, setEditingClass]           = useState(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [classToDelete, setClassToDelete]         = useState(null)
+  const [deleting, setDeleting]                   = useState(false)
+
   const fetchClasses = async () => {
     try {
-      setLoading(true)
-      setError(null)
-
+      setLoading(true); setError(null)
       const res = await classService.getAllClasses()
-      console.log('Fetched classes:', res.data)
       setClasses(res.data || [])
     } catch (err) {
-      console.error('Error fetching classes:', err)
       setError(err.message || 'Failed to load classes')
       toast.error(err.message || 'Failed to load classes')
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
-  // Fetch classes on component mount
+  useEffect(() => { fetchClasses() }, [])
   useEffect(() => {
-    fetchClasses()
+    const h = () => { setShowSortDropdown(false) }
+    document.addEventListener('click', h)
+    return () => document.removeEventListener('click', h)
   }, [])
 
-  // Function to open modal with class data
-  const handleViewClass = (classItem) => {
-    console.log('Viewing class:', classItem)
-    setSelectedClass(classItem)
-    setIsModalOpen(true)
-  }
-
-  // Close modal
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setSelectedClass(null)
-  }
-
-  // Handle delete confirmation
-  const handleDeleteClick = (classItem) => {
-    console.log('Delete clicked for class:', classItem)
-    setClassToDelete(classItem)
-    setShowDeleteConfirm(true)
-  }
-
-  // Confirm delete - FIXED VERSION
-   // Confirm delete - FIXED VERSION WITHOUT REFRESH
-const confirmDelete = async () => {
-  if (!classToDelete || !classToDelete.class_id) {
-    toast.error('Invalid class ID')
-    return
-  }
-
-  try {
-    setDeleting(true)
-    console.log('🗑️ Attempting to delete class ID:', classToDelete.class_id)
-    
-    // Call delete API
-    const response = await classService.deleteClass(classToDelete.class_id)
-    console.log('✅ Delete API success:', response)
-    
-    // 1. Update local state - DON'T call fetchClasses immediately
-    setClasses(prevClasses => {
-      const updatedClasses = prevClasses.filter(c => c.class_id !== classToDelete.class_id)
-      console.log('🔄 Local state updated:', {
-        before: prevClasses.length,
-        after: updatedClasses.length
-      })
-      return updatedClasses
+  const filteredClasses = classes
+    .filter(c => {
+      const q = search.toLowerCase()
+      return c.class_name?.toLowerCase().includes(q) || c.class_code?.toString().toLowerCase().includes(q)
     })
-    
-    // 2. Close modal
-    setShowDeleteConfirm(false)
-    setClassToDelete(null)
-    
-    // 3. Show success
-    toast.success('Class deleted successfully!')
-    
-    // 4. DO NOT automatically refresh - wait for user action
-    // Remove the setTimeout with fetchClasses()
-    
-  } catch (error) {
-    console.error('❌ Delete failed:', error)
-    toast.error(error.message || 'Failed to delete class')
-    
-    // If error, refresh to sync
-    await fetchClasses()
-  } finally {
-    setDeleting(false)
-  }
-}
-
-  // Cancel delete
-  const cancelDelete = () => {
-    setShowDeleteConfirm(false)
-    setClassToDelete(null)
-  }
-
-  // Format date
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('en-IN', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
+    .sort((a, b) => {
+      if (sortOrder === 'newest') return b.class_id - a.class_id
+      if (sortOrder === 'oldest') return a.class_id - b.class_id
+      if (sortOrder === 'az')     return a.class_name?.localeCompare(b.class_name)
+      if (sortOrder === 'za')     return b.class_name?.localeCompare(a.class_name)
+      return 0
     })
+
+  const handleEditClass   = (c) => { setEditingClass(c); setIsEditOpen(true) }
+  const handleDeleteClick = (c) => { setClassToDelete(c); setShowDeleteConfirm(true) }
+  const cancelDelete      = () => { setShowDeleteConfirm(false); setClassToDelete(null) }
+
+  const confirmDelete = async () => {
+    if (!classToDelete?.class_id) return toast.error('Invalid class ID')
+    try {
+      setDeleting(true)
+      await classService.deleteClass(classToDelete.class_id)
+      setClasses(prev => prev.filter(c => c.class_id !== classToDelete.class_id))
+      setShowDeleteConfirm(false); setClassToDelete(null)
+      toast.success('Class deleted successfully!')
+    } catch (err) {
+      toast.error(err.message || 'Failed to delete class')
+      await fetchClasses()
+    } finally { setDeleting(false) }
   }
 
-  // Show loading spinner while fetching
+  const sortLabel = { newest: 'Newest First', oldest: 'Oldest First', az: 'A → Z', za: 'Z → A' }
+
+  const S = {
+    root:    { fontFamily: "'DM Sans', sans-serif", minHeight: '100vh', background: '#f6f8fb', padding: '32px 20px' },
+    card:    { background: 'white', borderRadius: 20, border: '1px solid #e8edf3', overflow: 'hidden', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' },
+    th:      { padding: '13px 26px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: 1, textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' },
+    thRight: { padding: '13px 26px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: '#94a3b8', letterSpacing: 1, textTransform: 'uppercase', borderBottom: '1px solid #f1f5f9' },
+    td:      { padding: '15px 26px' },
+    tdRight: { padding: '15px 26px', textAlign: 'right' },
+    iconBtn: (type) => ({
+      borderRadius: 10, padding: '7px', border: '1px solid transparent', background: 'transparent',
+      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s',
+      ...(type === 'edit'   ? { color: '#64748b' } : {}),
+      ...(type === 'delete' ? { color: '#64748b' } : {}),
+    }),
+  }
+
+  /* ── Loading ── */
   if (loading && classes.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-green-600 mx-auto mb-4"></div>
-          <p className="text-gray-700 text-lg">Loading classes...</p>
+      <div style={{ ...S.root, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ width: 44, height: 44, border: '3px solid #e0e7ff', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'cl-spin 0.75s linear infinite', margin: '0 auto 14px' }} />
+          <p style={{ fontSize: 13.5, color: '#94a3b8', margin: 0 }}>Loading classes...</p>
         </div>
+        <style>{`@keyframes cl-spin { to { transform: rotate(360deg) } }`}</style>
       </div>
     )
   }
 
-  // Show error message if API fails
+  /* ── Error ── */
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8 text-center">
-          <div className="mb-4">
-            <svg className="mx-auto h-12 w-12 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={fetchClasses}
-            className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition"
-          >
+      <div style={{ ...S.root, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: 'white', borderRadius: 20, padding: '40px 32px', textAlign: 'center', maxWidth: 340, border: '1px solid #e8edf3', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+          <AlertCircle style={{ width: 40, height: 40, color: '#f43f5e', margin: '0 auto 14px' }} />
+          <p style={{ fontSize: 15, fontWeight: 600, color: '#1e293b', margin: '0 0 6px' }}>Something went wrong</p>
+          <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 20px' }}>{error}</p>
+          <button onClick={fetchClasses} style={{ padding: '9px 22px', background: '#6366f1', color: 'white', border: 'none', borderRadius: 11, fontSize: 13.5, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
             Try Again
           </button>
         </div>
@@ -165,253 +119,233 @@ const confirmDelete = async () => {
     )
   }
 
-  // Show message if no classes found
-  if (classes.length === 0) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-100 p-6">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Classes List</h1>
-              <p className="text-gray-600 mt-1">View all registered classes</p>
-            </div>
-            <button
-              onClick={() => navigate('/admin/classes/add')}
-              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition flex items-center gap-2"
-            >
-              <span className="text-xl">+</span>
-              Add Class
-            </button>
-          </div>
-
-          {/* Empty State */}
-          <div className="bg-white rounded-xl shadow-md p-12 text-center">
-            <div className="mb-4">
-              <svg className="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-            </div>
-            <p className="text-gray-600 text-lg mb-2">No classes found</p>
-            <p className="text-gray-500 text-sm mb-6">Get started by adding your first class</p>
-            <button
-              onClick={() => navigate('/admin/classes/add')}
-              className="px-6 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition"
-            >
-              Add First Class
-            </button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-teal-100 p-6">
-        <div className="max-w-6xl mx-auto">
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap');
+        .cl-row { transition: background 0.13s; }
+        .cl-row:hover { background: #f8fafc !important; }
+        .cl-row:hover .cl-edit-btn   { background: #fef9c3 !important; border-color: #fde68a !important; color: #d97706 !important; }
+        .cl-row:hover .cl-delete-btn { background: #fff1f2 !important; border-color: #fecdd3 !important; color: #e11d48 !important; }
+        .cl-dropdown-item:hover { background: #f1f5f9; color: #1e293b; }
+        .cl-skeleton { background: linear-gradient(90deg,#f1f5f9 25%,#e8edf3 50%,#f1f5f9 75%); background-size: 200% 100%; animation: cl-shimmer 1.4s infinite; border-radius: 8px; }
+        @keyframes cl-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        .cl-fade { animation: cl-fadeup 0.28s ease both; }
+        @keyframes cl-fadeup { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes cl-spin { to { transform: rotate(360deg) } }
+        .cl-add-btn:hover { background: #4f46e5 !important; }
+      `}</style>
+
+      <div style={S.root}>
+        <div style={{ maxWidth: 880, margin: '0 auto' }}>
+
           {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Classes List</h1>
-              <p className="text-gray-600 mt-1">
-                Total {classes.length} class{classes.length !== 1 ? 'es' : ''}
-              </p>
+              <h1 style={{ margin: 0, fontSize: 23, fontWeight: 700, color: '#0f172a', letterSpacing: -0.4 }}>Class Management</h1>
+              <p style={{ margin: '4px 0 0', fontSize: 13.5, color: '#94a3b8', fontWeight: 400 }}>Manage all school classes and their details</p>
             </div>
             <button
-              onClick={() => navigate('/admin/classes/add')}
-              className="px-4 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition flex items-center gap-2"
+              className="cl-add-btn"
+              onClick={() => navigate('/admin/sections/add')}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#6366f1', color: 'white', border: 'none', borderRadius: 12, padding: '9px 18px', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', boxShadow: '0 4px 14px rgba(99,102,241,0.22)', fontFamily: "'DM Sans', sans-serif", transition: 'background 0.15s' }}
             >
-              <span className="text-xl">+</span>
-              Add Class
+              <Plus style={{ width: 16, height: 16 }} />
+              Add section
             </button>
           </div>
 
-          {/* List Container */}
-          <div className="bg-white rounded-xl shadow-md overflow-hidden">
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium">
-              <div className="col-span-3">
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Class Name
-                </span>
-              </div>
-              <div className="col-span-2">
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  Order
-                </span>
-              </div>
-              <div className="col-span-3">
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Status
-                </span>
-              </div>
-              <div className="col-span-2">
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  Created On
-                </span>
-              </div>
-              <div className="col-span-2 text-center">
-                <span className="flex items-center gap-2 justify-center">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  Actions
-                </span>
-              </div>
+          {/* Filter Bar */}
+          <div style={{ background: 'white', borderRadius: 14, border: '1px solid #e8edf3', padding: '5px 8px', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '3px 8px' }}>
+              <Search style={{ width: 14, height: 14, color: '#94a3b8', flexShrink: 0 }} />
+              <input
+                type="text"
+                placeholder="Search by class name or code..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                style={{ flex: 1, border: 'none', background: 'transparent', fontSize: 13.5, color: '#1e293b', outline: 'none', fontFamily: "'DM Sans', sans-serif", fontWeight: 400 }}
+              />
             </div>
+            <div style={{ width: 1, height: 20, background: '#e8edf3' }} />
 
-            {/* Table Body */}
-            <div className="divide-y divide-gray-100">
-              {classes.map((classItem) => (
-                <div 
-                  key={classItem.class_id} 
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 transition-colors duration-200"
-                >
-                  {/* Class Name */}
-                  <div className="col-span-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-r from-green-100 to-green-200 rounded-lg flex items-center justify-center">
-                        <span className="text-green-700 font-bold">{classItem.class_order}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{classItem.class_name}</h3>
-                        <p className="text-sm text-gray-500 line-clamp-1">{classItem.class_details}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Order */}
-                  <div className="col-span-2 flex items-center">
-                    <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-lg font-medium">
-                      {classItem.class_order}
-                    </span>
-                  </div>
-
-                  {/* Status */}
-                  <div className="col-span-3 flex items-center">
-                    <div className="flex items-center gap-3">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        classItem.status === 1 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        <span className={`w-2 h-2 rounded-full mr-2 ${
-                          classItem.status === 1 ? 'bg-green-500' : 'bg-yellow-500'
-                        }`}></span>
-                        {classItem.status === 1 ? 'Active' : 'Inactive'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Created On */}
-                  <div className="col-span-2 flex items-center">
-                    <div className="text-gray-700">
-                      {formatDate(classItem.created_at)}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="col-span-2 flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => handleViewClass(classItem)}
-                      className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition flex items-center justify-center gap-2"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                      <span className="sr-only md:not-sr-only md:text-sm">View</span>
+            {/* Sort Dropdown */}
+            <div style={{ position: 'relative' }} onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => setShowSortDropdown(!showSortDropdown)}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', background: '#f8fafc', border: '1px solid #e8edf3', borderRadius: 10, fontSize: 12.5, fontWeight: 600, color: '#475569', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+              >
+                <SlidersHorizontal style={{ width: 13, height: 13, color: '#6366f1' }} />
+                {sortLabel[sortOrder]}
+                <ChevronDown style={{ width: 12, height: 12, opacity: 0.45 }} />
+              </button>
+              {showSortDropdown && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', background: 'white', border: '1px solid #e2e8f0', borderRadius: 14, boxShadow: '0 10px 36px rgba(0,0,0,0.09)', zIndex: 40, minWidth: 165, padding: 4 }}>
+                  {Object.entries(sortLabel).map(([val, label]) => (
+                    <button key={val} className="cl-dropdown-item"
+                      onClick={() => { setSortOrder(val); setShowSortDropdown(false) }}
+                      style={{ width: '100%', textAlign: 'left', padding: '8px 12px', fontSize: 13, fontWeight: sortOrder === val ? 600 : 500, color: sortOrder === val ? '#6366f1' : '#475569', borderRadius: 10, border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+                      {label}
                     </button>
-                    <button
-                      onClick={() => navigate(`/admin/classes/edit/${classItem.class_id}`)}
-                      className="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition flex items-center justify-center gap-2"
-                      title="Edit Class"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                      <span className="sr-only md:not-sr-only md:text-sm">Edit</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(classItem)}
-                      className="p-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition flex items-center justify-center gap-2"
-                      title="Delete Class"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      <span className="sr-only md:not-sr-only md:text-sm">Delete</span>
-                    </button>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
+
+          {/* Table Card */}
+          <div style={S.card}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  <th style={S.th}>Class Name</th>
+                  <th style={S.th}>Class Code</th>
+                  <th style={S.thRight}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+
+                {/* Skeletons */}
+                {loading && [1,2,3,4].map(i => (
+                  <tr key={i} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={S.td}><div className="cl-skeleton" style={{ height: 15, width: 110 }} /></td>
+                    <td style={S.td}><div className="cl-skeleton" style={{ height: 24, width: 72, borderRadius: 9 }} /></td>
+                    <td style={S.tdRight}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+                        <div className="cl-skeleton" style={{ height: 30, width: 30, borderRadius: 10 }} />
+                        <div className="cl-skeleton" style={{ height: 30, width: 30, borderRadius: 10 }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+
+                {/* Rows */}
+                {!loading && filteredClasses.map((classItem, idx) => (
+                  <tr
+                    key={classItem.class_id}
+                    className="cl-row cl-fade"
+                    style={{ borderBottom: idx === filteredClasses.length - 1 ? 'none' : '1px solid #f1f5f9', animationDelay: `${idx * 0.035}s` }}
+                  >
+                    {/* Class Name */}
+                    <td style={S.td}>
+                      <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1e293b' }}>{classItem.class_name}</span>
+                    </td>
+
+                    {/* Class Code */}
+                    <td style={S.td}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 11px', background: '#eff6ff', color: '#3b82f6', borderRadius: 9, fontSize: 12.5, fontWeight: 700, letterSpacing: 0.5, border: '1px solid #dbeafe' }}>
+                        {classItem.class_code || '—'}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td style={S.tdRight}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6 }}>
+                        <button
+                          className="cl-edit-btn"
+                          onClick={() => handleEditClass(classItem)}
+                          style={S.iconBtn('edit')}
+                          title="Edit"
+                        >
+                          <Pencil style={{ width: 14, height: 14 }} />
+                        </button>
+                        <button
+                          className="cl-delete-btn"
+                          onClick={() => handleDeleteClick(classItem)}
+                          style={S.iconBtn('delete')}
+                          title="Delete"
+                        >
+                          <Trash2 style={{ width: 14, height: 14 }} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* Empty State */}
+            {!loading && filteredClasses.length === 0 && (
+              <div style={{ padding: '56px 0', textAlign: 'center' }}>
+                <div style={{ width: 52, height: 52, background: '#f8fafc', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                  <GraduationCap style={{ width: 22, height: 22, color: '#cbd5e1' }} />
+                </div>
+                <p style={{ fontSize: 14.5, fontWeight: 600, color: '#1e293b', margin: 0 }}>No classes found</p>
+                <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 5 }}>
+                  {search ? 'Try adjusting your search.' : 'Add your first class to get started.'}
+                </p>
+              </div>
+            )}
+
+            {/* Footer */}
+            {!loading && filteredClasses.length > 0 && (
+              <div style={{ padding: '11px 26px', borderTop: '1px solid #f1f5f9', background: '#fafbfd' }}>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: '#94a3b8', letterSpacing: 0.9, textTransform: 'uppercase' }}>
+                  Showing {filteredClasses.length} of {classes.length} Class{classes.length !== 1 ? 'es' : ''}
+                </span>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
-      {/* Class Details Modal */}
-      <Modal 
-        isOpen={isModalOpen} 
-        onClose={closeModal}
-        title="Class Details"
-      >
+      {/* View Modal */}
+      <Modal isOpen={isViewOpen} onClose={() => { setIsViewOpen(false); setSelectedClass(null) }} title="Class Details">
         {selectedClass && (
-          <ClassDetailsModal 
-            classItem={selectedClass} 
-            onClose={closeModal}
-          />
+          <ClassDetailsModal classItem={selectedClass} onClose={() => { setIsViewOpen(false); setSelectedClass(null) }} />
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
+      {/* Edit Modal */}
+      {isEditOpen && editingClass && (
+        <EditClass
+          classItem={editingClass}
+          onClose={() => { setIsEditOpen(false); setEditingClass(null) }}
+          onSaved={fetchClasses}
+        />
+      )}
+
+      {/* Delete Confirm Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
-              <Trash2 className="w-6 h-6 text-red-600" />
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, background: 'rgba(15,23,42,0.35)', backdropFilter: 'blur(4px)', fontFamily: "'DM Sans', sans-serif" }}
+          onClick={cancelDelete}
+        >
+          <div
+            style={{ background: 'white', borderRadius: 22, boxShadow: '0 20px 60px rgba(0,0,0,0.15)', width: '100%', maxWidth: 360, padding: '32px 28px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+              <div style={{ width: 56, height: 56, background: '#fff1f2', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                <Trash2 style={{ width: 24, height: 24, color: '#f43f5e' }} />
+              </div>
+              <p style={{ fontSize: 17, fontWeight: 700, color: '#0f172a', margin: '0 0 8px' }}>Delete Class?</p>
+              <p style={{ fontSize: 13.5, color: '#64748b', margin: 0, lineHeight: 1.6 }}>
+                You're about to delete{' '}
+                <span style={{ fontWeight: 700, color: '#1e293b' }}>{classToDelete?.class_name}</span>.
+                This action cannot be undone.
+              </p>
             </div>
-            
-            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
-              Delete Class
-            </h3>
-            
-            <p className="text-gray-600 text-center mb-6">
-              Are you sure you want to delete <strong>{classToDelete?.class_name}</strong>? This action cannot be undone.
-            </p>
-            
-            <div className="flex gap-3">
+            <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
               <button
                 onClick={cancelDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-medium disabled:opacity-50"
+                style={{ flex: 1, padding: '11px 0', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 12, fontSize: 13.5, fontWeight: 600, color: '#475569', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'background 0.15s' }}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={deleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ flex: 1, padding: '11px 0', background: '#f43f5e', border: 'none', borderRadius: 12, fontSize: 13.5, fontWeight: 600, color: 'white', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 14px rgba(244,63,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, transition: 'background 0.15s', opacity: deleting ? 0.65 : 1 }}
               >
                 {deleting ? (
                   <>
-                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
+                    <span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: 'white', borderRadius: '50%', display: 'inline-block', animation: 'cl-spin 0.7s linear infinite' }} />
                     Deleting...
                   </>
-                ) : (
-                  'Delete'
-                )}
+                ) : 'Yes, Delete'}
               </button>
             </div>
           </div>

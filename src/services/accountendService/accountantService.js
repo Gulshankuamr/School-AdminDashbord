@@ -21,132 +21,91 @@ export const accountantService = {
 
     const data = await response.json()
     if (!response.ok) throw new Error('Could not fetch accountants')
-
     return data
   },
 
   // ===============================
-  // 2️⃣ GET ACCOUNTANT BY ID
+  // 2️⃣ GET ACCOUNTANT BY ID - FIXED URL
   // ===============================
   getAccountById: async (accountantId) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
 
-    const response = await fetch(
-      `${API_BASE_URL}/schooladmin/getAccountantById/${accountantId}`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+    try {
+      // FIXED: Correct endpoint format
+      const response = await fetch(
+        `${API_BASE_URL}/schooladmin/getAccountantById/${accountantId}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      // Check if response is OK
+      if (!response.ok) {
+        const text = await response.text()
+        console.error('Server response:', text)
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-    )
 
-    const data = await response.json()
-    console.log('ACCOUNTANT API RESPONSE:', data)
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to load accountant data')
+      }
 
-    if (!response.ok || data.success !== true) {
-      throw new Error(data.message || 'Failed to load accountant data')
+      return data.data
+    } catch (error) {
+      console.error('Error in getAccountById:', error)
+      throw error
     }
-
-    return data.data
   },
 
   // ===============================
-  // 3️⃣ ADD ACCOUNTANT - FIXED
+  // 3️⃣ ADD ACCOUNTANT
   // ===============================
-  // addAccountant: async (accountantData) => {
-  //   const token = getAuthToken()
-  //   if (!token) throw new Error('Token missing')
-
-  //   const formData = new FormData()
-    
-  //   // REQUIRED FIELDS
-  //   formData.append('name', accountantData.name)
-  //   formData.append('user_email', accountantData.user_email)
-  //   formData.append('password', accountantData.password)
-  //   formData.append('qualification', accountantData.qualification)
-    
-  //   // OPTIONAL FILES
-  //   if (accountantData.accountant_photo instanceof File) {
-  //     formData.append('accountant_photo', accountantData.accountant_photo)
-  //   }
-    
-  //   if (accountantData.aadhar_card instanceof File) {
-  //     formData.append('aadhar_card', accountantData.aadhar_card)
-  //   }
-
-  //   console.log('📤 ADD ACCOUNTANT PAYLOAD:', {
-  //     name: accountantData.name,
-  //     user_email: accountantData.user_email,
-  //     qualification: accountantData.qualification,
-  //     has_photo: accountantData.accountant_photo instanceof File,
-  //     has_aadhar: accountantData.aadhar_card instanceof File,
-  //   })
-
-  //   const response = await fetch(
-  //     `${API_BASE_URL}/schooladmin/createAccountant`,
-  //     {
-  //       method: 'POST',
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //         // ❌ DON'T set Content-Type - browser sets it automatically
-  //       },
-  //       body: formData,
-  //     }
-  //   )
-
-  //   const data = await response.json()
-  //   console.log('✅ ADD RESPONSE:', data)
-    
-  //   if (!response.ok || data.success !== true) {
-  //     throw new Error(data.message || 'Accountant not added')
-  //   }
-
-  //   return data
-  // },
-
-
-    addAccountant: async (accountantData) => {
+  addAccountant: async (accountantData) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
 
     const formData = new FormData()
 
-    // EXACT SAME FIELDS AS POSTMAN
-    formData.append('name', accountantData.name)
-    formData.append('user_email', accountantData.user_email)
-    formData.append('password', accountantData.password)
-    formData.append('qualification', accountantData.qualification)
+    // Required fields
+    formData.append('name', accountantData.name || '')
+    formData.append('user_email', accountantData.user_email || '')
+    formData.append('password', accountantData.password || '')
+    formData.append('qualification', accountantData.qualification || '')
+    
+    // Optional text fields
+    if (accountantData.mobile_number) formData.append('mobile_number', accountantData.mobile_number)
+    if (accountantData.address) formData.append('address', accountantData.address)
+    if (accountantData.father_name) formData.append('father_name', accountantData.father_name)
+    if (accountantData.mother_name) formData.append('mother_name', accountantData.mother_name)
+    if (accountantData.experience_years) formData.append('experience_years', accountantData.experience_years)
 
-    if (accountantData.accountant_photo) {
+    // Files
+    if (accountantData.accountant_photo instanceof File) {
       formData.append('accountant_photo', accountantData.accountant_photo)
     }
-
-    if (accountantData.aadhar_card) {
+    if (accountantData.aadhar_card instanceof File) {
       formData.append('aadhar_card', accountantData.aadhar_card)
     }
 
-    console.log('📤 REGISTER ACCOUNTANT PAYLOAD')
-    for (let pair of formData.entries()) {
-      console.log(pair[0], pair[1])
-    }
-
     const response = await fetch(
-      `${API_BASE_URL}/schooladmin/registerAccountant`, // ✅ CORRECT API
+      `${API_BASE_URL}/schooladmin/registerAccountant`,
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
-          // ❌ Content-Type mat lagana (FormData)
         },
         body: formData,
       }
     )
 
     const data = await response.json()
-    console.log('✅ API RESPONSE:', data)
-
     if (!response.ok || data.success !== true) {
       throw new Error(data.message || 'Accountant not added')
     }
@@ -155,63 +114,102 @@ export const accountantService = {
   },
 
   // ===============================
-  // 4️⃣ UPDATE ACCOUNTANT - FIXED TO SEND ALL FIELDS
+  // 4️⃣ UPDATE ACCOUNTANT - COMPLETELY FIXED
   // ===============================
-  
-  updateAccountant: async (accountantId, formData) => {
-  const token = getAuthToken()
-  if (!token) throw new Error('Token missing')
+  updateAccountant: async (accountantId, accountantData) => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
 
-  console.log('📤 FINAL UPDATE PAYLOAD:', [...formData.entries()])
-
-  const response = await fetch(
-    `${API_BASE_URL}/schooladmin/updateAccountant`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: formData, // 👈 DIRECT SEND
+    const formData = new FormData()
+    
+    // ALWAYS include accountant_id
+    formData.append('accountant_id', String(accountantId))
+    
+    // Add all fields - even empty ones to ensure they're sent
+    formData.append('name', accountantData.name || '')
+    formData.append('user_email', accountantData.user_email || '')
+    formData.append('qualification', accountantData.qualification || '')
+    formData.append('mobile_number', accountantData.mobile_number || '')
+    formData.append('address', accountantData.address || '')
+    formData.append('father_name', accountantData.father_name || '')
+    formData.append('mother_name', accountantData.mother_name || '')
+    formData.append('experience_years', accountantData.experience_years || '')
+    
+    // Only send password if it's provided (not empty)
+    if (accountantData.password && accountantData.password.trim() !== '') {
+      formData.append('password', accountantData.password)
     }
-  )
+    
+    // Handle files - only append if they are new File objects
+    if (accountantData.accountant_photo instanceof File) {
+      formData.append('accountant_photo', accountantData.accountant_photo)
+    }
+    
+    if (accountantData.aadhar_card instanceof File) {
+      formData.append('aadhar_card', accountantData.aadhar_card)
+    }
 
-  const data = await response.json()
+    console.log('📤 UPDATE PAYLOAD - FormData entries:')
+    for (let pair of formData.entries()) {
+      if (pair[0] !== 'accountant_photo' && pair[0] !== 'aadhar_card') {
+        console.log(pair[0], ':', pair[1])
+      } else {
+        console.log(pair[0], ':', pair[1] instanceof File ? `File: ${pair[1].name}` : 'No new file')
+      }
+    }
 
-  if (!response.ok || data.success !== true) {
-    throw new Error(data.message || 'Accountant not updated')
-  }
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/updateAccountant`,
+      {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    )
 
-  return data
-},
+    // Check if response is OK
+    if (!response.ok) {
+      const text = await response.text()
+      console.error('Server error response:', text)
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
 
+    const data = await response.json()
+    console.log('✅ UPDATE RESPONSE:', data)
 
- 
+    if (!data.success) {
+      throw new Error(data.message || 'Accountant not updated')
+    }
+
+    return data
+  },
+
   // ===============================
-// 5️⃣ DELETE ACCOUNTANT
-// ===============================
-deleteAccountant: async (accountantId) => {
-  const token = getAuthToken()
-  if (!token) throw new Error('Token missing')
+  // 5️⃣ DELETE ACCOUNTANT
+  // ===============================
+  deleteAccountant: async (accountantId) => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
 
-  const response = await fetch(
-    `${API_BASE_URL}/schooladmin/deleteAccountantById`,
-    {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ accountant_id: accountantId }),
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/deleteAccountantById`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accountant_id: accountantId }),
+      }
+    )
+
+    const data = await response.json()
+    if (!response.ok || data.success !== true) {
+      throw new Error(data.message || 'Accountant not deleted')
     }
-  )
 
-  const data = await response.json()
-
-  if (!response.ok || data.success !== true) {
-    throw new Error(data.message || 'Accountant not deleted')
-  }
-
-  return data
-},
-
+    return data
+  },
 }

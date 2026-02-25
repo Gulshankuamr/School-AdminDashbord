@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Upload, CheckCircle, AlertCircle } from 'lucide-react'
-// import { accountantService } from '../../services/accountantService'
+import {
+  ArrowLeft, Upload, CheckCircle, AlertCircle, X,
+  User, Mail, Lock, Phone, MapPin, Award, Users, Briefcase
+} from 'lucide-react'
 import { accountantService } from '../../services/accountendService/accountantService'
-
 
 const AddAccountant = () => {
   const navigate = useNavigate()
@@ -13,6 +14,11 @@ const AddAccountant = () => {
     user_email: '',
     password: '',
     qualification: '',
+    mobile_number: '',
+    address: '',
+    father_name: '',
+    mother_name: '',
+    experience_years: '',
     accountant_photo: null,
     aadhar_card: null,
   })
@@ -22,10 +28,10 @@ const AddAccountant = () => {
     aadhar_card: null,
   })
 
-  const [showSuccess, setShowSuccess] = useState(false)
-  const [showError, setShowError] = useState(false)
-  const [errorMessage, setErrorMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [successInfo, setSuccessInfo] = useState(null)
+  const [error, setError] = useState(null)
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
@@ -35,251 +41,445 @@ const AddAccountant = () => {
     const { name, files } = e.target
     if (files && files[0]) {
       const file = files[0]
-
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('File size should not exceed 5MB')
+        setError('File size should not exceed 5MB')
         return
       }
-
       setFormData({ ...formData, [name]: file })
-
-      // Create preview for images
+      
       if (file.type.startsWith('image/')) {
         const reader = new FileReader()
-        reader.onloadend = () => {
-          setFilePreviews((prev) => ({ ...prev, [name]: reader.result }))
-        }
+        reader.onloadend = () => setFilePreviews(prev => ({ ...prev, [name]: reader.result }))
         reader.readAsDataURL(file)
       } else {
-        setFilePreviews((prev) => ({ ...prev, [name]: file.name }))
+        setFilePreviews(prev => ({ ...prev, [name]: file.name }))
       }
-    }
-  }
-
-  const validateForm = () => {
-    if (!formData.name.trim()) {
-      setErrorMessage('Name is required')
-      return false
-    }
-    if (!formData.user_email.trim()) {
-      setErrorMessage('Email is required')
-      return false
-    }
-    if (!formData.password.trim()) {
-      setErrorMessage('Password is required')
-      return false
-    }
-    if (!formData.qualification.trim()) {
-      setErrorMessage('Qualification is required')
-      return false
-    }
-
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(formData.user_email)) {
-      setErrorMessage('Please enter a valid email')
-      return false
-    }
-
-    return true
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-
-    // Validate form
-    if (!validateForm()) {
-      setShowError(true)
-      setTimeout(() => setShowError(false), 3000)
-      return
-    }
-
-    setLoading(true)
-    setShowError(false)
-
-    try {
-      await accountantService.addAccountant(formData)
-
-      // Success
-      setShowSuccess(true)
-
-      // Redirect after 2 seconds
-      setTimeout(() => {
-        setShowSuccess(false)
-        navigate('/admin/accountants')
-      }, 2000)
-    } catch (error) {
-      console.error('Error adding accountant:', error)
-      setErrorMessage(error.message || 'Failed to add accountant. Please try again.')
-      setShowError(true)
-      setTimeout(() => setShowError(false), 5000)
-    } finally {
-      setLoading(false)
     }
   }
 
   const resetForm = () => {
     setFormData({
-      name: '',
-      user_email: '',
-      password: '',
-      qualification: '',
-      accountant_photo: null,
-      aadhar_card: null,
+      name: '', user_email: '', password: '', qualification: '',
+      mobile_number: '', address: '', father_name: '', mother_name: '',
+      experience_years: '', accountant_photo: null, aadhar_card: null,
     })
-    setFilePreviews({
-      accountant_photo: null,
-      aadhar_card: null,
-    })
+    setFilePreviews({ accountant_photo: null, aadhar_card: null })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // Create a clean object with all fields
+      const submitData = {
+        name: formData.name,
+        user_email: formData.user_email,
+        password: formData.password,
+        qualification: formData.qualification,
+        mobile_number: formData.mobile_number,
+        address: formData.address,
+        father_name: formData.father_name,
+        mother_name: formData.mother_name,
+        experience_years: formData.experience_years,
+        accountant_photo: formData.accountant_photo,
+        aadhar_card: formData.aadhar_card,
+      }
+      
+      await accountantService.addAccountant(submitData)
+      setSuccessInfo({ name: formData.name })
+      resetForm()
+      setTimeout(() => {
+        setSuccessInfo(null)
+        navigate('/admin/accountants')
+      }, 2000)
+    } catch (err) {
+      console.error('Error adding accountant:', err)
+      setError(err.message || 'Failed to add accountant. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 p-6">
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 z-50 animate-slide-in">
-          <CheckCircle className="w-6 h-6" />
-          <span className="font-medium">Accountant added successfully!</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4 sm:px-6 lg:px-8">
+
+      {/* Error Toast */}
+      {error && (
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full animate-in slide-in-from-top-2">
+          <div className="bg-white border-2 border-red-200 shadow-xl rounded-xl overflow-hidden">
+            <div className="bg-red-500 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-white" />
+                <span className="text-white font-semibold">Error</span>
+              </div>
+              <button onClick={() => setError(null)} className="text-white hover:text-red-200">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700">{error}</p>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Error Message */}
-      {showError && (
-        <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg flex items-center gap-3 z-50 animate-slide-in">
-          <AlertCircle className="w-6 h-6" />
-          <span className="font-medium">{errorMessage}</span>
+      {/* Success Toast */}
+      {successInfo && (
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full animate-in slide-in-from-top-2">
+          <div className="bg-white border-2 border-green-200 shadow-xl rounded-xl overflow-hidden">
+            <div className="bg-green-500 px-4 py-3 flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-white" />
+              <span className="text-white font-semibold">Accountant Added!</span>
+            </div>
+            <div className="p-4">
+              <p className="text-gray-700">
+                <span className="font-bold">{successInfo.name}</span> has been registered successfully.
+              </p>
+              <p className="text-xs text-gray-400 mt-1">Redirecting to list...</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-5xl mx-auto">
+
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <button
-            onClick={() => navigate('/admin/accountants')}
-            className="p-2 hover:bg-white rounded-lg transition shadow-sm bg-white/50"
-          >
-            <ArrowLeft className="w-6 h-6 text-gray-700" />
-          </button>
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900">Add New Accountant</h1>
-            <p className="text-gray-600 mt-1">Fill in the accountant details and upload documents</p>
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+            <span className="hover:text-purple-600 cursor-pointer" onClick={() => navigate('/admin/accountants')}>
+              Accountants
+            </span>
+            <span>/</span>
+            <span className="text-gray-700 font-medium">Add New</span>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/admin/accountants')}
+              className="p-2 bg-white hover:bg-gray-100 rounded-xl transition border border-gray-200 shadow-sm group">
+              <ArrowLeft className="w-5 h-5 text-gray-500 group-hover:text-purple-600" />
+            </button>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Add New Accountant</h1>
+              <p className="text-gray-500 mt-1">Fill in the details to register a new accountant</p>
+            </div>
           </div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            {/* Basic Information */}
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-purple-500">
-              Basic Information
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-              {[
-                { label: 'Full Name', name: 'name', type: 'text', placeholder: 'Enter full name', required: true },
-                { label: 'Email', name: 'user_email', type: 'email', placeholder: 'accountant@example.com', required: true },
-                { label: 'Password', name: 'password', type: 'password', placeholder: 'Enter password', required: true },
-                { label: 'Qualification', name: 'qualification', type: 'text', placeholder: 'e.g., CA, MBA Finance', required: true },
-              ].map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {field.label} {field.required && <span className="text-red-600">*</span>}
-                  </label>
+        <form onSubmit={handleSubmit} className="space-y-6">
+
+          {/* Basic Information */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-purple-50 to-white border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <User className="w-5 h-5 text-purple-600" />
+                <h2 className="text-lg font-semibold text-gray-800">Basic Information</h2>
+              </div>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  required
+                  placeholder="Enter full name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  name="user_email"
+                  value={formData.user_email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  required
+                  placeholder="accountant@example.com"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
                   <input
-                    type={field.type}
-                    name={field.name}
-                    value={formData[field.name]}
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border text-gray-900 border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition"
-                    required={field.required}
-                    placeholder={field.placeholder}
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    required
+                    placeholder="Enter password"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            {/* File Uploads */}
-            <h2 className="text-2xl font-semibold text-gray-800 mb-6 pb-2 border-b-2 border-purple-500">
-              Documents & Photos
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[
-                { label: 'Accountant Photo', name: 'accountant_photo', accept: 'image/*' },
-                { label: 'Aadhar Card', name: 'aadhar_card', accept: 'image/*,.pdf' },
-              ].map((file) => (
-                <div key={file.name}>
-                  <label className="block text-sm font-medium text-gray-700 mb-3">{file.label}</label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-purple-500 transition bg-gray-50 hover:bg-purple-50">
-                    <input
-                      type="file"
-                      name={file.name}
-                      id={file.name}
-                      onChange={handleFileChange}
-                      accept={file.accept}
-                      className="hidden"
-                    />
-                    <label htmlFor={file.name} className="cursor-pointer flex flex-col items-center">
-                      {filePreviews[file.name] ? (
-                        typeof filePreviews[file.name] === 'string' && filePreviews[file.name].startsWith('data:') ? (
-                          <img
-                            src={filePreviews[file.name]}
-                            alt="Preview"
-                            className="w-40 h-40 object-cover rounded-lg mb-3 shadow-md"
-                          />
-                        ) : (
-                          <div className="text-sm text-green-600 font-medium mb-3 bg-green-50 px-4 py-2 rounded-lg">
-                            ✓ {filePreviews[file.name]}
-                          </div>
-                        )
-                      ) : (
-                        <Upload className="w-16 h-16 text-gray-400 mb-3" />
-                      )}
-                      <span className="text-sm text-gray-700 font-medium">Click to upload {file.label.toLowerCase()}</span>
-                      <span className="text-xs text-gray-500 mt-1">JPG, PNG, PDF (Max 5MB)</span>
-                    </label>
-                  </div>
-                </div>
-              ))}
-            </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Qualification <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="qualification"
+                  value={formData.qualification}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  required
+                  placeholder="e.g., CA, B.Com, MCA"
+                />
+              </div>
 
-            {/* Buttons */}
-            <div className="flex gap-4 mt-10 pt-6 border-t">
-              <button
-                type="submit"
-                disabled={loading}
-                className={`bg-purple-600 text-white px-10 py-3 rounded-lg transition font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
-                  }`}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Adding...
-                  </span>
-                ) : (
-                  'Add Accountant'
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="bg-gray-200 text-gray-700 px-10 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
-                disabled={loading}
-              >
-                Reset
-              </button>
-              <button
-                type="button"
-                onClick={() => navigate('/admin/accountants')}
-                className="bg-gray-200 text-gray-700 px-10 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
-                disabled={loading}
-              >
-                Cancel
-              </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Mobile Number
+                </label>
+                <input
+                  type="tel"
+                  name="mobile_number"
+                  value={formData.mobile_number}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  placeholder="Enter mobile number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Experience (Years)
+                </label>
+                <input
+                  type="number"
+                  name="experience_years"
+                  value={formData.experience_years}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  placeholder="e.g., 2"
+                  min="0"
+                  max="50"
+                />
+              </div>
+
             </div>
           </div>
+
+          {/* Address */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-white border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-orange-600" />
+                <h2 className="text-lg font-semibold text-gray-800">Address Information</h2>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+              <textarea
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows={3}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none"
+                placeholder="Enter complete address"
+              />
+            </div>
+          </div>
+
+          {/* Family Information */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-white border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-green-600" />
+                <h2 className="text-lg font-semibold text-gray-800">Family Information</h2>
+              </div>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Father's Name</label>
+                <input
+                  type="text"
+                  name="father_name"
+                  value={formData.father_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  placeholder="Father's full name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mother's Name</label>
+                <input
+                  type="text"
+                  name="mother_name"
+                  value={formData.mother_name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  placeholder="Mother's full name"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Documents */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
+            <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-white border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <Upload className="w-5 h-5 text-blue-600" />
+                <h2 className="text-lg font-semibold text-gray-800">Documents</h2>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">JPG, PNG or PDF accepted (Max 5MB)</p>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              {/* Accountant Photo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Accountant Photo</label>
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4">
+                  {filePreviews.accountant_photo ? (
+                    <div className="relative">
+                      <img
+                        src={filePreviews.accountant_photo}
+                        alt="Preview"
+                        className="w-full h-40 object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, accountant_photo: null })
+                          setFilePreviews(prev => ({ ...prev, accountant_photo: null }))
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center">
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">Click to upload photo</span>
+                      <span className="text-xs text-gray-400 mt-1">JPG, PNG</span>
+                      <input
+                        type="file"
+                        name="accountant_photo"
+                        onChange={handleFileChange}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Aadhar Card */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Aadhaar Card</label>
+                <div className="border-2 border-dashed border-gray-200 rounded-xl p-4">
+                  {filePreviews.aadhar_card ? (
+                    <div className="relative">
+                      {filePreviews.aadhar_card.startsWith('data:') ? (
+                        <img
+                          src={filePreviews.aadhar_card}
+                          alt="Preview"
+                          className="w-full h-40 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center py-6">
+                          <FileText className="w-8 h-8 text-blue-500 mb-2" />
+                          <span className="text-sm text-gray-600">{filePreviews.aadhar_card}</span>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, aadhar_card: null })
+                          setFilePreviews(prev => ({ ...prev, aadhar_card: null }))
+                        }}
+                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="cursor-pointer flex flex-col items-center">
+                      <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-sm text-gray-600">Click to upload file</span>
+                      <span className="text-xs text-gray-400 mt-1">JPG, PNG, PDF</span>
+                      <input
+                        type="file"
+                        name="aadhar_card"
+                        onChange={handleFileChange}
+                        accept="image/*,.pdf"
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4 pt-4">
+            <button
+              type="button"
+              onClick={resetForm}
+              disabled={loading}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium disabled:opacity-50"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/accountants')}
+              disabled={loading}
+              className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-8 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl font-medium hover:from-purple-700 hover:to-purple-800 transition shadow-lg shadow-purple-200 flex items-center gap-2 disabled:opacity-50"
+            >
+              {loading ? (
+                <>
+                  <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  Add Accountant
+                </>
+              )}
+            </button>
+          </div>
+
         </form>
       </div>
     </div>

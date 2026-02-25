@@ -15,6 +15,8 @@ const CreateFee = () => {
     feeHeadId: '',
     baseAmount: '',
     feeFrequency: 'monthly',
+    startDueDate: '',   // ✅ NEW
+    endDueDate: '',     // ✅ NEW
   });
   
   // Data from APIs
@@ -49,7 +51,6 @@ const CreateFee = () => {
     { value: '2026-27', label: '2026-27' },
   ];
 
-  // Fetch data on component mount
   useEffect(() => {
     fetchData();
   }, []);
@@ -59,7 +60,6 @@ const CreateFee = () => {
       setLoading(true);
       setAuthError('');
       
-      // Fetch classes
       const classResponse = await feecreateService.getAllClasses();
       if (classResponse.data && Array.isArray(classResponse.data)) {
         setClasses(classResponse.data);
@@ -67,7 +67,6 @@ const CreateFee = () => {
         console.warn('Unexpected classes response structure:', classResponse);
       }
       
-      // Fetch fee heads
       const feeHeadResponse = await feecreateService.getAllFeeHeads();
       if (feeHeadResponse.data?.fee_heads) {
         setFeeHeads(feeHeadResponse.data.fee_heads);
@@ -96,7 +95,6 @@ const CreateFee = () => {
       setError('Please enter a valid base amount first');
       return;
     }
-
     if (!formData.feeFrequency) {
       setError('Please select payment frequency');
       return;
@@ -108,7 +106,6 @@ const CreateFee = () => {
     let installmentCount = 0;
     let installmentName = '';
     
-    // Determine number of installments based on frequency
     switch (formData.feeFrequency) {
       case 'monthly':
         installmentCount = 12;
@@ -135,12 +132,10 @@ const CreateFee = () => {
         installmentName = 'Fee';
     }
     
-    // Generate installments
     const newInstallments = [];
     const months = ['January', 'February', 'March', 'April', 'May', 'June', 
                    'July', 'August', 'September', 'October', 'November', 'December'];
     
-    // Start from current month
     const currentDate = new Date();
     let currentMonth = currentDate.getMonth();
     let currentYear = currentDate.getFullYear();
@@ -148,8 +143,6 @@ const CreateFee = () => {
     for (let i = 0; i < installmentCount; i++) {
       const monthIndex = (currentMonth + i) % 12;
       const year = currentYear + Math.floor((currentMonth + i) / 12);
-      
-      // Calculate due date (10th of each month)
       const dueDate = new Date(year, monthIndex, 10);
       
       newInstallments.push({
@@ -168,23 +161,15 @@ const CreateFee = () => {
     setTotalAmount(baseAmount * installmentCount);
     setIsGeneratingInstallments(false);
     
-    // Scroll to preview section
     setTimeout(() => {
       if (previewRef.current) {
-        previewRef.current.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start'
-        });
+        previewRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }, 100);
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    // Clear installments if frequency or amount changes
+    setFormData(prev => ({ ...prev, [field]: value }));
     if (field === 'feeFrequency' || field === 'baseAmount') {
       setInstallments([]);
       setTotalAmount(0);
@@ -195,18 +180,26 @@ const CreateFee = () => {
 
   const handleInstallmentChange = (index, field, value) => {
     const newInstallments = [...installments];
-    newInstallments[index] = {
-      ...newInstallments[index],
-      [field]: value
-    };
+    newInstallments[index] = { ...newInstallments[index], [field]: value };
     setInstallments(newInstallments);
-    
-    // Recalculate total
     const newTotal = newInstallments.reduce((sum, inst) => sum + parseFloat(inst.amount || 0), 0);
     setTotalAmount(newTotal);
   };
 
   const handlePreviewClick = () => {
+    // ✅ Validate due dates before generating
+    if (!formData.startDueDate) {
+      setError('Please select a Start Due Date');
+      return;
+    }
+    if (!formData.endDueDate) {
+      setError('Please select an End Due Date');
+      return;
+    }
+    if (formData.endDueDate < formData.startDueDate) {
+      setError('End Due Date cannot be before Start Due Date');
+      return;
+    }
     generateInstallments();
   };
 
@@ -216,13 +209,15 @@ const CreateFee = () => {
       setError('');
       setSuccess('');
 
-      // Prepare payload based on API example
+      // ✅ Payload now includes start_due_date and end_due_date as required by API
       const payload = {
         class_id: parseInt(formData.classId),
         fee_head_id: parseInt(formData.feeHeadId),
         base_amount: formData.baseAmount,
         fee_frequency: formData.feeFrequency,
-        academic_year: formData.academicYear
+        academic_year: formData.academicYear,
+        start_due_date: formData.startDueDate,
+        end_due_date: formData.endDueDate,
       };
 
       console.log('🚀 Creating fee with payload:', payload);
@@ -233,21 +228,20 @@ const CreateFee = () => {
         setShowConfirmModal(false);
         setSuccess('✅ Fee structure created successfully!');
         
-        // Clear form
         setFormData({
           academicYear: '2024-25',
           classId: '',
           feeHeadId: '',
           baseAmount: '',
           feeFrequency: 'monthly',
+          startDueDate: '',
+          endDueDate: '',
         });
         setInstallments([]);
         setTotalAmount(0);
         
-        // Auto-scroll to top to show success message
         window.scrollTo({ top: 0, behavior: 'smooth' });
         
-        // Redirect after 3 seconds
         setTimeout(() => {
           navigate('/admin/fees/create');
         }, 1500);
@@ -346,7 +340,7 @@ const CreateFee = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Left Column - Main Form */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Fee Configuration Card */}
+                {/* Step 1 - Fee Configuration */}
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white">
@@ -372,9 +366,7 @@ const CreateFee = () => {
                           disabled={loading}
                         >
                           {academicYears.map(year => (
-                            <option key={year.value} value={year.value}>
-                              {year.label}
-                            </option>
+                            <option key={year.value} value={year.value}>{year.label}</option>
                           ))}
                         </select>
                         <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
@@ -429,7 +421,7 @@ const CreateFee = () => {
                   </div>
                 </div>
 
-                {/* Financial Details Card */}
+                {/* Step 2 - Financial Details */}
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white">
@@ -437,7 +429,7 @@ const CreateFee = () => {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-gray-900">Financial Details</h2>
-                      <p className="text-gray-700 mt-1">Set payment frequency and base amount</p>
+                      <p className="text-gray-700 mt-1">Set payment frequency, base amount and due dates</p>
                     </div>
                   </div>
 
@@ -490,12 +482,64 @@ const CreateFee = () => {
                     </p>
                   </div>
 
+                  {/* ✅ NEW: Start & End Due Date Fields */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-900 mb-3">
+                      Due Date Range *
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Start Due Date */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                          Start Due Date *
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <input
+                            type="date"
+                            value={formData.startDueDate}
+                            onChange={(e) => handleInputChange('startDueDate', e.target.value)}
+                            className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+
+                      {/* End Due Date */}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                          End Due Date *
+                        </label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                          </div>
+                          <input
+                            type="date"
+                            value={formData.endDueDate}
+                            onChange={(e) => handleInputChange('endDueDate', e.target.value)}
+                            min={formData.startDueDate || ''}
+                            className="pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-gray-500 text-xs mt-2">
+                      Defines the fee collection window for this structure.
+                    </p>
+                  </div>
+
                   {/* Total Amount Preview */}
                   <div className="mb-6">
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 inline-block">
                       <p className="text-xs text-gray-700 mb-1">BASE AMOUNT PREVIEW</p>
                       <p className="text-2xl font-bold text-gray-900">
-                        {formData.baseAmount ? `₹${parseFloat(formData.baseAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0.00'}
+                        {formData.baseAmount
+                          ? `₹${parseFloat(formData.baseAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                          : '₹0.00'}
                       </p>
                     </div>
                   </div>
@@ -520,7 +564,7 @@ const CreateFee = () => {
                   </button>
                 </div>
 
-                {/* Installment Schedule Card */}
+                {/* Step 3 - Installment Schedule */}
                 {installments.length > 0 && (
                   <div ref={previewRef} className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
@@ -542,29 +586,16 @@ const CreateFee = () => {
                       </div>
                     </div>
 
-                    {/* Installments Table */}
                     <div className="overflow-x-auto border border-gray-200 rounded-lg">
                       <table className="w-full">
                         <thead className="bg-gray-50">
                           <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                              #
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                              Installment
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                              Month & Year
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                              Amount (₹)
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                              Due Date
-                            </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
-                              Status
-                            </th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">#</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Installment</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Month & Year</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Amount (₹)</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Due Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Status</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -573,12 +604,8 @@ const CreateFee = () => {
                               <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                                 {String(inst.id).padStart(2, '0')}
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {inst.name}
-                              </td>
-                              <td className="px-4 py-3 text-sm text-gray-900">
-                                {inst.displayDate}
-                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{inst.name}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">{inst.displayDate}</td>
                               <td className="px-4 py-3">
                                 <input
                                   type="number"
@@ -641,7 +668,7 @@ const CreateFee = () => {
                       </p>
                     </div>
 
-                    {/* Installment Details */}
+                    {/* Details */}
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
                         <span className="text-gray-900">Installments</span>
@@ -663,9 +690,23 @@ const CreateFee = () => {
                         <span className="text-gray-900">Academic Year</span>
                         <span className="font-semibold text-gray-900">{formData.academicYear}</span>
                       </div>
+
+                      {/* ✅ Due dates in summary */}
+                      {formData.startDueDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-900">Start Date</span>
+                          <span className="font-semibold text-gray-900 text-sm">{formData.startDueDate}</span>
+                        </div>
+                      )}
+                      {formData.endDueDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-900">End Date</span>
+                          <span className="font-semibold text-gray-900 text-sm">{formData.endDueDate}</span>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Divider */}
+                    {/* Progress */}
                     <div className="border-t border-gray-200 pt-4">
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-gray-900">Remaining Balance</span>
@@ -682,7 +723,12 @@ const CreateFee = () => {
                         onClick={() => {
                           setInstallments([]);
                           setTotalAmount(0);
-                          setFormData(prev => ({ ...prev, baseAmount: '' }));
+                          setFormData(prev => ({
+                            ...prev,
+                            baseAmount: '',
+                            startDueDate: '',
+                            endDueDate: '',
+                          }));
                         }}
                         className="w-full px-4 py-2.5 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
                       >
@@ -707,7 +753,6 @@ const CreateFee = () => {
                       </button>
                     </div>
 
-                    {/* Help Text */}
                     <div className="pt-4 border-t border-gray-200">
                       <p className="text-xs text-gray-700">
                         <span className="font-medium">Note:</span> After confirming, the fee structure will be created and you'll be redirected to the fee list.
@@ -752,6 +797,15 @@ const CreateFee = () => {
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-700">Total Amount:</span>
                   <span className="font-semibold text-gray-900">{formatCurrency(totalAmount)}</span>
+                </div>
+                {/* ✅ Dates shown in modal */}
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">Start Due Date:</span>
+                  <span className="font-semibold text-gray-900">{formData.startDueDate || '—'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-700">End Due Date:</span>
+                  <span className="font-semibold text-gray-900">{formData.endDueDate || '—'}</span>
                 </div>
               </div>
             </div>

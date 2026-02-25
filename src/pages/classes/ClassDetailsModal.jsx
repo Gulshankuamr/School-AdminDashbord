@@ -1,272 +1,199 @@
-// import React from 'react'
-// import { Calendar, Hash, Info, CheckCircle, XCircle, Clock } from 'lucide-react'
+import React, { useState } from 'react'
+import { X, AlertCircle } from 'lucide-react'
+import { classService } from '../../services/classService/classService'
+import { toast } from 'sonner'
 
-// const ClassDetailsModal = ({ classItem, onClose }) => {
-//   if (!classItem) return null
+function EditClassModal({ classItem, onClose, onSaved }) {
+  const [formData, setFormData] = useState({
+    class_name: classItem?.class_name || '',
+    class_order: classItem?.class_order?.toString() || '',
+    class_details: classItem?.class_details || '',
+    status: classItem?.status ?? 1,
+  })
+  const [saving, setSaving] = useState(false)
+  const [fieldError, setFieldError] = useState('')
 
-//   // Format date
-//   const formatDate = (dateString) => {
-//     const date = new Date(dateString)
-//     return date.toLocaleDateString('en-IN', {
-//       weekday: 'long',
-//       year: 'numeric',
-//       month: 'long',
-//       day: 'numeric',
-//       hour: '2-digit',
-//       minute: '2-digit'
-//     })
-//   }
+  const handleChange = (e) => {
+    const { name, value } = e.target
+    if (name === 'class_order' && value !== '' && !/^\d+$/.test(value)) return
+    setFormData((p) => ({ ...p, [name]: value }))
+    setFieldError('')
+  }
 
-//   // Format time ago
-//   const getTimeAgo = (dateString) => {
-//     const date = new Date(dateString)
-//     const now = new Date()
-//     const diffInSeconds = Math.floor((now - date) / 1000)
-    
-//     if (diffInSeconds < 60) return 'Just now'
-//     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)} minutes ago`
-//     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)} hours ago`
-//     if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)} days ago`
-//     return formatDate(dateString)
-//   }
+  const toggleStatus = () =>
+    setFormData((p) => ({ ...p, status: p.status === 1 ? 0 : 1 }))
 
-//   return (
-//     <div className="max-w-2xl mx-auto">
-//       {/* Header */}
-//       <div className="mb-6">
-//         <div className="flex items-start justify-between">
-//           <div>
-//             <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-//               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-//                 <span className="text-white font-bold text-xl">{classItem.class_order}</span>
-//               </div>
-//               <div>
-//                 <div className="text-2xl">{classItem.class_name}</div>
-//                 <div className="text-sm text-gray-600 font-normal mt-1 flex items-center gap-1">
-//                   <Calendar className="w-4 h-4" />
-//                   Created {getTimeAgo(classItem.created_at)}
-//                 </div>
-//               </div>
-//             </h2>
-//           </div>
-          
-//           {/* Status Badge */}
-//           <div className={`px-4 py-2 rounded-full font-medium flex items-center gap-2 ${
-//             classItem.status === 1 
-//               ? 'bg-green-100 text-green-800 border border-green-200' 
-//               : 'bg-red-100 text-red-800 border border-red-200'
-//           }`}>
-//             {classItem.status === 1 ? (
-//               <>
-//                 <CheckCircle className="w-4 h-4" />
-//                 Active
-//               </>
-//             ) : (
-//               <>
-//                 <XCircle className="w-4 h-4" />
-//                 Inactive
-//               </>
-//             )}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Details Grid */}
-//       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-//         {/* Class Order Card */}
-//         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-5 border border-blue-200">
-//           <div className="flex items-center gap-3 mb-3">
-//             <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-//               <Hash className="w-5 h-5 text-white" />
-//             </div>
-//             <div>
-//               <h3 className="text-sm font-medium text-blue-800 uppercase">Class Order</h3>
-//               <p className="text-xs text-blue-600">Sorting position</p>
-//             </div>
-//           </div>
-//           <div className="text-3xl font-bold text-blue-900 text-center">
-//             {classItem.class_order}
-//           </div>
-//         </div>
-
-//         {/* Creation Date Card */}
-//         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-5 border border-purple-200">
-//           <div className="flex items-center gap-3 mb-3">
-//             <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
-//               <Clock className="w-5 h-5 text-white" />
-//             </div>
-//             <div>
-//               <h3 className="text-sm font-medium text-purple-800 uppercase">Created On</h3>
-//               <p className="text-xs text-purple-600">Date of creation</p>
-//             </div>
-//           </div>
-//           <div className="text-sm font-medium text-purple-900 text-center">
-//             {formatDate(classItem.created_at)}
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Class Details Section */}
-//       <div className="mb-8">
-//         <div className="flex items-center gap-2 mb-4">
-//           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
-//             <Info className="w-4 h-4 text-white" />
-//           </div>
-//           <h3 className="text-lg font-semibold text-gray-900">Class Details</h3>
-//         </div>
-        
-//         <div className="bg-gray-50 rounded-xl p-5 border border-gray-200">
-//           <div className="prose prose-sm max-w-none">
-//             <p className="text-gray-700 whitespace-pre-line">{classItem.class_details}</p>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Additional Information */}
-//       <div className="mb-8">
-//         <h3 className="text-lg font-semibold text-gray-900 mb-4">Additional Information</h3>
-        
-//         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-//           <div className="grid grid-cols-2 divide-x divide-gray-200">
-//             {/* Class ID */}
-//             <div className="p-4">
-//               <div className="text-xs text-gray-500 uppercase font-medium mb-1">Class ID</div>
-//               <div className="text-sm font-medium text-gray-900">{classItem.class_id}</div>
-//             </div>
-            
-//             {/* Created Date */}
-//             <div className="p-4">
-//               <div className="text-xs text-gray-500 uppercase font-medium mb-1">Created Date</div>
-//               <div className="text-sm font-medium text-gray-900">
-//                 {new Date(classItem.created_at).toLocaleDateString('en-IN')}
-//               </div>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-
-//       {/* Action Buttons */}
-//       <div className="pt-6 border-t border-gray-200 flex gap-3">
-//         <button
-//           onClick={onClose}
-//           className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
-//         >
-//           Close
-//         </button>
-//         <button
-//           onClick={() => {
-//             onClose()
-//             // Navigate to edit page - you'll need to handle this in parent component
-//           }}
-//           className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 transition font-medium"
-//         >
-//           Edit Class
-//         </button>
-//       </div>
-
-//       {/* Metadata Footer */}
-//       <div className="mt-6 pt-4 border-t border-gray-100">
-//         <div className="text-xs text-gray-500 text-center">
-//           <p>Class ID: {classItem.class_id} • Last Updated: {getTimeAgo(classItem.created_at)}</p>
-//         </div>
-//       </div>
-//     </div>
-//   )
-// }
-
-// export default ClassDetailsModal
-
-
-import React from 'react'
-import { Hash, Info } from 'lucide-react'
-
-const ClassDetailsModal = ({ classItem, onClose }) => {
-  if (!classItem) return null
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.class_name.trim()) return setFieldError('Class name is required')
+    if (!formData.class_order.trim()) return setFieldError('Class order is required')
+    setFieldError('')
+    setSaving(true)
+    try {
+      await classService.updateClass({
+        class_id: classItem.class_id,
+        class_name: formData.class_name.trim(),
+        class_order: parseInt(formData.class_order),
+        class_details: formData.class_details.trim(),
+        status: formData.status,
+      })
+      toast.success('Class updated successfully!')
+      onSaved()
+      onClose()
+    } catch (err) {
+      setFieldError(err.message || 'Failed to update class')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Class Information</h2>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Class ID: {classItem.class_id}</span>
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Edit Class</h3>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+
+          {/* Class Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Class Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="class_name"
+              value={formData.class_name}
+              onChange={handleChange}
+              placeholder="e.g., Class 10"
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
+            {fieldError === 'Class name is required' && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {fieldError}
+              </p>
+            )}
           </div>
-          <span className={`px-3 py-1 text-sm rounded-full ${
-            classItem.status === 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-          }`}>
-            {classItem.status === 1 ? 'Active' : 'Inactive'}
-          </span>
-        </div>
-      </div>
 
-      {/* Class Name */}
-      <div className="mb-6">
-        <div className="text-sm font-medium text-gray-700 mb-2">Class Name *</div>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div className="text-gray-900">{classItem.class_name}</div>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          e.g., Class 10th, B.Com 1st Year
-        </div>
-      </div>
-
-      {/* Class Order */}
-      <div className="mb-8">
-        <div className="text-sm font-medium text-gray-700 mb-2">Class Order *</div>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 flex items-center gap-2">
-          <Hash className="w-4 h-4 text-gray-500" />
-          <span className="text-gray-900">{classItem.class_order}</span>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Numeric order for sorting classes
-        </div>
-      </div>
-
-      {/* Divider */}
-      <div className="border-t border-gray-200 my-8"></div>
-
-      {/* Additional Information Header */}
-      <div className="mb-4">
-        <h3 className="text-xl font-bold text-gray-900">Additional Information</h3>
-      </div>
-
-      {/* Description */}
-      <div className="mb-8">
-        <div className="flex items-center gap-2 mb-2">
-          <Info className="w-4 h-4 text-gray-500" />
-          <div className="text-sm font-medium text-gray-700">Description (Optional)</div>
-        </div>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 min-h-[100px]">
-          <div className="text-gray-700 whitespace-pre-line">
-            {classItem.class_details || 'No description provided'}
+          {/* Class Code */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Class Code <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="class_order"
+              value={formData.class_order}
+              onChange={handleChange}
+              placeholder="e.g., 10"
+              inputMode="numeric"
+              className={`w-full px-3.5 py-2.5 border rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                fieldError && (fieldError.includes('order') || fieldError.toLowerCase().includes('exists'))
+                  ? 'border-red-400 ring-1 ring-red-400'
+                  : 'border-gray-200'
+              }`}
+            />
+            {(fieldError.includes('order') || fieldError.toLowerCase().includes('exists')) && (
+              <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {fieldError.toLowerCase().includes('exists') ? 'Class code already exists.' : fieldError}
+              </p>
+            )}
           </div>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Add any additional details about the class...
-        </div>
-      </div>
 
-      {/* Action Buttons */}
-      <div className="pt-6 border-t border-gray-200 flex gap-3">
-        <button
-          onClick={onClose}
-          className="flex-1 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium"
-        >
-          Close
-        </button>
-        <button
-          onClick={() => {
-            onClose()
-            // Navigate to edit page
-          }}
-          className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-        >
-          Edit Class
-        </button>
+          {/* Class Details */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Class Details
+            </label>
+            <textarea
+              name="class_details"
+              value={formData.class_details}
+              onChange={handleChange}
+              placeholder="Add details about this class..."
+              rows={3}
+              className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+            />
+          </div>
+
+          {/* Status Toggle */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              Status
+            </label>
+            <button
+              type="button"
+              onClick={toggleStatus}
+              className="flex items-center gap-3"
+            >
+              <span
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${
+                  formData.status === 1 ? 'bg-blue-600' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                    formData.status === 1 ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </span>
+              <span className="text-sm text-gray-700">
+                {formData.status === 1 ? 'Active' : 'Inactive'}
+              </span>
+            </button>
+          </div>
+
+          {/* Generic error (not name/order/exists) */}
+          {fieldError &&
+            fieldError !== 'Class name is required' &&
+            !fieldError.includes('order') &&
+            !fieldError.toLowerCase().includes('exists') && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> {fieldError}
+              </p>
+            )}
+
+          {/* Buttons */}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 py-2.5 bg-gray-100 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-200 transition disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Saving...
+                </>
+              ) : (
+                'Save Changes'
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )
 }
 
-export default ClassDetailsModal
+export default EditClassModal
