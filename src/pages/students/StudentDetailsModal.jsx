@@ -4,7 +4,7 @@ import {
   Edit, Trash2, X, Download, User, DollarSign,
   FileText, Users, Copy, CheckCircle, Phone, MapPin,
   Shield, Briefcase, Building2, Heart, IdCard,
-  Calendar, GraduationCap, Hash, BookOpen, Layers
+  Calendar, GraduationCap, BookOpen, Layers
 } from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
 import ImageModal from '../../components/ImageModal'
@@ -46,7 +46,6 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
   const [selectedImage, setSelectedImage]   = useState('')
   const [selectedImageTitle, setSelectedImageTitle] = useState('')
 
-  // Fetch full detail + fee heads in parallel
   useEffect(() => {
     if (!listStudent?.student_id) { setExtraLoading(false); return }
     const run = async () => {
@@ -66,7 +65,6 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
     run()
   }, [listStudent?.student_id])
 
-  // Resolved fee heads list
   const feeHeadsList = (() => {
     const ids = parseFeeHeadIds(student?.selected_fee_heads)
     return ids.map(id => {
@@ -97,7 +95,6 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
 
   const classSection = [student?.class_name, student?.section_name].filter(Boolean).join(' — ')
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <>
       <div className="bg-white rounded-2xl overflow-hidden w-full">
@@ -133,7 +130,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
         {/* BODY */}
         <div className="px-6 py-5 space-y-6 max-h-[75vh] overflow-y-auto">
 
-          {/* ── PROFILE BANNER ─────────────────────────────────────────────── */}
+          {/* ── PROFILE BANNER ── */}
           <div className="flex items-start gap-5 pb-5 border-b border-gray-100">
 
             {/* Photo + Status */}
@@ -164,9 +161,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
               </div>
             </div>
 
-            {/* Core Info Grid
-                ❌ student_id — REMOVED
-                ✅ roll_no   — ALWAYS shown (even if null → "Not assigned") */}
+            {/* Core Info Grid */}
             <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
 
               <InfoCell label="Full Name" value={student?.name} />
@@ -206,11 +201,11 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
 
               <InfoCell label="Class & Section" value={classSection || null} />
 
-              {/* ✅ Roll Number — always visible */}
+              {/* ── Roll Number — no # icon, plain clean display ── */}
               <InfoCell label="Roll Number">
                 {student?.roll_no
-                  ? <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
-                      <Hash className="w-3.5 h-3.5 text-gray-400" /> {student.roll_no}
+                  ? <span className="text-sm font-bold text-gray-900">
+                      {student.roll_no}
                     </span>
                   : <span className="text-sm text-gray-400 italic">Not assigned</span>
                 }
@@ -219,7 +214,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
             </div>
           </div>
 
-          {/* ── PERSONAL DETAILS ───────────────────────────────────────────── */}
+          {/* ── PERSONAL DETAILS ── */}
           <div>
             <SectionTitle icon={User} label="Personal Details" color="blue" />
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
@@ -269,6 +264,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                   </span>
                 </InfoCell>
               )}
+              {/* Section — show only section_name (no display_name) */}
               {student?.section_name && (
                 <InfoCell label="Section">
                   <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
@@ -308,7 +304,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
             )}
           </div>
 
-          {/* ── IDENTITY ───────────────────────────────────────────────────── */}
+          {/* ── IDENTITY ── */}
           {student?.aadhar_number && (
             <div>
               <SectionTitle icon={Shield} label="Identity" color="indigo" />
@@ -323,7 +319,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
             </div>
           )}
 
-          {/* ── ADDRESS ────────────────────────────────────────────────────── */}
+          {/* ── ADDRESS ── */}
           {(student?.address || student?.city || student?.state || student?.pincode) && (
             <div>
               <SectionTitle icon={MapPin} label="Address" color="orange" />
@@ -349,23 +345,19 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                 )}
                 {student?.pincode && (
                   <InfoCell label="Pincode">
-                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
-                      <Hash className="w-3.5 h-3.5 text-gray-400" /> {student.pincode}
-                    </span>
+                    <span className="text-sm font-semibold text-gray-900">{student.pincode}</span>
                   </InfoCell>
                 )}
               </div>
             </div>
           )}
 
-          {/* ── FAMILY & CONTACT ───────────────────────────────────────────── */}
+          {/* ── FAMILY & CONTACT ── */}
           {(student?.father_name || student?.mother_name || student?.guardian_name || student?.emergency_contact_number) && (
             <div>
               <SectionTitle icon={Users} label="Family & Contact" color="green" />
               <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
-                {student?.father_name && (
-                  <InfoCell label="Father's Name" value={student.father_name} />
-                )}
+                {student?.father_name && <InfoCell label="Father's Name" value={student.father_name} />}
                 {student?.father_mobile && (
                   <InfoCell label="Father's Mobile">
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
@@ -380,9 +372,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                     </span>
                   </InfoCell>
                 )}
-                {student?.mother_name && (
-                  <InfoCell label="Mother's Name" value={student.mother_name} />
-                )}
+                {student?.mother_name && <InfoCell label="Mother's Name" value={student.mother_name} />}
                 {student?.mother_mobile && (
                   <InfoCell label="Mother's Mobile">
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
@@ -397,9 +387,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                     </span>
                   </InfoCell>
                 )}
-                {student?.guardian_name && (
-                  <InfoCell label="Guardian Name" value={student.guardian_name} />
-                )}
+                {student?.guardian_name && <InfoCell label="Guardian Name" value={student.guardian_name} />}
                 {student?.emergency_contact_number && (
                   <InfoCell label="Emergency Contact">
                     <span className="inline-flex items-center gap-1 text-sm font-bold text-red-600">
@@ -411,7 +399,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
             </div>
           )}
 
-          {/* ── FEE HEADS ──────────────────────────────────────────────────── */}
+          {/* ── FEE HEADS ── */}
           {feeHeadsList.length > 0 && (
             <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
               <p className="text-xs font-bold text-yellow-700 uppercase tracking-wide mb-2">
@@ -429,7 +417,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
             </div>
           )}
 
-          {/* ── DOCUMENTS & PHOTOS ─────────────────────────────────────────── */}
+          {/* ── DOCUMENTS & PHOTOS ── */}
           <div>
             <SectionTitle icon={FileText} label="Documents & Photos" color="purple" />
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -439,8 +427,6 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
               <DocCard label="Aadhaar Card"   url={student?.aadhar_card_url}   onView={openImage} title="Aadhaar Card" isAadhar />
             </div>
           </div>
-
-          {/* ❌ SYSTEM INFO — COMPLETELY REMOVED (school_id, user_id, created_at, updated_at) */}
 
         </div>
 

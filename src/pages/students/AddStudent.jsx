@@ -6,13 +6,21 @@ import {
   IdCard, X, Shield, Briefcase, AlertCircle, Building2, Home
 } from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
+import { SectionDropdown } from './SectionDropdown'
 
+/**
+ * Section field contract:
+ *  formData.section_id  → sent to backend  ✅  e.g. 134
+ *  display_name         → only in UI       ✅  never in formData
+ */
 const AddStudent = () => {
   const navigate = useNavigate()
 
   const [formData, setFormData] = useState({
     name: '', user_email: '', password: '', roll_no: '', gender: '',
-    class_id: '', section_id: '', academic_year: '', dob: '', mobile_number: '',
+    class_id: '',
+    section_id: '',    // ← backend requires this; display_name is NEVER stored here
+    academic_year: '', dob: '', mobile_number: '',
     religion: '', blood_group: '', category: '', passed_out: '0', transfer: '0',
     father_name: '', father_mobile: '', father_occupation: '',
     mother_name: '', mother_mobile: '', mother_occupation: '',
@@ -58,16 +66,28 @@ const AddStudent = () => {
   useEffect(() => {
     const run = async () => {
       if (!formData.class_id) { setSections([]); return }
-      try { setLoadingSections(true); const d = await studentService.getSectionsByClassId(formData.class_id); setSections(Array.isArray(d) ? d : []) }
-      catch (e) { console.error(e); setSections([]) }
+      try {
+        setLoadingSections(true)
+        const d = await studentService.getSectionsByClassId(formData.class_id)
+        setSections(Array.isArray(d) ? d : [])
+      } catch (e) { console.error(e); setSections([]) }
       finally { setLoadingSections(false) }
     }; run()
   }, [formData.class_id])
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    if (name === 'class_id') setFormData(prev => ({ ...prev, class_id: value, section_id: '' }))
-    else setFormData(prev => ({ ...prev, [name]: value }))
+    if (name === 'class_id') {
+      setFormData(prev => ({ ...prev, class_id: value, section_id: '' }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
+  }
+
+  // Called by SectionDropdown
+  // section_id → goes to backend | section_name → ignored here (UI only)
+  const handleSectionChange = (sectionId, _sectionName) => {
+    setFormData(prev => ({ ...prev, section_id: sectionId }))
   }
 
   const handleFeeHeadToggle = (feeHeadId) => {
@@ -108,6 +128,7 @@ const AddStudent = () => {
       student_photo: null, aadhar_card: null, father_photo: null, mother_photo: null,
     })
     setFilePreviews({ student_photo: null, aadhar_card: null, father_photo: null, mother_photo: null })
+    setSections([])
   }
 
   const handleSubmit = async (e) => {
@@ -115,24 +136,20 @@ const AddStudent = () => {
     setLoading(true)
     setError(null)
     try {
+      // Payload: section_id goes to backend. display_name is not in formData so it never reaches backend.
       const submitData = {
         ...formData,
         selected_fee_heads: JSON.stringify(formData.selected_fee_heads),
       }
-
       const response = await studentService.addStudent(submitData)
       console.log('✅ addStudent response:', response)
-
       const studentName = formData.name
       resetForm()
       setSuccessInfo({ name: studentName })
-
-      // ✅ 2.5 sec baad list pe navigate — fresh fetch hogi
       setTimeout(() => {
         setSuccessInfo(null)
         navigate('/admin/students', { state: { refresh: true } })
       }, 2500)
-
     } catch (err) {
       console.error('Error adding student:', err)
       setError(err?.message || 'Failed to add student. Please try again.')
@@ -144,7 +161,6 @@ const AddStudent = () => {
   const inp = "w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 placeholder-gray-400 text-sm"
   const sel = "w-full pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 text-sm appearance-none cursor-pointer"
   const ico = "absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
-
   const ChevDown = () => (
     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
       <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -173,7 +189,6 @@ const AddStudent = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-3 sm:px-4 lg:px-6">
 
-      {/* Error Toast */}
       {error && (
         <div className="fixed top-5 right-5 z-50 max-w-sm w-full">
           <div className="bg-white border border-red-200 shadow-2xl rounded-xl overflow-hidden">
@@ -189,7 +204,6 @@ const AddStudent = () => {
         </div>
       )}
 
-      {/* Success Toast */}
       {successInfo && (
         <div className="fixed top-5 right-5 z-50 max-w-sm w-full">
           <div className="bg-white border border-green-200 shadow-2xl rounded-xl overflow-hidden">
@@ -201,9 +215,7 @@ const AddStudent = () => {
               <button onClick={() => setSuccessInfo(null)} className="text-white hover:text-green-200"><X className="w-4 h-4" /></button>
             </div>
             <div className="p-4">
-              <p className="text-gray-700 text-sm mb-2">
-                <span className="font-bold">{successInfo.name}</span> registered successfully.
-              </p>
+              <p className="text-gray-700 text-sm mb-2"><span className="font-bold">{successInfo.name}</span> registered successfully.</p>
               <p className="text-xs text-gray-400 flex items-center gap-1.5">
                 <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -217,8 +229,6 @@ const AddStudent = () => {
       )}
 
       <div className="max-w-5xl mx-auto">
-
-        {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-xs text-gray-400 mb-3">
             <span className="hover:text-blue-500 cursor-pointer" onClick={() => navigate('/admin/dashboard')}>Dashboard</span>
@@ -228,8 +238,7 @@ const AddStudent = () => {
             <span className="text-gray-600 font-medium">Enroll New Student</span>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/admin/students')}
-              className="p-2 bg-white hover:bg-gray-100 rounded-lg transition border border-gray-200 group">
+            <button onClick={() => navigate('/admin/students')} className="p-2 bg-white hover:bg-gray-100 rounded-lg transition border border-gray-200 group">
               <ArrowLeft className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
             </button>
             <div>
@@ -241,25 +250,21 @@ const AddStudent = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* ── 1. Basic Information ────────────────────────────────────────── */}
+          {/* ── Basic Information ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <SectionHeader icon={User} label="Basic Information" color="blue" />
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Full Name <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={inp} required placeholder="Student's full name" />
-                </div>
+                <div className="relative"><div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="name" value={formData.name} onChange={handleChange} className={inp} required placeholder="Student's full name" /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Email Address <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><Mail className="h-4 w-4 text-gray-400" /></div>
-                  <input type="email" name="user_email" value={formData.user_email} onChange={handleChange} className={inp} required placeholder="student@example.com" />
-                </div>
+                <div className="relative"><div className={ico}><Mail className="h-4 w-4 text-gray-400" /></div>
+                  <input type="email" name="user_email" value={formData.user_email} onChange={handleChange} className={inp} required placeholder="student@example.com" /></div>
               </div>
 
               <div>
@@ -269,8 +274,7 @@ const AddStudent = () => {
                   <input type={showPassword ? 'text' : 'password'} name="password" value={formData.password} onChange={handleChange}
                     className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 placeholder-gray-400 text-sm"
                     required placeholder="Enter password" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
@@ -278,36 +282,29 @@ const AddStudent = () => {
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Roll Number</label>
-                <div className="relative">
-                  <div className={ico}><Hash className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="roll_no" value={formData.roll_no} onChange={handleChange} className={inp} placeholder="e.g., 01" />
-                </div>
+                <div className="relative"><div className={ico}><Hash className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="roll_no" value={formData.roll_no} onChange={handleChange} className={inp} placeholder="e.g., 01" /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Academic Year <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><GraduationCap className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="academic_year" value={formData.academic_year} onChange={handleChange} className={inp} required placeholder="2025-26" />
-                </div>
+                <div className="relative"><div className={ico}><GraduationCap className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="academic_year" value={formData.academic_year} onChange={handleChange} className={inp} required placeholder="2025-26" /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date of Birth <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><Calendar className="h-4 w-4 text-gray-400" /></div>
-                  <input type="date" name="dob" value={formData.dob} onChange={handleChange} className={inp} required />
-                </div>
+                <div className="relative"><div className={ico}><Calendar className="h-4 w-4 text-gray-400" /></div>
+                  <input type="date" name="dob" value={formData.dob} onChange={handleChange} className={inp} required /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mobile Number <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
-                  <input type="tel" name="mobile_number" value={formData.mobile_number} onChange={handleChange} className={inp} required placeholder="Enter mobile number" />
-                </div>
+                <div className="relative"><div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
+                  <input type="tel" name="mobile_number" value={formData.mobile_number} onChange={handleChange} className={inp} required placeholder="Enter mobile number" /></div>
               </div>
 
+              {/* Class */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Class <span className="text-red-400">*</span></label>
                 <div className="relative">
@@ -320,50 +317,50 @@ const AddStudent = () => {
                 </div>
               </div>
 
+              {/* ── Section Dropdown ───────────────────────────────────────────
+                  SectionDropdown shows display_name to user.
+                  On select → calls handleSectionChange(section_id, section_name)
+                  Only section_id is stored in formData & sent to backend.
+                  display_name is NEVER stored in formData.
+                  Fixed positioning prevents dropdown from being clipped by grid.
+              ── */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Section <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><Layers className="h-4 w-4 text-gray-400" /></div>
-                  <select name="section_id" value={formData.section_id} onChange={handleChange}
-                    className={`${sel} disabled:opacity-60 disabled:cursor-not-allowed`}
-                    required disabled={!formData.class_id || loadingSections}>
-                    <option value="">{!formData.class_id ? 'Select class first' : loadingSections ? 'Loading...' : 'Select Section'}</option>
-                    {sections.map(s => <option key={s.section_id} value={s.section_id}>{s.section_name || `Section ${s.section_id}`}</option>)}
-                  </select>
-                  <ChevDown />
-                </div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                  Section <span className="text-red-400">*</span>
+                </label>
+                <SectionDropdown
+                  sections={sections}
+                  value={formData.section_id}
+                  onChange={handleSectionChange}
+                  disabled={!formData.class_id}
+                  loading={loadingSections}
+                  placeholder={!formData.class_id ? 'Select class first' : 'Select Section'}
+                />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Gender <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
+                <div className="relative"><div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
                   <select name="gender" value={formData.gender} onChange={handleChange} className={sel} required>
                     <option value="">Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
-                  </select>
-                  <ChevDown />
-                </div>
+                  </select><ChevDown /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Blood Group</label>
-                <div className="relative">
-                  <div className={ico}><Heart className="h-4 w-4 text-gray-400" /></div>
+                <div className="relative"><div className={ico}><Heart className="h-4 w-4 text-gray-400" /></div>
                   <select name="blood_group" value={formData.blood_group} onChange={handleChange} className={sel}>
                     <option value="">Select Blood Group</option>
                     {['A+','A-','B+','B-','O+','O-','AB+','AB-'].map(bg => <option key={bg} value={bg}>{bg}</option>)}
-                  </select>
-                  <ChevDown />
-                </div>
+                  </select><ChevDown /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Category</label>
-                <div className="relative">
-                  <div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
+                <div className="relative"><div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
                   <select name="category" value={formData.category} onChange={handleChange} className={sel}>
                     <option value="">Select Category</option>
                     <option value="General">General</option>
@@ -371,62 +368,47 @@ const AddStudent = () => {
                     <option value="SC">SC</option>
                     <option value="ST">ST</option>
                     <option value="EWS">EWS</option>
-                  </select>
-                  <ChevDown />
-                </div>
+                  </select><ChevDown /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Religion</label>
-                <div className="relative">
-                  <div className={ico}><Heart className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="religion" value={formData.religion} onChange={handleChange} className={inp} placeholder="e.g., Hindu, Muslim" />
-                </div>
+                <div className="relative"><div className={ico}><Heart className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="religion" value={formData.religion} onChange={handleChange} className={inp} placeholder="e.g., Hindu, Muslim" /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Passed Out</label>
-                <div className="relative">
-                  <div className={ico}><GraduationCap className="h-4 w-4 text-gray-400" /></div>
+                <div className="relative"><div className={ico}><GraduationCap className="h-4 w-4 text-gray-400" /></div>
                   <select name="passed_out" value={formData.passed_out} onChange={handleChange} className={sel}>
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
-                  </select>
-                  <ChevDown />
-                </div>
+                    <option value="0">No</option><option value="1">Yes</option>
+                  </select><ChevDown /></div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Transfer</label>
-                <div className="relative">
-                  <div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
+                <div className="relative"><div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
                   <select name="transfer" value={formData.transfer} onChange={handleChange} className={sel}>
-                    <option value="0">No</option>
-                    <option value="1">Yes</option>
-                  </select>
-                  <ChevDown />
-                </div>
+                    <option value="0">No</option><option value="1">Yes</option>
+                  </select><ChevDown /></div>
               </div>
 
             </div>
           </div>
 
-          {/* ── 2. Identity ─────────────────────────────────────────────────── */}
+          {/* ── Identity ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <SectionHeader icon={Shield} label="Identity Information" color="indigo" subtitle="Aadhaar and ID details" />
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Aadhaar Number</label>
-                <div className="relative">
-                  <div className={ico}><IdCard className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="aadhar_number" value={formData.aadhar_number} onChange={handleChange}
-                    className={inp} placeholder="12-digit Aadhaar number" maxLength={12} />
-                </div>
+                <div className="relative"><div className={ico}><IdCard className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="aadhar_number" value={formData.aadhar_number} onChange={handleChange} className={inp} placeholder="12-digit Aadhaar number" maxLength={12} /></div>
               </div>
             </div>
           </div>
 
-          {/* ── 3. Address ──────────────────────────────────────────────────── */}
+          {/* ── Address ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <SectionHeader icon={Home} label="Address Information" color="orange" />
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -439,103 +421,50 @@ const AddStudent = () => {
                     required placeholder="Enter complete address" />
                 </div>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">City</label>
-                <div className="relative">
-                  <div className={ico}><Building2 className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="city" value={formData.city} onChange={handleChange} className={inp} placeholder="City" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">State</label>
-                <div className="relative">
-                  <div className={ico}><MapPin className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="state" value={formData.state} onChange={handleChange} className={inp} placeholder="State" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Pincode</label>
-                <div className="relative">
-                  <div className={ico}><Hash className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} className={inp} placeholder="6-digit pincode" maxLength={6} />
-                </div>
-              </div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">City</label>
+                <div className="relative"><div className={ico}><Building2 className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="city" value={formData.city} onChange={handleChange} className={inp} placeholder="City" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">State</label>
+                <div className="relative"><div className={ico}><MapPin className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="state" value={formData.state} onChange={handleChange} className={inp} placeholder="State" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Pincode</label>
+                <div className="relative"><div className={ico}><Hash className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="pincode" value={formData.pincode} onChange={handleChange} className={inp} placeholder="6-digit pincode" maxLength={6} /></div></div>
             </div>
           </div>
 
-          {/* ── 4. Family & Contact ──────────────────────────────────────────── */}
+          {/* ── Family & Contact ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <SectionHeader icon={Users} label="Family & Contact Information" color="green" />
             <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Name <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="father_name" value={formData.father_name} onChange={handleChange} className={inp} required placeholder="Father's full name" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Mobile</label>
-                <div className="relative">
-                  <div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
-                  <input type="tel" name="father_mobile" value={formData.father_mobile} onChange={handleChange} className={inp} placeholder="Father's mobile number" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Occupation</label>
-                <div className="relative">
-                  <div className={ico}><Briefcase className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="father_occupation" value={formData.father_occupation} onChange={handleChange} className={inp} placeholder="e.g., Business" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Name <span className="text-red-400">*</span></label>
-                <div className="relative">
-                  <div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="mother_name" value={formData.mother_name} onChange={handleChange} className={inp} required placeholder="Mother's full name" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Mobile</label>
-                <div className="relative">
-                  <div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
-                  <input type="tel" name="mother_mobile" value={formData.mother_mobile} onChange={handleChange} className={inp} placeholder="Mother's mobile number" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Occupation</label>
-                <div className="relative">
-                  <div className={ico}><Briefcase className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="mother_occupation" value={formData.mother_occupation} onChange={handleChange} className={inp} placeholder="e.g., Homemaker" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Guardian Name</label>
-                <div className="relative">
-                  <div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
-                  <input type="text" name="guardian_name" value={formData.guardian_name} onChange={handleChange} className={inp} placeholder="Guardian's full name" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Emergency Contact</label>
-                <div className="relative">
-                  <div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
-                  <input type="tel" name="emergency_contact_number" value={formData.emergency_contact_number} onChange={handleChange} className={inp} placeholder="Emergency contact number" />
-                </div>
-              </div>
-
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Name <span className="text-red-400">*</span></label>
+                <div className="relative"><div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="father_name" value={formData.father_name} onChange={handleChange} className={inp} required placeholder="Father's full name" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Mobile</label>
+                <div className="relative"><div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
+                  <input type="tel" name="father_mobile" value={formData.father_mobile} onChange={handleChange} className={inp} placeholder="Father's mobile number" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Father's Occupation</label>
+                <div className="relative"><div className={ico}><Briefcase className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="father_occupation" value={formData.father_occupation} onChange={handleChange} className={inp} placeholder="e.g., Business" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Name <span className="text-red-400">*</span></label>
+                <div className="relative"><div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="mother_name" value={formData.mother_name} onChange={handleChange} className={inp} required placeholder="Mother's full name" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Mobile</label>
+                <div className="relative"><div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
+                  <input type="tel" name="mother_mobile" value={formData.mother_mobile} onChange={handleChange} className={inp} placeholder="Mother's mobile number" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Mother's Occupation</label>
+                <div className="relative"><div className={ico}><Briefcase className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="mother_occupation" value={formData.mother_occupation} onChange={handleChange} className={inp} placeholder="e.g., Homemaker" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Guardian Name</label>
+                <div className="relative"><div className={ico}><User className="h-4 w-4 text-gray-400" /></div>
+                  <input type="text" name="guardian_name" value={formData.guardian_name} onChange={handleChange} className={inp} placeholder="Guardian's full name" /></div></div>
+              <div><label className="block text-xs font-semibold text-gray-600 mb-1.5">Emergency Contact</label>
+                <div className="relative"><div className={ico}><Phone className="h-4 w-4 text-gray-400" /></div>
+                  <input type="tel" name="emergency_contact_number" value={formData.emergency_contact_number} onChange={handleChange} className={inp} placeholder="Emergency contact number" /></div></div>
             </div>
           </div>
 
-          {/* ── 5. Fee Heads ────────────────────────────────────────────────── */}
+          {/* ── Fee Heads ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2.5">
               <div className="p-1.5 bg-yellow-50 rounded-lg"><DollarSign className="w-4 h-4 text-yellow-600" /></div>
@@ -547,34 +476,32 @@ const AddStudent = () => {
               )}
             </div>
             <div className="p-5">
-              {loadingFeeHeads ? (
-                <p className="text-sm text-gray-400">Loading fee heads...</p>
-              ) : feeHeads.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">No fee heads available</p>
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {feeHeads.map((fh) => {
-                    const isChecked = formData.selected_fee_heads.includes(Number(fh.fee_head_id))
-                    return (
-                      <label key={fh.fee_head_id}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all select-none text-sm font-medium ${
-                          isChecked ? 'border-yellow-400 bg-yellow-50 text-yellow-800' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-yellow-300'
-                        }`}>
-                        <input type="checkbox" className="hidden" checked={isChecked} onChange={() => handleFeeHeadToggle(fh.fee_head_id)} />
-                        <span className={`w-4 h-4 rounded flex items-center justify-center border-2 flex-shrink-0 ${isChecked ? 'bg-yellow-500 border-yellow-500' : 'border-gray-300 bg-white'}`}>
-                          {isChecked && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
-                        </span>
-                        <DollarSign className="w-3.5 h-3.5 text-yellow-600" />
-                        {fh.head_name || `Fee Head #${fh.fee_head_id}`}
-                      </label>
-                    )
-                  })}
-                </div>
-              )}
+              {loadingFeeHeads ? <p className="text-sm text-gray-400">Loading fee heads...</p>
+                : feeHeads.length === 0 ? <p className="text-sm text-gray-400 italic">No fee heads available</p>
+                : (
+                  <div className="flex flex-wrap gap-3">
+                    {feeHeads.map((fh) => {
+                      const isChecked = formData.selected_fee_heads.includes(Number(fh.fee_head_id))
+                      return (
+                        <label key={fh.fee_head_id}
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border-2 cursor-pointer transition-all select-none text-sm font-medium ${
+                            isChecked ? 'border-yellow-400 bg-yellow-50 text-yellow-800' : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-yellow-300'
+                          }`}>
+                          <input type="checkbox" className="hidden" checked={isChecked} onChange={() => handleFeeHeadToggle(fh.fee_head_id)} />
+                          <span className={`w-4 h-4 rounded flex items-center justify-center border-2 flex-shrink-0 ${isChecked ? 'bg-yellow-500 border-yellow-500' : 'border-gray-300 bg-white'}`}>
+                            {isChecked && <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                          </span>
+                          <DollarSign className="w-3.5 h-3.5 text-yellow-600" />
+                          {fh.head_name || `Fee Head #${fh.fee_head_id}`}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
             </div>
           </div>
 
-          {/* ── 6. Documents ────────────────────────────────────────────────── */}
+          {/* ── Documents ── */}
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
             <SectionHeader icon={Upload} label="Documents & Photos" color="purple" subtitle="JPG, PNG or PDF accepted" />
             <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -591,22 +518,16 @@ const AddStudent = () => {
                     <label htmlFor={file.name} className="cursor-pointer flex flex-col items-center justify-center h-full p-3">
                       {filePreviews[file.name] ? (
                         typeof filePreviews[file.name] === 'string' && filePreviews[file.name].startsWith('data:') ? (
-                          <>
-                            <img src={filePreviews[file.name]} alt="Preview" className="w-16 h-16 object-cover rounded-lg mb-2 shadow border border-blue-200" />
-                            <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded-full">✓ Uploaded</span>
-                          </>
+                          <><img src={filePreviews[file.name]} alt="Preview" className="w-16 h-16 object-cover rounded-lg mb-2 shadow border border-blue-200" />
+                            <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-0.5 rounded-full">✓ Uploaded</span></>
                         ) : (
-                          <>
-                            <div className="bg-green-100 rounded-full p-2 mb-2"><CheckCircle className="w-5 h-5 text-green-600" /></div>
-                            <span className="text-xs text-green-600 font-semibold text-center break-all">{filePreviews[file.name]}</span>
-                          </>
+                          <><div className="bg-green-100 rounded-full p-2 mb-2"><CheckCircle className="w-5 h-5 text-green-600" /></div>
+                            <span className="text-xs text-green-600 font-semibold text-center break-all">{filePreviews[file.name]}</span></>
                         )
                       ) : (
-                        <>
-                          <div className="bg-blue-100 rounded-full p-3 mb-2"><Upload className="w-5 h-5 text-blue-500" /></div>
+                        <><div className="bg-blue-100 rounded-full p-3 mb-2"><Upload className="w-5 h-5 text-blue-500" /></div>
                           <span className="text-xs text-gray-600 font-medium text-center">Click to upload</span>
-                          <span className="text-xs text-gray-400 text-center mt-0.5">JPG, PNG{file.accept.includes('pdf') ? ', PDF' : ''}</span>
-                        </>
+                          <span className="text-xs text-gray-400 text-center mt-0.5">JPG, PNG{file.accept.includes('pdf') ? ', PDF' : ''}</span></>
                       )}
                     </label>
                   </div>
@@ -624,13 +545,10 @@ const AddStudent = () => {
             <button type="submit" disabled={loading}
               className={`px-6 py-2.5 bg-blue-600 text-white rounded-lg font-medium text-sm flex items-center justify-center gap-2 order-1 sm:order-2 shadow-sm hover:bg-blue-700 transition ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}>
               {loading ? (
-                <>
-                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <><svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Adding...</span>
-                </>
+                  </svg><span>Adding...</span></>
               ) : (
                 <><CheckCircle className="w-4 h-4" /><span>Add Student</span></>
               )}
