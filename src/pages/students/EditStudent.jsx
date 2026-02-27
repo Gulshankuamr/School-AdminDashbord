@@ -6,7 +6,7 @@ import {
   IdCard, CheckCircle, X, Shield, Briefcase, Building2, Home, AlertCircle
 } from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
-import { SectionDropdown } from './SectionDropdown'
+import { SectionDropdown } from './Sectiondropdown'
 
 /**
  * Section field contract:
