@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Upload, CheckCircle, User, Mail, Lock, Users, BookOpen, Layers,
   Phone, MapPin, Calendar, Heart, GraduationCap, Hash, DollarSign, Eye, EyeOff,
-  IdCard, X, Shield, Briefcase, AlertCircle, Building2, Home
+  IdCard, X, Shield, Briefcase, AlertCircle, Building2, Home, ChevronDown,
+  Search, UserCheck
 } from 'lucide-react'
 import { studentService } from '../../services/studentService/studentService'
 import { SectionDropdown } from './Sectiondropdown'
@@ -19,7 +20,7 @@ const AddStudent = () => {
   const [formData, setFormData] = useState({
     name: '', user_email: '', password: '', roll_no: '', gender: '',
     class_id: '',
-    section_id: '',    // ← backend requires this; display_name is NEVER stored here
+    section_id: '',
     academic_year: '', dob: '', mobile_number: '',
     religion: '', blood_group: '', category: '', passed_out: '0', transfer: '0',
     father_name: '', father_mobile: '', father_occupation: '',
@@ -35,10 +36,17 @@ const AddStudent = () => {
     student_photo: null, aadhar_card: null, father_photo: null, mother_photo: null,
   })
 
-  const [successInfo, setSuccessInfo]   = useState(null)
-  const [loading, setLoading]           = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [error, setError]               = useState(null)
+  const [successInfo, setSuccessInfo]         = useState(null)
+  const [loading, setLoading]                 = useState(false)
+  const [showPassword, setShowPassword]       = useState(false)
+  const [error, setError]                     = useState(null)
+
+  // Students list above form
+  const [students, setStudents]               = useState([])
+  const [showStudents, setShowStudents]       = useState(false)
+  const [loadingStudents, setLoadingStudents] = useState(false)
+  const [studentSearch, setStudentSearch]     = useState('')
+  const studentsRef                           = useRef(null)
 
   const [classes, setClasses]                 = useState([])
   const [sections, setSections]               = useState([])
@@ -75,6 +83,30 @@ const AddStudent = () => {
     }; run()
   }, [formData.class_id])
 
+  // ── Fetch students list ──────────────────────────────────────────────────
+  const fetchStudents = async () => {
+    try {
+      setLoadingStudents(true)
+      const d = await studentService.getAllStudents()
+      setStudents(Array.isArray(d) ? d : [])
+    } catch (e) {
+      console.error(e)
+      setStudents([])
+    } finally {
+      setLoadingStudents(false)
+    }
+  }
+
+  const handleToggleStudents = async () => {
+    if (!showStudents && students.length === 0) {
+      await fetchStudents()
+    }
+    setShowStudents(prev => !prev)
+    if (!showStudents) {
+      setTimeout(() => studentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
+    }
+  }
+
   const handleChange = (e) => {
     const { name, value } = e.target
     if (name === 'class_id') {
@@ -84,8 +116,6 @@ const AddStudent = () => {
     }
   }
 
-  // Called by SectionDropdown
-  // section_id → goes to backend | section_name → ignored here (UI only)
   const handleSectionChange = (sectionId, _sectionName) => {
     setFormData(prev => ({ ...prev, section_id: sectionId }))
   }
@@ -136,7 +166,6 @@ const AddStudent = () => {
     setLoading(true)
     setError(null)
     try {
-      // Payload: section_id goes to backend. display_name is not in formData so it never reaches backend.
       const submitData = {
         ...formData,
         selected_fee_heads: JSON.stringify(formData.selected_fee_heads),
@@ -146,10 +175,15 @@ const AddStudent = () => {
       const studentName = formData.name
       resetForm()
       setSuccessInfo({ name: studentName })
-      setTimeout(() => {
-        setSuccessInfo(null)
-        navigate('/admin/students', { state: { refresh: true } })
-      }, 2500)
+
+      // ── AUTO DISMISS after 1000ms ──
+      setTimeout(() => setSuccessInfo(null), 1000)
+
+      // Refresh students list if it's open / was loaded before
+      fetchStudents()
+      setShowStudents(true)
+      setTimeout(() => studentsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200)
+
     } catch (err) {
       console.error('Error adding student:', err)
       setError(err?.message || 'Failed to add student. Please try again.')
@@ -157,6 +191,13 @@ const AddStudent = () => {
       setLoading(false)
     }
   }
+
+  const filteredStudents = students.filter(s =>
+    !studentSearch ||
+    s.name?.toLowerCase().includes(studentSearch.toLowerCase()) ||
+    s.roll_no?.toString().includes(studentSearch) ||
+    s.user_email?.toLowerCase().includes(studentSearch.toLowerCase())
+  )
 
   const inp = "w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 placeholder-gray-400 text-sm"
   const sel = "w-full pl-10 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white outline-none transition-all text-gray-900 text-sm appearance-none cursor-pointer"
@@ -189,40 +230,42 @@ const AddStudent = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-6 px-3 sm:px-4 lg:px-6">
 
+      {/* Error Toast */}
       {error && (
-        <div className="fixed top-5 right-5 z-50 max-w-sm w-full">
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full animate-slideIn">
           <div className="bg-white border border-red-200 shadow-2xl rounded-xl overflow-hidden">
             <div className="bg-red-500 px-4 py-2.5 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-white" />
                 <span className="text-white font-semibold text-sm">Error</span>
               </div>
-              <button onClick={() => setError(null)} className="text-white hover:text-red-200"><X className="w-4 h-4" /></button>
+              <button onClick={() => setError(null)} className="text-white hover:text-red-200">
+                <X className="w-4 h-4" />
+              </button>
             </div>
-            <div className="p-4"><p className="text-gray-700 text-sm">{error}</p></div>
+            <div className="p-4">
+              <p className="text-gray-700 text-sm">{error}</p>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Success Toast — auto-dismisses in 1s */}
       {successInfo && (
-        <div className="fixed top-5 right-5 z-50 max-w-sm w-full">
+        <div className="fixed top-5 right-5 z-50 max-w-sm w-full animate-slideIn">
           <div className="bg-white border border-green-200 shadow-2xl rounded-xl overflow-hidden">
-            <div className="bg-green-500 px-4 py-2.5 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-white" />
-                <span className="text-white font-semibold text-sm">Student Enrolled!</span>
-              </div>
-              <button onClick={() => setSuccessInfo(null)} className="text-white hover:text-green-200"><X className="w-4 h-4" /></button>
+            <div className="bg-green-500 px-4 py-2.5 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-white" />
+              <span className="text-white font-semibold text-sm">Student Added!</span>
             </div>
             <div className="p-4">
-              <p className="text-gray-700 text-sm mb-2"><span className="font-bold">{successInfo.name}</span> registered successfully.</p>
-              <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <svg className="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Student list pe redirect ho raha hai...
+              <p className="text-gray-700 text-sm">
+                <span className="font-bold">{successInfo.name}</span> enrolled successfully.
               </p>
+              {/* Progress bar showing 1s auto-dismiss */}
+              <div className="mt-2 h-1 bg-green-100 rounded-full overflow-hidden">
+                <div className="h-full bg-green-400 rounded-full animate-shrink" />
+              </div>
             </div>
           </div>
         </div>
@@ -241,12 +284,110 @@ const AddStudent = () => {
             <button onClick={() => navigate('/admin/students')} className="p-2 bg-white hover:bg-gray-100 rounded-lg transition border border-gray-200 group">
               <ArrowLeft className="w-4 h-4 text-gray-500 group-hover:text-blue-600" />
             </button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">Enroll New Student</h1>
               <p className="text-gray-500 text-sm">Fill in details to register a new student</p>
             </div>
+            {/* View Students Toggle Button */}
+            <button
+              type="button"
+              onClick={handleToggleStudents}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all ${
+                showStudents
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-blue-400 hover:text-blue-600'
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>All Students</span>
+              {students.length > 0 && (
+                <span className={`text-xs font-bold px-1.5 py-0.5 rounded-full ${showStudents ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                  {students.length}
+                </span>
+              )}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showStudents ? 'rotate-180' : ''}`} />
+            </button>
           </div>
         </div>
+
+        {/* ── Students List Panel (above form) ─────────────────────────── */}
+        {showStudents && (
+          <div ref={studentsRef} className="mb-5 bg-white rounded-xl border border-blue-100 shadow-sm overflow-hidden animate-fadeIn">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+              <div className="p-1.5 bg-blue-50 rounded-lg"><UserCheck className="w-4 h-4 text-blue-600" /></div>
+              <div className="flex-1">
+                <h2 className="font-semibold text-gray-800 text-base">All Students</h2>
+                <p className="text-xs text-gray-400">{students.length} total students enrolled</p>
+              </div>
+              {/* Search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={studentSearch}
+                  onChange={e => setStudentSearch(e.target.value)}
+                  className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 outline-none bg-gray-50 w-44"
+                />
+              </div>
+              <button onClick={() => setShowStudents(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {loadingStudents ? (
+              <div className="flex items-center justify-center py-10 gap-2 text-gray-400">
+                <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-sm">Loading students...</span>
+              </div>
+            ) : filteredStudents.length === 0 ? (
+              <div className="py-10 text-center text-gray-400 text-sm">
+                {studentSearch ? 'No students match your search.' : 'No students enrolled yet.'}
+              </div>
+            ) : (
+              <div className="overflow-x-auto max-h-72 overflow-y-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 sticky top-0 z-10">
+                    <tr>
+                      {['#', 'Name', 'Roll No', 'Email', 'Class', 'Gender', 'Mobile'].map(h => (
+                        <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold text-gray-500 border-b border-gray-100">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredStudents.map((s, i) => (
+                      <tr key={s.student_id || i} className="border-b border-gray-50 hover:bg-blue-50/40 transition-colors">
+                        <td className="px-4 py-2.5 text-gray-400 text-xs">{i + 1}</td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-blue-600 font-bold text-xs">{s.name?.charAt(0)?.toUpperCase() || '?'}</span>
+                            </div>
+                            <span className="font-medium text-gray-800">{s.name || '—'}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-500">{s.roll_no || '—'}</td>
+                        <td className="px-4 py-2.5 text-gray-500 max-w-[160px] truncate">{s.user_email || '—'}</td>
+                        <td className="px-4 py-2.5 text-gray-500">{s.class_name || s.class_id || '—'}</td>
+                        <td className="px-4 py-2.5">
+                          {s.gender ? (
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.gender === 'Male' ? 'bg-blue-50 text-blue-600' : s.gender === 'Female' ? 'bg-pink-50 text-pink-600' : 'bg-gray-100 text-gray-500'}`}>
+                              {s.gender}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-4 py-2.5 text-gray-500">{s.mobile_number || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5">
 
@@ -317,13 +458,6 @@ const AddStudent = () => {
                 </div>
               </div>
 
-              {/* ── Section Dropdown ───────────────────────────────────────────
-                  SectionDropdown shows display_name to user.
-                  On select → calls handleSectionChange(section_id, section_name)
-                  Only section_id is stored in formData & sent to backend.
-                  display_name is NEVER stored in formData.
-                  Fixed positioning prevents dropdown from being clipped by grid.
-              ── */}
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">
                   Section <span className="text-red-400">*</span>
@@ -375,22 +509,6 @@ const AddStudent = () => {
                 <label className="block text-xs font-semibold text-gray-600 mb-1.5">Religion</label>
                 <div className="relative"><div className={ico}><Heart className="h-4 w-4 text-gray-400" /></div>
                   <input type="text" name="religion" value={formData.religion} onChange={handleChange} className={inp} placeholder="e.g., Hindu, Muslim" /></div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Passed Out</label>
-                <div className="relative"><div className={ico}><GraduationCap className="h-4 w-4 text-gray-400" /></div>
-                  <select name="passed_out" value={formData.passed_out} onChange={handleChange} className={sel}>
-                    <option value="0">No</option><option value="1">Yes</option>
-                  </select><ChevDown /></div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Transfer</label>
-                <div className="relative"><div className={ico}><Users className="h-4 w-4 text-gray-400" /></div>
-                  <select name="transfer" value={formData.transfer} onChange={handleChange} className={sel}>
-                    <option value="0">No</option><option value="1">Yes</option>
-                  </select><ChevDown /></div>
               </div>
 
             </div>
@@ -557,6 +675,25 @@ const AddStudent = () => {
 
         </form>
       </div>
+
+      <style jsx>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-8px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        /* Progress bar shrinks from full width to 0 in exactly 1s */
+        @keyframes shrink {
+          from { width: 100%; }
+          to   { width: 0%;   }
+        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-fadeIn  { animation: fadeIn  0.25s ease-out; }
+        .animate-shrink  { animation: shrink 1s linear forwards; }
+      `}</style>
     </div>
   )
 }

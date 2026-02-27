@@ -91,17 +91,17 @@ export const sidebarMenuItems = [
       },
 
       // ── Homework Module ──────────────────────────
-      {
-        id: 'homework',
-        label: 'Homework',
-        icon: BookOpen,
-        highlight: true,
-        hasDropdown: true,
-        subItems: [
-          { id: 'create-homework', label: 'Create Homework', path: '/admin/homework/create' },
-          { id: 'homework-list',   label: 'View Homework',   path: '/admin/homework' },
-        ],
-      },
+      // {
+      //   id: 'homework',
+      //   label: 'Homework',
+      //   icon: BookOpen,
+      //   highlight: true,
+      //   hasDropdown: true,
+      //   subItems: [
+      //     { id: 'create-homework', label: 'Create Homework', path: '/admin/homework/create' },
+      //     { id: 'homework-list',   label: 'View Homework',   path: '/admin/homework' },
+      //   ],
+      // },
 
       // ── Exams Module ─────────────────────────────
       {

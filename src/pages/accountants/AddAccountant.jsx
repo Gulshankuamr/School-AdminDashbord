@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, Upload, CheckCircle, AlertCircle, X,
-  User, Mail, Lock, Phone, MapPin, Award, Users, Briefcase
+  User, Mail, Lock, Phone, MapPin, Award, Users, Briefcase, FileText
 } from 'lucide-react'
 import { accountantService } from '../../services/accountendService/accountantService'
 
@@ -119,7 +119,7 @@ const AddAccountant = () => {
               </button>
             </div>
             <div className="p-4">
-              <p className="text-gray-700">{error}</p>
+              <p className="text-gray-800">{error}</p>
             </div>
           </div>
         </div>
@@ -134,10 +134,10 @@ const AddAccountant = () => {
               <span className="text-white font-semibold">Accountant Added!</span>
             </div>
             <div className="p-4">
-              <p className="text-gray-700">
+              <p className="text-gray-800">
                 <span className="font-bold">{successInfo.name}</span> has been registered successfully.
               </p>
-              <p className="text-xs text-gray-400 mt-1">Redirecting to list...</p>
+              {/* <p className="text-sm text-gray-500 mt-1">Redirecting to list...</p> */}
             </div>
           </div>
         </div>
@@ -147,12 +147,12 @@ const AddAccountant = () => {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+          <div className="flex items-center gap-2 text-sm text-gray-600 mb-3">
             <span className="hover:text-purple-600 cursor-pointer" onClick={() => navigate('/admin/accountants')}>
               Accountants
             </span>
             <span>/</span>
-            <span className="text-gray-700 font-medium">Add New</span>
+            <span className="text-gray-800 font-medium">Add New</span>
           </div>
           
           <div className="flex items-center gap-4">
@@ -162,7 +162,7 @@ const AddAccountant = () => {
             </button>
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Add New Accountant</h1>
-              <p className="text-gray-500 mt-1">Fill in the details to register a new accountant</p>
+              <p className="text-gray-600 mt-1">Fill in the details to register a new accountant</p>
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ const AddAccountant = () => {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   required
                   placeholder="Enter full name"
                 />
@@ -204,7 +204,7 @@ const AddAccountant = () => {
                   name="user_email"
                   value={formData.user_email}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   required
                   placeholder="accountant@example.com"
                 />
@@ -220,14 +220,14 @@ const AddAccountant = () => {
                     name="password"
                     value={formData.password}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                     required
                     placeholder="Enter password"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
@@ -243,7 +243,7 @@ const AddAccountant = () => {
                   name="qualification"
                   value={formData.qualification}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   required
                   placeholder="e.g., CA, B.Com, MCA"
                 />
@@ -258,7 +258,7 @@ const AddAccountant = () => {
                   name="mobile_number"
                   value={formData.mobile_number}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   placeholder="Enter mobile number"
                 />
               </div>
@@ -272,7 +272,7 @@ const AddAccountant = () => {
                   name="experience_years"
                   value={formData.experience_years}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   placeholder="e.g., 2"
                   min="0"
                   max="50"
@@ -298,7 +298,7 @@ const AddAccountant = () => {
                 value={formData.address}
                 onChange={handleChange}
                 rows={3}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none resize-none"
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400 resize-none"
                 placeholder="Enter complete address"
               />
             </div>
@@ -321,7 +321,7 @@ const AddAccountant = () => {
                   name="father_name"
                   value={formData.father_name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   placeholder="Father's full name"
                 />
               </div>
@@ -333,7 +333,7 @@ const AddAccountant = () => {
                   name="mother_name"
                   value={formData.mother_name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-gray-900 placeholder-gray-400"
                   placeholder="Mother's full name"
                 />
               </div>
@@ -347,7 +347,7 @@ const AddAccountant = () => {
                 <Upload className="w-5 h-5 text-blue-600" />
                 <h2 className="text-lg font-semibold text-gray-800">Documents</h2>
               </div>
-              <p className="text-xs text-gray-500 mt-1">JPG, PNG or PDF accepted (Max 5MB)</p>
+              <p className="text-sm text-gray-500 mt-1">JPG, PNG or PDF accepted (Max 5MB)</p>
             </div>
             
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -378,7 +378,7 @@ const AddAccountant = () => {
                     <label className="cursor-pointer flex flex-col items-center">
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
                       <span className="text-sm text-gray-600">Click to upload photo</span>
-                      <span className="text-xs text-gray-400 mt-1">JPG, PNG</span>
+                      <span className="text-sm text-gray-400 mt-1">JPG, PNG</span>
                       <input
                         type="file"
                         name="accountant_photo"
@@ -406,7 +406,7 @@ const AddAccountant = () => {
                       ) : (
                         <div className="flex flex-col items-center py-6">
                           <FileText className="w-8 h-8 text-blue-500 mb-2" />
-                          <span className="text-sm text-gray-600">{filePreviews.aadhar_card}</span>
+                          <span className="text-sm text-gray-700">{filePreviews.aadhar_card}</span>
                         </div>
                       )}
                       <button
@@ -424,7 +424,7 @@ const AddAccountant = () => {
                     <label className="cursor-pointer flex flex-col items-center">
                       <Upload className="w-8 h-8 text-gray-400 mb-2" />
                       <span className="text-sm text-gray-600">Click to upload file</span>
-                      <span className="text-xs text-gray-400 mt-1">JPG, PNG, PDF</span>
+                      <span className="text-sm text-gray-400 mt-1">JPG, PNG, PDF</span>
                       <input
                         type="file"
                         name="aadhar_card"

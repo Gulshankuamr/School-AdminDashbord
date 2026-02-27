@@ -6,10 +6,10 @@ import feePaymentService from '../../services/feeallService/feePaymentService';
 const CollectFee = () => {
   const navigate = useNavigate();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [allStudents, setAllStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [filters, setFilters] = useState({ className: '', sectionName: '', searchText: '' });
+  const [isLoading,        setIsLoading]        = useState(true);
+  const [allStudents,      setAllStudents]       = useState([]);
+  const [filteredStudents, setFilteredStudents]  = useState([]);
+  const [filters,          setFilters]           = useState({ className: '', sectionName: '', searchText: '' });
 
   useEffect(() => { fetchAllStudents(); }, []);
   useEffect(() => { applyFilters(); }, [filters, allStudents]);
@@ -31,7 +31,7 @@ const CollectFee = () => {
 
   const applyFilters = () => {
     let filtered = [...allStudents];
-    if (filters.className) filtered = filtered.filter(s => s.class_name === filters.className);
+    if (filters.className)   filtered = filtered.filter(s => s.class_name   === filters.className);
     if (filters.sectionName) filtered = filtered.filter(s => s.section_name === filters.sectionName);
     if (filters.searchText) {
       const q = filters.searchText.toLowerCase();
@@ -42,20 +42,21 @@ const CollectFee = () => {
     setFilteredStudents(filtered);
   };
 
-  const getUniqueClasses = () => {
-    return [...new Set(allStudents.map(s => s.class_name).filter(Boolean))].sort();
-  };
+  /* Unique class list from student data */
+  const getUniqueClasses = () =>
+    [...new Set(allStudents.map(s => s.class_name).filter(Boolean))].sort();
 
+  /* Unique section_name list — optionally scoped to selected class */
   const getUniqueSections = () => {
-    let src = filters.className
+    const src = filters.className
       ? allStudents.filter(s => s.class_name === filters.className)
       : allStudents;
     return [...new Set(src.map(s => s.section_name).filter(Boolean))].sort();
   };
 
   const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
-  const handleReset = () => setFilters({ className: '', sectionName: '', searchText: '' });
-  const handleCollect = (student) => navigate(`/admin/fees-payment/collect/${student.student_id}`);
+  const handleReset        = ()            => setFilters({ className: '', sectionName: '', searchText: '' });
+  const handleCollect      = (student)     => navigate(`/admin/fees-payment/collect/${student.student_id}`);
 
   const avatarColor = (name) => {
     const colors = [
@@ -66,13 +67,15 @@ const CollectFee = () => {
     return colors[i];
   };
 
+  /* ── Loading ── */
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center"
+        style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)' }}>
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-4 border-indigo-100"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-indigo-100" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
               <GraduationCap className="w-8 h-8 text-indigo-600" />
             </div>
@@ -84,12 +87,15 @@ const CollectFee = () => {
     );
   }
 
+  /* ── Main ── */
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)', fontFamily: "'Poppins', sans-serif" }}>
+    <div className="min-h-screen"
+      style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)', fontFamily: "'Poppins', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
       {/* Top Header */}
-      <div style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #2563EB 100%)' }} className="px-6 py-8 shadow-xl">
+      <div style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #2563EB 100%)' }}
+        className="px-6 py-8 shadow-xl">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div>
@@ -127,6 +133,7 @@ const CollectFee = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+
             {/* Class */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Class</label>
@@ -134,7 +141,7 @@ const CollectFee = () => {
                 value={filters.className}
                 onChange={(e) => {
                   handleFilterChange('className', e.target.value);
-                  handleFilterChange('sectionName', '');
+                  handleFilterChange('sectionName', ''); // reset section when class changes
                 }}
                 className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
               >
@@ -143,7 +150,7 @@ const CollectFee = () => {
               </select>
             </div>
 
-            {/* Section */}
+            {/* Section — only section_name used */}
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Section</label>
               <select
@@ -170,7 +177,8 @@ const CollectFee = () => {
                   className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
                 {filters.searchText && (
-                  <button onClick={() => handleFilterChange('searchText', '')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                  <button onClick={() => handleFilterChange('searchText', '')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
                     <X className="w-4 h-4" />
                   </button>
                 )}
@@ -181,11 +189,12 @@ const CollectFee = () => {
           {(filters.className || filters.sectionName || filters.searchText) && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
               <span className="text-sm text-slate-500">
-                Showing <span className="font-semibold text-indigo-600">{filteredStudents.length}</span> of <span className="font-semibold">{allStudents.length}</span> students
+                Showing <span className="font-semibold text-indigo-600">{filteredStudents.length}</span> of{' '}
+                <span className="font-semibold">{allStudents.length}</span> students
               </span>
-              <button onClick={handleReset} className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 font-medium transition-colors">
-                <X className="w-3.5 h-3.5" />
-                Reset Filters
+              <button onClick={handleReset}
+                className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 font-medium transition-colors">
+                <X className="w-3.5 h-3.5" /> Reset Filters
               </button>
             </div>
           )}
@@ -193,6 +202,7 @@ const CollectFee = () => {
 
         {/* Students Table */}
         <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200">
             <div className="col-span-1 text-xs font-bold text-slate-400 uppercase tracking-wider">#</div>
@@ -223,11 +233,14 @@ const CollectFee = () => {
                         {student.name?.charAt(0)?.toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-semibold text-slate-800 text-sm group-hover:text-indigo-700 transition-colors">{student.name}</div>
+                        <div className="font-semibold text-slate-800 text-sm group-hover:text-indigo-700 transition-colors">
+                          {student.name}
+                        </div>
                         <div className="text-xs text-slate-400 capitalize">{student.gender?.toLowerCase()}</div>
                       </div>
                     </div>
 
+                    {/* Class + section_name only */}
                     <div className="col-span-3 flex items-center">
                       <span
                         className="px-3 py-1 rounded-full text-xs font-semibold"
@@ -247,8 +260,7 @@ const CollectFee = () => {
                         className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150"
                         style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
                       >
-                        Collect
-                        <ChevronRight className="w-4 h-4" />
+                        Collect <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -265,14 +277,14 @@ const CollectFee = () => {
                 {allStudents.length === 0 ? 'No students in the system' : 'Try adjusting your filters'}
               </p>
               {allStudents.length > 0 && (
-                <button onClick={handleReset} className="mt-4 px-5 py-2 rounded-xl bg-indigo-50 text-indigo-600 font-semibold text-sm hover:bg-indigo-100 transition-colors">
+                <button onClick={handleReset}
+                  className="mt-4 px-5 py-2 rounded-xl bg-indigo-50 text-indigo-600 font-semibold text-sm hover:bg-indigo-100 transition-colors">
                   Clear Filters
                 </button>
               )}
             </div>
           )}
 
-          {/* Footer */}
           {filteredStudents.length > 0 && (
             <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
               <span className="text-xs text-slate-500">

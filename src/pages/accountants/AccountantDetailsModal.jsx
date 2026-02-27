@@ -81,7 +81,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
             </div>
             <div>
               <h2 className="text-lg font-bold text-gray-900">Accountant Details</h2>
-              <p className="text-xs text-gray-500">Complete profile information</p>
+              <p className="text-sm text-gray-600">Complete profile information</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -95,7 +95,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
                 <Trash2 className="w-4 h-4" /> Delete
               </button>
             )}
-            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-400 hover:text-gray-600">
+            <button onClick={onClose} className="p-2 hover:bg-gray-200 rounded-lg transition text-gray-500 hover:text-gray-700">
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -103,7 +103,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
 
         <div className="px-6 py-5 space-y-6 max-h-[75vh] overflow-y-auto">
 
-          {/* Profile Banner - SHOWS ID HERE */}
+          {/* Profile Banner - REMOVED ID AND NAME FROM HERE */}
           <div className="flex flex-col md:flex-row items-start gap-6 pb-6 border-b border-gray-100">
             {/* Avatar */}
             <div className="flex-shrink-0 text-center md:text-left">
@@ -131,14 +131,8 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
               </div>
             </div>
 
-            {/* Quick Info Grid - ID SHOWN HERE */}
+            {/* Quick Info Grid - REMOVED ID CARD, ONLY NAME AND CONTACT */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-              <InfoCard 
-                label="Accountant ID" 
-                value={a?.accountant_id || '—'} 
-                icon={Hash}
-                highlight={true}
-              />
               <InfoCard 
                 label="Full Name" 
                 value={a?.name || '—'} 
@@ -155,6 +149,11 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
                 value={a?.mobile_number || '—'} 
                 icon={Phone} 
               />
+              <InfoCard 
+                label="Qualification" 
+                value={a?.qualification || '—'} 
+                icon={GraduationCap} 
+              />
             </div>
           </div>
 
@@ -162,7 +161,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
           {extraLoading && (
             <div className="flex items-center gap-2 text-purple-600 text-sm bg-purple-50 p-3 rounded-lg">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-purple-500 border-t-transparent"></div>
-              Loading additional details...
+              <span className="text-purple-700">Loading additional details...</span>
             </div>
           )}
 
@@ -192,7 +191,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
             <div className="bg-orange-50/30 p-4 rounded-xl">
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                <p className="text-gray-700">{a?.address || 'No address provided'}</p>
+                <p className="text-gray-800">{a?.address || 'No address provided'}</p>
               </div>
             </div>
           </Section>
@@ -286,7 +285,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
               if (a?.aadhar_card_url) urls.push(a.aadhar_card_url)
               urls.forEach(url => window.open(url, '_blank'))
             }}
-            className="flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-purple-600 transition">
+            className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-purple-600 transition">
             <Download className="w-4 h-4" /> Download All Documents
           </button>
           <button onClick={onClose}
@@ -323,7 +322,7 @@ function Section({ title, icon: Icon, color, children }) {
         <div className={`p-1.5 rounded-lg ${colors[color]}`}>
           <Icon className="w-4 h-4" />
         </div>
-        <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{title}</h3>
+        <h3 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">{title}</h3>
       </div>
       {children}
     </div>
@@ -341,10 +340,10 @@ function InfoCard({ label, value, icon: Icon, isEmail, highlight }) {
   
   return (
     <div className={`p-3 rounded-xl ${highlight ? 'bg-purple-50 border border-purple-200' : 'bg-gray-50'}`}>
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-sm text-gray-600 mb-1">{label}</p>
       <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        <span className={`text-sm font-semibold truncate ${highlight ? 'text-purple-700' : 'text-gray-900'}`}>
+        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+        <span className={`text-base font-semibold truncate ${highlight ? 'text-purple-800' : 'text-gray-900'}`}>
           {value}
         </span>
         {isEmail && value !== '—' && (
@@ -363,10 +362,10 @@ function InfoCard({ label, value, icon: Icon, isEmail, highlight }) {
 function InfoBox({ label, value, icon: Icon }) {
   return (
     <div className="bg-gray-50 p-3 rounded-xl">
-      <p className="text-xs text-gray-500 mb-1">{label}</p>
+      <p className="text-sm text-gray-600 mb-1">{label}</p>
       <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-        <span className="text-sm font-medium text-gray-900">{value || '—'}</span>
+        <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" />
+        <span className="text-base font-medium text-gray-900">{value || '—'}</span>
       </div>
     </div>
   )
@@ -377,7 +376,7 @@ function DocumentCard({ label, url, onView, title }) {
   
   return (
     <div>
-      <p className="text-xs font-medium text-gray-500 mb-2">{label}</p>
+      <p className="text-sm font-medium text-gray-700 mb-2">{label}</p>
       <div
         onClick={() => url && onView(url, title)}
         className={`h-36 rounded-xl border-2 overflow-hidden flex items-center justify-center transition ${
@@ -394,7 +393,7 @@ function DocumentCard({ label, url, onView, title }) {
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                 <FileText className="w-6 h-6 text-purple-500" />
               </div>
-              <p className="text-xs font-medium text-gray-600">Click to view</p>
+              <p className="text-sm font-medium text-gray-700">Click to view</p>
             </div>
           )
         ) : (
@@ -402,7 +401,7 @@ function DocumentCard({ label, url, onView, title }) {
             <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
               <User className="w-5 h-5 text-gray-400" />
             </div>
-            <p className="text-xs text-gray-400 font-medium">Not Uploaded</p>
+            <p className="text-sm text-gray-500 font-medium">Not Uploaded</p>
           </div>
         )}
       </div>

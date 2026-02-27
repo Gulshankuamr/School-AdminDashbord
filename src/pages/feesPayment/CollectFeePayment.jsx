@@ -14,8 +14,9 @@ const fmt = (n) =>
 
 const fmtDate = (d) => {
   if (!d) return 'N/A';
-  try { return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }); }
-  catch { return d; }
+  try {
+    return new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  } catch { return d; }
 };
 
 const statusStyle = (s) => {
@@ -41,7 +42,7 @@ const Skeleton = ({ className }) => (
 
 /* ══════════════════════════════════════════════════════════ */
 const CollectFeePayment = () => {
-  const navigate    = useNavigate();
+  const navigate      = useNavigate();
   const { studentId } = useParams();
 
   const [loading,       setLoading]       = useState(true);
@@ -66,6 +67,7 @@ const CollectFeePayment = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true); setError('');
+      // Uses current academic year from API (2025-26)
       const res = await feePaymentService.getStudentFees(studentId);
       if (res?.success && res?.data) {
         setApiData(res.data);
@@ -91,6 +93,12 @@ const CollectFeePayment = () => {
   };
   const closeModal = () => { setShowModal(false); setActiveFeeHead(null); };
 
+  /**
+   * Installment id field: API returns `id` (not installment_id)
+   * e.g. { "id": 227, "installment_no": 1, ... }
+   */
+  const getInstId = (inst) => inst.id ?? inst.installment_id;
+
   const toggleInstallment = (id, status) => {
     if (status?.toLowerCase() === 'paid') return;
     setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -101,8 +109,11 @@ const CollectFeePayment = () => {
     if (!activeFeeHead) return { amount: 0, fine: 0, grand: 0, count: 0 };
     let amount = 0, fine = 0;
     selectedIds.forEach(id => {
-      const inst = activeFeeHead.installments?.find(i => (i.id || i.installment_id) === id);
-      if (inst) { amount += parseFloat(inst.amount || 0); fine += parseFloat(inst.fine_amount || 0); }
+      const inst = activeFeeHead.installments?.find(i => getInstId(i) === id);
+      if (inst) {
+        amount += parseFloat(inst.amount  || 0);
+        fine   += parseFloat(inst.fine_amount || 0);
+      }
     });
     return { amount, fine, grand: amount + fine, count: selectedIds.length };
   };
@@ -111,7 +122,9 @@ const CollectFeePayment = () => {
   /* ── submit payment ── */
   const handleSubmit = async () => {
     setModalError('');
-    if (selectedIds.length === 0) { setModalError('Please select at least one installment'); return; }
+    if (selectedIds.length === 0) {
+      setModalError('Please select at least one installment'); return;
+    }
     if (paymentMode !== 'cash' && !txRef.trim()) {
       setModalError('Transaction reference is required for non-cash payments'); return;
     }
@@ -120,7 +133,7 @@ const CollectFeePayment = () => {
       setSubmitting(true);
       const payload = {
         student_id:      parseInt(studentId),
-        installment_ids: selectedIds,
+        installment_ids: selectedIds,   // array of `id` values from installments
         payment_mode:    paymentMode,
         transaction_ref: txRef || null,
         payment_gateway: 'offline',
@@ -129,7 +142,7 @@ const CollectFeePayment = () => {
       const res = await feePaymentService.collectFeePayment(payload);
 
       const paidInsts  = (activeFeeHead?.installments || [])
-        .filter(i => selectedIds.includes(i.id || i.installment_id));
+        .filter(i => selectedIds.includes(getInstId(i)));
       const receipt_id = res?.data?.receipt_id || res?.receipt_id || `RCP-${Date.now()}`;
 
       const receiptPayload = {
@@ -152,7 +165,6 @@ const CollectFeePayment = () => {
       closeModal();
       fetchData(); // refresh in background
 
-      /* ✅ Navigate to FeeReceipt page — data passed via route state (no localStorage) */
       navigate(`/admin/fees-payment/receipt/${receipt_id}`, {
         state: { receiptData: receiptPayload },
       });
@@ -164,7 +176,8 @@ const CollectFeePayment = () => {
   /* ── loading skeleton ── */
   if (loading) {
     return (
-      <div className="min-h-screen p-6" style={{ background: 'linear-gradient(135deg,#EEF2FF,#F0FDF4)', fontFamily: "'Poppins',sans-serif" }}>
+      <div className="min-h-screen p-6"
+        style={{ background: 'linear-gradient(135deg,#EEF2FF,#F0FDF4)', fontFamily: "'Poppins',sans-serif" }}>
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
         <div className="max-w-5xl mx-auto space-y-6 pt-4">
           <Skeleton className="h-8 w-40" />
@@ -199,11 +212,15 @@ const CollectFeePayment = () => {
     );
   }
 
+  /**
+   * Grand total = pending + fine
+   * Using summary.current_year which has { total, paid, pending, fine }
+   */
   const grandTotal = (summary.current_year?.pending || 0) + (summary.current_year?.fine || 0);
 
   /* ══════════════════════════════════════════════════════════
      RENDER
-     ══════════════════════════════════════════════════════════ */
+  ══════════════════════════════════════════════════════════ */
   return (
     <div className="min-h-screen"
       style={{ background: 'linear-gradient(135deg,#EEF2FF,#F0FDF4)', fontFamily: "'Poppins',sans-serif" }}>
@@ -219,6 +236,7 @@ const CollectFeePayment = () => {
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-2xl font-bold text-white">{studentInfo?.name || 'Student'}</h1>
+              {/* section_name used directly from student_info */}
               <p className="text-blue-200 text-sm mt-0.5">
                 {studentInfo?.admission_no} · Class {studentInfo?.class_name} – {studentInfo?.section_name}
                 {apiData?.current_academic_year ? ` · AY ${apiData.current_academic_year}` : ''}
@@ -260,6 +278,22 @@ const CollectFeePayment = () => {
           </div>
         )}
 
+        {/* Previous year dues (if any) */}
+        {(summary.previous_pending > 0 || summary.previous_fine > 0) && (
+          <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-orange-700">Previous Year Dues</p>
+              <p className="text-xs text-orange-500 mt-0.5">Outstanding from earlier sessions</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-orange-700">{fmt(summary.previous_pending)}</p>
+              {summary.previous_fine > 0 && (
+                <p className="text-xs text-red-500">+{fmt(summary.previous_fine)} fine</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Grand Total Banner */}
         {grandTotal > 0 && (
           <div className="bg-white rounded-2xl shadow-lg border-2 border-red-200 p-5 flex items-center justify-between">
@@ -285,13 +319,14 @@ const CollectFeePayment = () => {
             <div className="space-y-4">
               {feeBreakdown.map((fh, idx) => {
                 const fhPending  = parseFloat(fh.pending_amount || 0);
-                const fhPaid     = parseFloat(fh.paid_amount || 0);
-                const fhTotal    = parseFloat(fh.total_amount || 0);
+                const fhPaid     = parseFloat(fh.paid_amount    || 0);
+                const fhTotal    = parseFloat(fh.total_amount   || 0);
                 const isPaid     = fhPending === 0 && fhTotal > 0;
                 const isExpanded = expandedHeads[idx];
 
                 return (
-                  <div key={idx} className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                  <div key={fh.student_fee_id ?? idx}
+                    className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                     <div className="p-5">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
@@ -302,10 +337,14 @@ const CollectFeePayment = () => {
                             </div>
                             <h3 className="font-bold text-slate-800">{fh.fee_head_name}</h3>
                             {isPaid
-                              ? <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background: '#D1FAE5', color: '#065F46' }}>✓ PAID</span>
-                              : <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background: '#FEF3C7', color: '#92400E' }}>PENDING</span>}
+                              ? <span className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                                  style={{ background: '#D1FAE5', color: '#065F46' }}>✓ PAID</span>
+                              : <span className="px-2.5 py-0.5 rounded-full text-xs font-bold"
+                                  style={{ background: '#FEF3C7', color: '#92400E' }}>PENDING</span>}
                             {fh.fee_frequency && (
-                              <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full capitalize">{fh.fee_frequency}</span>
+                              <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full capitalize">
+                                {fh.fee_frequency}
+                              </span>
                             )}
                           </div>
                           <div className="grid grid-cols-3 gap-4">
@@ -319,10 +358,13 @@ const CollectFeePayment = () => {
                             </div>
                             <div>
                               <p className="text-xs text-slate-400">Pending</p>
-                              <p className={`font-semibold ${fhPending > 0 ? 'text-red-600' : 'text-slate-700'}`}>{fmt(fhPending)}</p>
+                              <p className={`font-semibold ${fhPending > 0 ? 'text-red-600' : 'text-slate-700'}`}>
+                                {fmt(fhPending)}
+                              </p>
                             </div>
                           </div>
                         </div>
+
                         <div className="flex flex-col items-end gap-2 flex-shrink-0">
                           {!isPaid && (
                             <button
@@ -353,14 +395,21 @@ const CollectFeePayment = () => {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Installments</p>
                         <div className="space-y-2">
                           {fh.installments.map((inst, ii) => {
+                            /* Use calculated_status first, fallback to status */
                             const { bg, color, label } = statusStyle(inst.calculated_status || inst.status);
                             return (
-                              <div key={ii} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-100">
+                              <div key={getInstId(inst) ?? ii}
+                                className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-slate-100">
                                 <div className="flex items-center gap-3">
                                   <span className="text-xs font-bold text-slate-400">#{inst.installment_no}</span>
                                   <div>
-                                    <p className="text-sm font-medium text-slate-700">Due {fmtDate(inst.due_date)}</p>
-                                    {inst.paid_on && <p className="text-xs text-emerald-500">Paid {fmtDate(inst.paid_on)}</p>}
+                                    {/* Use end_due_date as the primary due date shown to user */}
+                                    <p className="text-sm font-medium text-slate-700">
+                                      Due {fmtDate(inst.end_due_date || inst.start_due_date)}
+                                    </p>
+                                    {inst.paid_on && (
+                                      <p className="text-xs text-emerald-500">Paid {fmtDate(inst.paid_on)}</p>
+                                    )}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-4">
@@ -368,7 +417,8 @@ const CollectFeePayment = () => {
                                   {parseFloat(inst.fine_amount) > 0 && (
                                     <span className="text-xs text-red-500">+{fmt(inst.fine_amount)}</span>
                                   )}
-                                  <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: bg, color }}>{label}</span>
+                                  <span className="px-2.5 py-1 rounded-full text-xs font-bold"
+                                    style={{ background: bg, color }}>{label}</span>
                                 </div>
                               </div>
                             );
@@ -393,7 +443,9 @@ const CollectFeePayment = () => {
                   <div key={i} className="flex items-center justify-between px-6 py-4">
                     <div>
                       <p className="font-semibold text-slate-800 text-sm">{ph.fee_head_name || 'Payment'}</p>
-                      <p className="text-xs text-slate-400">{fmtDate(ph.payment_date)} · {ph.payment_mode?.toUpperCase()}</p>
+                      <p className="text-xs text-slate-400">
+                        {fmtDate(ph.payment_date)} · {ph.payment_mode?.toUpperCase()}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-emerald-600">{fmt(ph.amount)}</p>
@@ -448,7 +500,7 @@ const CollectFeePayment = () => {
                 ) : (
                   <div className="space-y-2">
                     {activeFeeHead.installments.map((inst) => {
-                      const id     = inst.id || inst.installment_id;
+                      const id     = getInstId(inst);
                       const status = (inst.calculated_status || inst.status || '').toLowerCase();
                       const isPaid = status === 'paid';
                       const isOver = status === 'overdue';
@@ -461,9 +513,9 @@ const CollectFeePayment = () => {
                           onClick={() => toggleInstallment(id, status)}
                           className={`flex items-center justify-between rounded-xl px-4 py-3.5 border-2 transition-all
                             ${isPaid ? 'opacity-50 cursor-not-allowed border-slate-100 bg-slate-50'
-                            : isSel  ? 'border-indigo-500 bg-indigo-50 cursor-pointer shadow-sm'
-                            : isOver ? 'border-red-300 bg-red-50 cursor-pointer hover:border-red-400'
-                            :          'border-slate-200 bg-white cursor-pointer hover:border-indigo-300'}`}
+                              : isSel  ? 'border-indigo-500 bg-indigo-50 cursor-pointer shadow-sm'
+                              : isOver ? 'border-red-300 bg-red-50 cursor-pointer hover:border-red-400'
+                              :          'border-slate-200 bg-white cursor-pointer hover:border-indigo-300'}`}
                         >
                           <div className="flex items-center gap-3">
                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all
@@ -474,8 +526,13 @@ const CollectFeePayment = () => {
                               <p className="font-semibold text-slate-800 text-sm">Installment #{inst.installment_no}</p>
                               <div className="flex items-center gap-2 mt-0.5">
                                 <Calendar className="w-3 h-3 text-slate-400" />
-                                <p className="text-xs text-slate-400">Due {fmtDate(inst.due_date)}</p>
-                                {inst.paid_on && <p className="text-xs text-emerald-500">· Paid {fmtDate(inst.paid_on)}</p>}
+                                {/* Show end_due_date as the deadline */}
+                                <p className="text-xs text-slate-400">
+                                  Due {fmtDate(inst.end_due_date || inst.start_due_date)}
+                                </p>
+                                {inst.paid_on && (
+                                  <p className="text-xs text-emerald-500">· Paid {fmtDate(inst.paid_on)}</p>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -486,7 +543,8 @@ const CollectFeePayment = () => {
                                 <p className="text-xs text-red-500">+{fmt(inst.fine_amount)} fine</p>
                               )}
                             </div>
-                            <span className="px-2.5 py-1 rounded-full text-xs font-bold" style={{ background: bg, color }}>{label}</span>
+                            <span className="px-2.5 py-1 rounded-full text-xs font-bold"
+                              style={{ background: bg, color }}>{label}</span>
                           </div>
                         </div>
                       );
