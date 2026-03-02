@@ -87,7 +87,7 @@ export const sidebarMenuItems = [
         subItems: [
           { id: 'subject-list', label: 'View All Subjects', path: '/admin/subject' },
           { id: 'add-subject',  label: 'Add Subject',       path: '/admin/subject/add' },
-        ],
+        ], 
       },
 
       // ── Homework Module ──────────────────────────
@@ -307,9 +307,13 @@ export const sidebarMenuItems = [
         icon: Settings,
         highlight: true,
         hasDropdown: true,
+        // subItems: [
+        //   { id: 'role-permissions', label: 'Role Permissions', path: '/admin/settings/role-permissions', icon: ShieldCheck },
+        // ],
         subItems: [
-          { id: 'role-permissions', label: 'Role Permissions', path: '/admin/settings/role-permissions', icon: ShieldCheck },
-        ],
+             { id: 'role-permissions', label: 'Role Permissions', path: '/admin/settings/role-permissions', icon: ShieldCheck, },
+             { id: 'user-permissions', label: 'User Permissions', path: '/admin/settings/user-permissions', icon: Users, },
+]
       },
 
     ],

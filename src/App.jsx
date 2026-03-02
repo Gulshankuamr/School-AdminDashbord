@@ -20,7 +20,9 @@ import MyNotificationsPage from './pages/notifications/MyNotificationsPage'
 // 📊 DASHBOARD MODULE
 // ════════════════════════════════════════════════
 import AdminDashboard from './pages/admin/AdminDashboard'
+// import RolePermissions from './pages/admin/RolePermissions'
 import RolePermissions from './pages/admin/RolePermissions'
+import UserPermissions from './pages/admin/UserPermissions'
 
 // ════════════════════════════════════════════════
 // 🎓 STUDENTS MODULE
@@ -104,9 +106,10 @@ import FeePreview from './pages/fees/FeePreview'
 // ════════════════════════════════════════════════
 // 💳 FEE PAYMENT MODULE
 // ════════════════════════════════════════════════
-import CollectFee from './pages/feesPayment/CollectFee'
+import CollectFee        from './pages/feesPayment/CollectFee'
+import StudentFeeProfile from './pages/feesPayment/StudentFeeProfile'   // ✅ NEW
 import CollectFeePayment from './pages/feesPayment/CollectFeePayment'
-import FeeReceipt from './pages/feesPayment/FeeReceipt'
+import FeeReceipt        from './pages/feesPayment/FeeReceipt'
 
 // ════════════════════════════════════════════════
 // 📝 EXAMS MODULE
@@ -253,9 +256,10 @@ function App() {
           <Route path="fees/preview"   element={<FeePreview />} />
 
           {/* ── Fee Payment ─────────────────────────── */}
-          <Route path="fees-payment/collect"            element={<CollectFee />} />
-          <Route path="fees-payment/collect/:studentId" element={<CollectFeePayment />} />
-          <Route path="fees-payment/receipt/:receiptId" element={<FeeReceipt />} />
+          <Route path="fees-payment/collect"             element={<CollectFee />} />
+          <Route path="fees-payment/student/:studentId"  element={<StudentFeeProfile />} />  {/* ✅ NEW */}
+          <Route path="fees-payment/collect/:studentId"  element={<CollectFeePayment />} />
+          <Route path="fees-payment/receipt/:receiptId"  element={<FeeReceipt />} />
 
           {/* ── Exams ───────────────────────────────── */}
           <Route path="exams"                       element={<ExamList />} />
@@ -280,8 +284,10 @@ function App() {
           <Route path="reports" element={<Report />} />
 
           {/* ── Settings ────────────────────────────── */}
-          <Route path="settings" />
-          <Route path="settings/role-permissions" element={<RolePermissions />} />
+         <Route path="settings">
+  <Route path="role-permissions" element={<RolePermissions />} />
+  <Route path="user-permissions" element={<UserPermissions />} />
+</Route>
 
         </Route>
 

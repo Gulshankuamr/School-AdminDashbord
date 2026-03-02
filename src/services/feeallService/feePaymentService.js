@@ -185,6 +185,37 @@ const feePaymentService = {
     const sectionNames = (data.data || []).map((s) => s.section_name).filter(Boolean);
     return { ...data, sectionNames };
   },
+
+  // ===============================
+  // 6️⃣ DISCONTINUE FEE
+  //    POST /api/schooladmin/discontinueFee
+  //    Body: { student_id, student_fee_id, discontinued_on, discontinue_reason }
+  // ===============================
+  discontinueFee: async (payload) => {
+    const token = getAuthToken();
+    if (!token) throw new Error('Token missing');
+
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/discontinueFee`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = await response.json();
+    console.log('discontinueFee response:', data);
+
+    if (!response.ok || !data.success) {
+      throw new Error(data?.message || 'Failed to discontinue fee');
+    }
+
+    return data;
+  },
 };
 
 export default feePaymentService;

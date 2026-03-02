@@ -2,275 +2,279 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { homeWorkService } from '../../services/homeWorkService/homeWorkService'
 
+// ─── helpers ────────────────────────────────────────────────────────────────
+const fmt = (d, withTime = false) => {
+  if (!d) return '—'
+  const date = new Date(d)
+  const datePart = date.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  if (!withTime) return datePart
+  const timePart = date.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+  return `${datePart}, ${timePart}`
+}
 
+const fileIcon = (name = '') => {
+  const ext = (name.split('.').pop() || '').toLowerCase()
+  if (['jpg', 'jpeg', 'png', 'svg', 'webp'].includes(ext)) return '🖼️'
+  if (ext === 'pdf') return '📕'
+  return '📄'
+}
+
+const fmtSize = (bytes) => {
+  if (!bytes) return ''
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)}MB`
+}
+
+// ─── STATUS BADGE ────────────────────────────────────────────────────────────
+function StatusBadge({ status }) {
+  const map = {
+    Submitted: { bg: '#dcfce7', color: '#15803d', emoji: '🟢' },
+    Pending:   { bg: '#fef9c3', color: '#92400e', emoji: '🟡' },
+    Overdue:   { bg: '#fee2e2', color: '#b91c1c', emoji: '🔴' },
+    Active:    { bg: '#dcfce7', color: '#15803d', emoji: '🟢' },
+    Upcoming:  { bg: '#e0e7ff', color: '#3730a3', emoji: '⬜' },
+  }
+  const s = map[status] || { bg: '#f3f4f6', color: '#6b7280', emoji: '' }
+  return (
+    <span style={{
+      background: s.bg, color: s.color,
+      padding: '3px 12px', borderRadius: 20,
+      fontWeight: 600, fontSize: 12,
+      display: 'inline-flex', alignItems: 'center', gap: 4,
+    }}>
+      {s.emoji} {status}
+    </span>
+  )
+}
+
+// ─── FILE POPUP (drawer/modal) ───────────────────────────────────────────────
+function SubmissionPopup({ student, onClose }) {
+  if (!student) return null
+  const attachments = student.attachments || student.files || []
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'rgba(0,0,0,0.45)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 1000,
+    }} onClick={onClose}>
+      <div style={{
+        background: '#fff', borderRadius: 16,
+        padding: '28px 32px', maxWidth: 480, width: '90%',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+      }} onClick={(e) => e.stopPropagation()}>
+
+        {/* header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#111827' }}>
+              {student.student_name} – Submitted Files
+            </h3>
+            <div style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+              Submitted: {fmt(student.submitted_at, true)}
+            </div>
+            {student.remarks && (
+              <div style={{ marginTop: 6, background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '7px 12px', fontSize: 13, color: '#15803d' }}>
+                💬 "{student.remarks}"
+              </div>
+            )}
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: '#6b7280', lineHeight: 1, padding: 0 }}>✕</button>
+        </div>
+
+        {/* files */}
+        {attachments.length === 0 ? (
+          <div style={{ textAlign: 'center', color: '#9ca3af', padding: '24px 0', fontSize: 14 }}>No files attached</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {attachments.map((att, i) => {
+              const name = att.name || att.url?.split('/').pop() || `File ${i + 1}`
+              return (
+                <div key={i} style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  background: '#f9fafb', border: '1px solid #e5e7eb',
+                  borderRadius: 10, padding: '11px 14px',
+                }}>
+                  <span style={{ fontSize: 24 }}>{fileIcon(name)}</span>
+                  <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 600, fontSize: 13, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {name}
+                    </div>
+                    {att.size && <div style={{ fontSize: 11, color: '#9ca3af' }}>{fmtSize(att.size)}</div>}
+                  </div>
+                  <a
+                    href={att.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: '#2563eb', fontWeight: 600, fontSize: 13, textDecoration: 'none', padding: '5px 12px', background: '#eff6ff', borderRadius: 7, flexShrink: 0 }}
+                  >
+                    View
+                  </a>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <div style={{ textAlign: 'right', marginTop: 20 }}>
+          <button onClick={onClose} style={{ padding: '9px 24px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', fontWeight: 600, fontSize: 14, cursor: 'pointer', color: '#374151' }}>
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── MAIN PAGE ───────────────────────────────────────────────────────────────
 export default function HomeworkDetails() {
-  const { id } = useParams()
-  const navigate = useNavigate()
+  const { id }    = useParams()
+  const navigate  = useNavigate()
 
-  const [homework, setHomework] = useState(null)
-  const [submissions, setSubmissions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [statusFilter, setStatusFilter] = useState('All Statuses')
+  const [homework,      setHomework]      = useState(null)
+  const [submissions,   setSubmissions]   = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [error,         setError]         = useState(null)
+  const [statusFilter,  setStatusFilter]  = useState('All')
   const [searchStudent, setSearchStudent] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
+  const [activeStudent, setActiveStudent] = useState(null)  // popup
+  const [currentPage,   setCurrentPage]   = useState(1)
   const ITEMS_PER_PAGE = 10
 
   useEffect(() => {
-    const fetchDetails = async () => {
+    const load = async () => {
       setLoading(true)
       setError(null)
       try {
         const data = await homeWorkService.getHomeworkById(id)
-        const hw = data.data || {}
+        const hw   = Array.isArray(data.data) ? data.data[0] : (data.data || {})
         setHomework(hw)
-        setSubmissions(hw.submissions || [])
+        setSubmissions(hw.submissions || hw.student_submissions || [])
       } catch (err) {
-        setError(err.message || 'Failed to load homework details')
+        setError(err.message || 'Failed to load')
       } finally {
         setLoading(false)
       }
     }
-    fetchDetails()
+    load()
   }, [id])
 
-  const handleDelete = async () => {
-    setDeleting(true)
-    try {
-      await homeWorkService.deleteStudentHomeworkPermanently(id)
-      navigate('/homework')
-    } catch (err) {
-      alert(err.message || 'Delete failed')
-      setDeleting(false)
-    }
-  }
+  // ── derived ──────────────────────────────────────────────────────────────────
+  const total     = homework?.total_students   || 0
+  const submitted = Number(homework?.submitted_count) || 0
+  const overdue   = Number(homework?.overdue_count)   || 0
+  const pending   = Number(homework?.pending_count)   ?? (total - submitted - overdue)
+  const pct       = total > 0 ? Math.round((submitted / total) * 100) : 0
+  const pctColor  = pct >= 80 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626'
 
-  const filteredSubmissions = submissions.filter((s) => {
-    const matchStatus = statusFilter === 'All Statuses' || s.status === statusFilter
-    const matchSearch =
-      !searchStudent ||
+  const attachments = (() => {
+    if (!homework?.attachment) return []
+    if (Array.isArray(homework.attachment)) return homework.attachment
+    return [{ url: homework.attachment, name: homework.attachment_name || 'Attachment' }]
+  })()
+
+  // ── filter submissions ───────────────────────────────────────────────────────
+  const filtered = submissions.filter((s) => {
+    const matchStatus = statusFilter === 'All' || s.status === statusFilter
+    const matchSearch = !searchStudent ||
       (s.student_name || '').toLowerCase().includes(searchStudent.toLowerCase()) ||
       String(s.roll_no || '').includes(searchStudent)
     return matchStatus && matchSearch
   })
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginated  = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
 
-  const totalPages = Math.ceil(filteredSubmissions.length / ITEMS_PER_PAGE)
-  const paginated = filteredSubmissions.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
-  )
-
-  const statusStyle = {
-    Submitted: { bg: '#e8f5e9', color: '#2e7d32' },
-    Pending: { bg: '#fff3e0', color: '#e65100' },
-    Late: { bg: '#fce4ec', color: '#c62828' },
-  }
-
-  if (loading) {
-    return (
-      <div style={{ padding: 60, textAlign: 'center', color: '#6b7280', fontFamily: 'sans-serif' }}>
-        Loading...
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div style={{ padding: 60, textAlign: 'center', color: '#ef4444', fontFamily: 'sans-serif' }}>
-        {error}
-      </div>
-    )
-  }
+  if (loading) return <div style={{ padding: 80, textAlign: 'center', color: '#6b7280', fontFamily: 'system-ui' }}>Loading...</div>
+  if (error)   return <div style={{ padding: 80, textAlign: 'center', color: '#ef4444', fontFamily: 'system-ui' }}>{error}</div>
 
   return (
-    <div style={{ padding: 24, background: '#f8f9fb', minHeight: '100vh', fontFamily: 'sans-serif', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: 24, background: '#f0f2f5', minHeight: '100vh', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
-      {/* Breadcrumb */}
-      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
-        <span style={{ cursor: 'pointer', color: '#4f46e5' }} onClick={() => navigate('/homework')}>
-          Homework
-        </span>
-        {' › '}
-        <span>Details</span>
+      {/* breadcrumb + back */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#6b7280', marginBottom: 16 }}>
+        <button onClick={() => navigate('/homework')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontSize: 13, fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+          ← Back
+        </button>
+        <span>›</span>
+        <span style={{ color: '#374151', fontWeight: 500 }}>{homework?.title || homework?.homework_title || 'Homework Details'}</span>
       </div>
 
-      {/* Subject + Class Tags */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        {homework && homework.subject_name && (
-          <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '3px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, textTransform: 'uppercase' }}>
-            {homework.subject_name}
-          </span>
-        )}
-        {homework && homework.class_name && (
-          <span style={{ background: '#f3f4f6', color: '#374151', padding: '3px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700 }}>
-            {homework.class_name}{homework.section_name ? ` - ${homework.section_name}` : ''}
-          </span>
-        )}
-      </div>
-
-      {/* Title + Actions */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ margin: '0 0 6px', fontSize: 26, fontWeight: 700, color: '#1a1a2e' }}>
-            {homework ? (homework.title || homework.homework_title || 'Homework Details') : 'Homework Details'}
-          </h1>
-          <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 4 }}>
-            📅 Due:{' '}
-            {homework && homework.due_date
-              ? new Date(homework.due_date).toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: 'numeric',
-                  year: 'numeric',
-                })
-              : 'N/A'}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => navigate('/homework/edit/' + id)}
-            style={{
-              background: '#4f46e5',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              padding: '9px 20px',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-            }}
-          >
-            ✏️ Edit Homework
-          </button>
-          <button
-            onClick={() => setDeleteConfirm(true)}
-            style={{
-              background: '#fff',
-              color: '#dc2626',
-              border: '1px solid #fca5a5',
-              borderRadius: 8,
-              padding: '9px 20px',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-            }}
-          >
-            🗑️ Delete
-          </button>
-        </div>
-      </div>
-
-      {/* Main Grid: Instructions + Attachments */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, marginBottom: 24 }}>
-
-        {/* Instructions */}
-        <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <h3 style={{ margin: '0 0 12px', fontSize: 16, color: '#1a1a2e' }}>
-            📄 Instructions
-          </h3>
-          <p style={{ color: '#374151', fontSize: 14, lineHeight: 1.7, margin: 0, whiteSpace: 'pre-wrap' }}>
-            {homework ? (homework.description || homework.instructions || 'No instructions provided.') : 'No instructions provided.'}
-          </p>
-        </div>
-
-        {/* Attachments */}
-        <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 16, color: '#1a1a2e' }}>
-              📎 Attachments
-            </h3>
-          </div>
-          {homework && homework.attachment ? (
-            <div
-              style={{
-                background: '#f8f9fb',
-                border: '1px solid #e5e7eb',
-                borderRadius: 10,
-                padding: 14,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 28 }}>📄</span>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a2e' }}>
-                    {homework.attachment_name || 'Attachment'}
-                  </div>
-                </div>
-              </div>
-              <a
-                href={homework.attachment}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: '#4f46e5', fontSize: 18 }}
-                title="Download"
-              >
-                ⬇️
-              </a>
+      {/* ── Header Card ── */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: '20px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <h1 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 700, color: '#111827' }}>
+              {homework?.title || homework?.homework_title}
+            </h1>
+            <div style={{ display: 'flex', gap: 16, fontSize: 13, color: '#6b7280', flexWrap: 'wrap' }}>
+              <span>Class: <strong style={{ color: '#374151' }}>{homework?.class_name}{homework?.section_name ? ` ${homework.section_name}` : ''}</strong></span>
+              <span>Subject: <strong style={{ color: '#374151' }}>{homework?.subject_name || '—'}</strong></span>
+              <span>Due: <strong style={{ color: '#374151' }}>{fmt(homework?.due_date)}</strong></span>
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', color: '#6b7280', fontSize: 13, padding: '20px 0' }}>
-              No attachments
-            </div>
-          )}
+          </div>
+          <StatusBadge status={homework?.status || 'Active'} />
+        </div>
+
+        {/* attachments row */}
+        {attachments.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>📎</span>
+            {attachments.map((att, i) => {
+              const name = att.name || att.url?.split('/').pop() || `File ${i + 1}`
+              return (
+                <a key={i} href={att.url} target="_blank" rel="noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f0f9ff', color: '#0369a1', padding: '3px 10px', borderRadius: 8, fontSize: 12, fontWeight: 500, textDecoration: 'none', border: '1px solid #bae6fd' }}>
+                  {fileIcon(name)} {name} [View]
+                </a>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Summary Card ── */}
+      <div style={{ background: '#fff', borderRadius: 14, padding: '18px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.08)', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBottom: 12 }}>
+          <span style={{ fontSize: 14, color: '#374151' }}>Total: <strong>{total}</strong></span>
+          <span style={{ fontSize: 14, color: '#16a34a' }}>Submitted: <strong>{submitted}</strong> 🟢</span>
+          <span style={{ fontSize: 14, color: '#d97706' }}>Pending: <strong>{pending}</strong> 🟡</span>
+          <span style={{ fontSize: 14, color: '#dc2626' }}>Overdue: <strong>{overdue}</strong> 🔴</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: pctColor, marginLeft: 'auto' }}>{pct}%</span>
+        </div>
+        <div style={{ background: '#f3f4f6', borderRadius: 99, height: 10, overflow: 'hidden' }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: pctColor, borderRadius: 99, transition: 'width 0.6s' }} />
         </div>
       </div>
 
-      {/* Student Submissions */}
-      <div style={{ background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontSize: 16, color: '#1a1a2e' }}>Student Submissions</h3>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <input
-              type="text"
-              placeholder="🔍 Search student name..."
-              value={searchStudent}
-              onChange={(e) => { setSearchStudent(e.target.value); setCurrentPage(1) }}
-              style={{
-                padding: '7px 12px',
-                borderRadius: 8,
-                border: '1px solid #e5e7eb',
-                fontSize: 13,
-                outline: 'none',
-              }}
-            />
+      {/* ── Submissions Table ── */}
+      <div style={{ background: '#fff', borderRadius: 14, boxShadow: '0 1px 4px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+
+        {/* table toolbar */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #f3f4f6', flexWrap: 'wrap', gap: 10 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#111827' }}>Student Submissions</h3>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1) }}
-              style={{
-                padding: '7px 12px',
-                borderRadius: 8,
-                border: '1px solid #e5e7eb',
-                fontSize: 13,
-                outline: 'none',
-              }}
+              style={filterInput}
             >
-              {['All Statuses', 'Submitted', 'Pending', 'Late'].map((s) => (
-                <option key={s}>{s}</option>
-              ))}
+              {['All', 'Submitted', 'Pending', 'Overdue'].map((s) => <option key={s}>{s}</option>)}
             </select>
+            <input
+              type="text"
+              placeholder="🔍 Search Student..."
+              value={searchStudent}
+              onChange={(e) => { setSearchStudent(e.target.value); setCurrentPage(1) }}
+              style={{ ...filterInput, minWidth: 180 }}
+            />
           </div>
         </div>
 
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
-            <tr style={{ borderBottom: '2px solid #f3f4f6' }}>
-              {['Student Name', 'Roll No', 'Status', 'Submitted At', 'Action'].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    color: '#6b7280',
-                    fontWeight: 600,
-                    fontSize: 12,
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.5,
-                  }}
-                >
+            <tr style={{ background: '#f9fafb' }}>
+              {['Student', 'Roll No', 'Status', 'Submitted On', 'Action'].map((h) => (
+                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: 0.5, borderBottom: '1px solid #e5e7eb' }}>
                   {h}
                 </th>
               ))}
@@ -279,59 +283,65 @@ export default function HomeworkDetails() {
           <tbody>
             {paginated.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: '#6b7280' }}>
-                  No submissions found
-                </td>
+                <td colSpan={5} style={{ padding: 48, textAlign: 'center', color: '#9ca3af' }}>No submissions found</td>
               </tr>
             ) : (
               paginated.map((s, i) => {
-                const ss = statusStyle[s.status] || { bg: '#f3f4f6', color: '#374151' }
+                const hasFiles = (s.attachments || s.files || []).length > 0
+                const hasRemark = !!s.remarks
                 return (
-                  <tr key={s.student_id || i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '12px' }}>
+                  <tr key={s.student_id || i} style={{ borderBottom: '1px solid #f3f4f6' }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {/* student */}
+                    <td style={{ padding: '13px 16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: '50%',
-                            background: '#e0e7ff',
-                            color: '#4f46e5',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontWeight: 700,
-                            fontSize: 13,
-                            flexShrink: 0,
-                          }}
-                        >
-                          {(s.student_name || '?')[0]}
+                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#dbeafe', color: '#1d4ed8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
+                          {(s.student_name || '?')[0].toUpperCase()}
                         </div>
-                        {s.student_name}
+                        <span style={{ fontWeight: 500, color: '#111827' }}>{s.student_name}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '12px', color: '#374151' }}>{s.roll_no}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ background: ss.bg, color: ss.color, padding: '3px 12px', borderRadius: 20, fontWeight: 600, fontSize: 12 }}>
-                        {s.status}
-                      </span>
+
+                    {/* roll */}
+                    <td style={{ padding: '13px 16px', color: '#374151' }}>{s.roll_no || '—'}</td>
+
+                    {/* status */}
+                    <td style={{ padding: '13px 16px' }}><StatusBadge status={s.status} /></td>
+
+                    {/* submitted on + meta */}
+                    <td style={{ padding: '13px 16px' }}>
+                      <div style={{ color: '#374151', fontSize: 13 }}>{fmt(s.submitted_at, true)}</div>
+                      {hasFiles && (
+                        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 3 }}>
+                          📎 {(s.attachments || s.files || []).length} file{(s.attachments || s.files || []).length > 1 ? 's' : ''}
+                          <button
+                            onClick={() => setActiveStudent(s)}
+                            style={{ background: 'none', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '0 4px' }}
+                          >
+                            [View]
+                          </button>
+                        </div>
+                      )}
+                      {hasRemark && (
+                        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>💬 "{s.remarks}"</div>
+                      )}
+                      {!s.submitted_at && <span style={{ color: '#9ca3af', fontSize: 13 }}>—</span>}
                     </td>
-                    <td style={{ padding: '12px', color: '#6b7280' }}>
-                      {s.submitted_at
-                        ? new Date(s.submitted_at).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })
-                        : '—'}
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      <button
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 16 }}
-                        title="View submission"
-                      >
-                        👁️
-                      </button>
+
+                    {/* action */}
+                    <td style={{ padding: '13px 16px' }}>
+                      {hasFiles ? (
+                        <button
+                          onClick={() => setActiveStudent(s)}
+                          style={{ background: 'none', border: '1px solid #e5e7eb', borderRadius: 7, padding: '5px 12px', cursor: 'pointer', fontSize: 12, color: '#374151', fontWeight: 500 }}
+                        >
+                          👁️ View
+                        </button>
+                      ) : (
+                        <span style={{ color: '#d1d5db', fontSize: 13 }}>—</span>
+                      )}
                     </td>
                   </tr>
                 )
@@ -340,29 +350,22 @@ export default function HomeworkDetails() {
           </tbody>
         </table>
 
-        {/* Pagination */}
+        {/* pagination */}
         {totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
-            <div style={{ fontSize: 13, color: '#6b7280' }}>
-              Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredSubmissions.length)}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredSubmissions.length)} of {filteredSubmissions.length} submissions
-            </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderTop: '1px solid #f3f4f6' }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>
+              Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filtered.length)}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} of {filtered.length}
+            </span>
             <div style={{ display: 'flex', gap: 6 }}>
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setCurrentPage(p)}
-                  style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: 8,
-                    border: p === currentPage ? 'none' : '1px solid #e5e7eb',
-                    background: p === currentPage ? '#4f46e5' : '#fff',
-                    color: p === currentPage ? '#fff' : '#374151',
-                    fontWeight: p === currentPage ? 700 : 400,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                  }}
-                >
+                <button key={p} onClick={() => setCurrentPage(p)} style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  border: p === currentPage ? 'none' : '1px solid #e5e7eb',
+                  background: p === currentPage ? '#2563eb' : '#fff',
+                  color: p === currentPage ? '#fff' : '#374151',
+                  fontWeight: p === currentPage ? 700 : 400,
+                  cursor: 'pointer', fontSize: 13,
+                }}>
                   {p}
                 </button>
               ))}
@@ -371,61 +374,14 @@ export default function HomeworkDetails() {
         )}
       </div>
 
-      {/* Delete Confirm Modal */}
-      {deleteConfirm && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-          }}
-        >
-          <div style={{ background: '#fff', borderRadius: 16, padding: 32, maxWidth: 380, width: '90%', textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-            <h3 style={{ margin: '0 0 8px', fontSize: 18, color: '#1a1a2e' }}>Delete Homework?</h3>
-            <p style={{ color: '#6b7280', fontSize: 14, margin: '0 0 24px' }}>
-              This will permanently delete the homework and all student submissions.
-            </p>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
-              <button
-                onClick={() => setDeleteConfirm(false)}
-                disabled={deleting}
-                style={{
-                  padding: '10px 24px',
-                  borderRadius: 8,
-                  border: '1px solid #e5e7eb',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                style={{
-                  padding: '10px 24px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: '#dc2626',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 14,
-                }}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* file popup */}
+      <SubmissionPopup student={activeStudent} onClose={() => setActiveStudent(null)} />
     </div>
   )
+}
+
+const filterInput = {
+  padding: '8px 12px', borderRadius: 8,
+  border: '1px solid #e5e7eb', fontSize: 13,
+  outline: 'none', background: '#fff', color: '#374151', cursor: 'pointer',
 }

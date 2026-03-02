@@ -2,136 +2,87 @@ import { API_BASE_URL, getAuthToken } from '../api'
 
 export const homeWorkService = {
 
-  // ===============================
-  // 1️⃣ GET ALL CLASSES
-  // ===============================
+  // ── 1. GET ALL CLASSES ─────────────────────────────────────────────────────
   getAllClasses: async () => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-    const response = await fetch(`${API_BASE_URL}/schooladmin/getAllClassList`, {
-      method: 'GET',
+    const res = await fetch(`${API_BASE_URL}/schooladmin/getAllClassList`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch classes')
+    const data = await res.json()
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch classes')
     return data
   },
 
-  // ===============================
-  // 2️⃣ GET ALL SECTIONS BY CLASS ID
-  // ===============================
+  // ── 2. GET SECTIONS BY CLASS ────────────────────────────────────────────────
   getAllSections: async (classId) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-    const response = await fetch(`${API_BASE_URL}/schooladmin/getAllSections?class_id=${classId}`, {
-      method: 'GET',
+    const res = await fetch(`${API_BASE_URL}/schooladmin/getAllSections?class_id=${classId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch sections')
+    const data = await res.json()
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch sections')
     return data
   },
 
-  // ===============================
-  // 3️⃣ GET ALL SUBJECTS
-  // ===============================
+  // ── 3. GET ALL SUBJECTS ─────────────────────────────────────────────────────
   getAllSubjects: async () => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-    const response = await fetch(`${API_BASE_URL}/schooladmin/getAllSubjects`, {
-      method: 'GET',
+    const res = await fetch(`${API_BASE_URL}/schooladmin/getAllSubjects`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch subjects')
+    const data = await res.json()
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch subjects')
     return data
   },
 
-  // ===============================
-  // 4️⃣ GET ALL TEACHERS  ✅ NEW
-  // ===============================
-  getAllTeachers: async () => {
+  // ── 4. GET ALL HOMEWORKS (list page) ────────────────────────────────────────
+  getAllHomeworks: async (filters = {}) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-    const response = await fetch(`${API_BASE_URL}/schooladmin/getTotalTeachersListBySchoolId`, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    console.log('📊 getAllTeachers:', data)
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch teachers')
+    const params = new URLSearchParams()
+    if (filters.class_id)   params.append('class_id',   filters.class_id)
+    if (filters.subject_id) params.append('subject_id', filters.subject_id)
+    if (filters.status)     params.append('status',     filters.status)
+    const url = `${API_BASE_URL}/schooladmin/getHomeworks${params.toString() ? '?' + params.toString() : ''}`
+    const res  = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    const data = await res.json()
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch homeworks')
     return data
   },
 
-  // ===============================
-  // 5️⃣ GET TEACHER HOMEWORK LIST
-  // ===============================
-  getTeacherHomeworkByTeacherId: async (teacherId = '') => {
-    const token = getAuthToken()
-    if (!token) throw new Error('Token missing')
-    const url = teacherId
-      ? `${API_BASE_URL}/schooladmin/getTeacherHomeworkByTeacherId?teacher_id=${teacherId}`
-      : `${API_BASE_URL}/schooladmin/getTeacherHomeworkByTeacherId`
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch homework')
-    return data
-  },
-
-  // ===============================
-  // 6️⃣ GET HOMEWORK BY ID
-  // ===============================
+  // ── 5. GET SINGLE HOMEWORK + SUBMISSIONS ────────────────────────────────────
   getHomeworkById: async (homeworkId) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-    const response = await fetch(
+    const res = await fetch(
       `${API_BASE_URL}/schooladmin/getTeacherHomeworkByTeacherId?homework_id=${homeworkId}`,
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+      { headers: { Authorization: `Bearer ${token}` } }
     )
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch homework details')
+    const data = await res.json()
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch homework details')
     return data
   },
 
-  // ===============================
-  // 7️⃣ GET STUDENT HOMEWORK SUBJECT WISE
-  // ===============================
-  getStudentHomeworkSubjectWise: async (studentId) => {
+  // ── 6. CREATE HOMEWORK ──────────────────────────────────────────────────────
+  createHomework: async (formData) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-    const response = await fetch(
-      `${API_BASE_URL}/schooladmin/getStudentHomeworkSubjectWise?student_id=${studentId}`,
-      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
-    )
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch student homework')
-    return data
-  },
-
-  // ===============================
-  // 8️⃣ DELETE HOMEWORK
-  // ===============================
-  deleteStudentHomeworkPermanently: async (homeworkId) => {
-    const token = getAuthToken()
-    if (!token) throw new Error('Token missing')
-    const response = await fetch(`${API_BASE_URL}/schooladmin/deleteStudentHomeworkPermanently`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ homework_id: homeworkId }),
+    const res = await fetch(`${API_BASE_URL}/schooladmin/createTeacherHomework`, {
+      method:  'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body:    formData,
     })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-    const data = await response.json()
-    if (!data || data.success !== true) throw new Error(data?.message || 'Failed to delete homework')
-    return data
+    const rawText = await res.text()
+    let data
+    try { data = JSON.parse(rawText) } catch {
+      throw new Error(`Server error (${res.status})`)
+    }
+    if (!res.ok || data?.success === false) {
+      throw new Error(data?.message || data?.error || `Request failed (${res.status})`)
+    }
+    return data // data.data.homework_id is the created ID
   },
 }

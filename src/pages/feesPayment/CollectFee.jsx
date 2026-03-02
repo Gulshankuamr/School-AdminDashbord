@@ -1,15 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Loader2, SlidersHorizontal, X, ChevronRight, GraduationCap, Users } from 'lucide-react';
+import {
+  Search, SlidersHorizontal, X, ChevronRight,
+  GraduationCap, Users, Plus, Download
+} from 'lucide-react';
 import feePaymentService from '../../services/feeallService/feePaymentService';
 
 const CollectFee = () => {
   const navigate = useNavigate();
 
-  const [isLoading,        setIsLoading]        = useState(true);
-  const [allStudents,      setAllStudents]       = useState([]);
-  const [filteredStudents, setFilteredStudents]  = useState([]);
-  const [filters,          setFilters]           = useState({ className: '', sectionName: '', searchText: '' });
+  const [isLoading, setIsLoading] = useState(true);
+  const [allStudents, setAllStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [filters, setFilters] = useState({ className: '', sectionName: '', searchText: '' });
 
   useEffect(() => { fetchAllStudents(); }, []);
   useEffect(() => { applyFilters(); }, [filters, allStudents]);
@@ -31,7 +34,7 @@ const CollectFee = () => {
 
   const applyFilters = () => {
     let filtered = [...allStudents];
-    if (filters.className)   filtered = filtered.filter(s => s.class_name   === filters.className);
+    if (filters.className) filtered = filtered.filter(s => s.class_name === filters.className);
     if (filters.sectionName) filtered = filtered.filter(s => s.section_name === filters.sectionName);
     if (filters.searchText) {
       const q = filters.searchText.toLowerCase();
@@ -42,11 +45,9 @@ const CollectFee = () => {
     setFilteredStudents(filtered);
   };
 
-  /* Unique class list from student data */
   const getUniqueClasses = () =>
     [...new Set(allStudents.map(s => s.class_name).filter(Boolean))].sort();
 
-  /* Unique section_name list — optionally scoped to selected class */
   const getUniqueSections = () => {
     const src = filters.className
       ? allStudents.filter(s => s.class_name === filters.className)
@@ -55,245 +56,296 @@ const CollectFee = () => {
   };
 
   const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
-  const handleReset        = ()            => setFilters({ className: '', sectionName: '', searchText: '' });
-  const handleCollect      = (student)     => navigate(`/admin/fees-payment/collect/${student.student_id}`);
+  const handleReset = () => setFilters({ className: '', sectionName: '', searchText: '' });
+  const handleCollect = (student) => navigate(`/admin/fees-payment/student/${student.student_id}`);
 
-  const avatarColor = (name) => {
-    const colors = [
-      ['#1E3A8A', '#DBEAFE'], ['#065F46', '#D1FAE5'], ['#7C2D12', '#FEE2E2'],
-      ['#5B21B6', '#EDE9FE'], ['#92400E', '#FEF3C7'], ['#0F766E', '#CCFBF1'],
-    ];
-    const i = (name?.charCodeAt(0) || 0) % colors.length;
-    return colors[i];
-  };
+  const avatarColors = [
+    { bg: '#FFF3E0', text: '#E65100' },
+    { bg: '#E8F5E9', text: '#2E7D32' },
+    { bg: '#E3F2FD', text: '#1565C0' },
+    { bg: '#FCE4EC', text: '#880E4F' },
+    { bg: '#EDE7F6', text: '#4527A0' },
+    { bg: '#E0F2F1', text: '#00695C' },
+  ];
+  const getAvatar = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
 
-  /* ── Loading ── */
+  /* ── Stat counts ── */
+  const paidCount    = allStudents.filter(s => s.fee_status === 'paid').length;
+  const partialCount = allStudents.filter(s => s.fee_status === 'partial').length;
+  const pendingCount = allStudents.filter(s => s.fee_status === 'pending').length;
+
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="relative w-20 h-20 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-4 border-indigo-100" />
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-indigo-600 animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <GraduationCap className="w-8 h-8 text-indigo-600" />
-            </div>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 rounded-full border-4 border-orange-100" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 animate-spin" />
           </div>
-          <p className="text-indigo-800 font-semibold text-lg">Loading Students...</p>
-          <p className="text-indigo-400 text-sm mt-1">Please wait</p>
+          <p className="text-gray-700 font-semibold">Loading Students...</p>
         </div>
       </div>
     );
   }
 
-  /* ── Main ── */
   return (
-    <div className="min-h-screen"
-      style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #F0FDF4 100%)', fontFamily: "'Poppins', sans-serif" }}>
-      <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-      {/* Top Header */}
-      <div style={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #2563EB 100%)' }}
-        className="px-6 py-8 shadow-xl">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-                  <GraduationCap className="w-6 h-6 text-white" />
-                </div>
-                <h1 className="text-3xl font-bold text-white tracking-tight">Collect Fee</h1>
-              </div>
-              <p className="text-blue-200 text-sm ml-13 mt-1">Select a student to collect their fee payment</p>
-            </div>
-            <div className="hidden md:flex items-center gap-3">
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20 text-center">
-                <div className="text-2xl font-bold text-white">{allStudents.length}</div>
-                <div className="text-blue-200 text-xs font-medium">Total Students</div>
-              </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/20 text-center">
-                <div className="text-2xl font-bold text-white">{filteredStudents.length}</div>
-                <div className="text-blue-200 text-xs font-medium">Showing</div>
-              </div>
-            </div>
+      {/* ── Page Header ── */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Fee Collection Dashboard</h1>
+            <p className="text-gray-500 text-sm mt-0.5">Manage student payments and financial records</p>
           </div>
+          <button
+            onClick={() => navigate('/admin/fees-payment/collect')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
+            style={{ background: '#EA580C' }}
+          >
+            <Plus className="w-4 h-4" />
+            Add New Record
+          </button>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-
-        {/* Filter Card */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 p-6 mb-6">
-          <div className="flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-              <SlidersHorizontal className="w-4 h-4 text-indigo-600" />
-            </div>
-            <h2 className="font-semibold text-slate-800 text-base">Filter Students</h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-            {/* Class */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Class</label>
-              <select
-                value={filters.className}
-                onChange={(e) => {
-                  handleFilterChange('className', e.target.value);
-                  handleFilterChange('sectionName', ''); // reset section when class changes
-                }}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="">All Classes</option>
-                {getUniqueClasses().map(cls => <option key={cls} value={cls}>{cls}</option>)}
-              </select>
-            </div>
-
-            {/* Section — only section_name used */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Section</label>
-              <select
-                value={filters.sectionName}
-                onChange={(e) => handleFilterChange('sectionName', e.target.value)}
-                disabled={!filters.className}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <option value="">All Sections</option>
-                {getUniqueSections().map(sec => <option key={sec} value={sec}>{sec}</option>)}
-              </select>
-            </div>
-
-            {/* Search */}
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Student name or admission number..."
-                  value={filters.searchText}
-                  onChange={(e) => handleFilterChange('searchText', e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-                {filters.searchText && (
-                  <button onClick={() => handleFilterChange('searchText', '')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {(filters.className || filters.sectionName || filters.searchText) && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
-              <span className="text-sm text-slate-500">
-                Showing <span className="font-semibold text-indigo-600">{filteredStudents.length}</span> of{' '}
-                <span className="font-semibold">{allStudents.length}</span> students
+      {/* ── Stat Cards ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {[
+          { label: 'Total Students', value: allStudents.length, icon: '👥', sub: '+2.5%',  subColor: '#16A34A' },
+          { label: 'Paid Full',      value: paidCount,          icon: '✅', sub: '85% total', subColor: '#16A34A' },
+          { label: 'Partial Payment',value: partialCount,       icon: '📋', sub: 'Due soon',  subColor: '#D97706' },
+          { label: 'Pending',        value: pendingCount,       icon: '⚠️', sub: 'Overdue',   subColor: '#DC2626' },
+        ].map(({ label, value, icon, sub, subColor }) => (
+          <div key={label} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+            <div className="flex items-start justify-between mb-3">
+              <span className="text-2xl">{icon}</span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-50" style={{ color: subColor }}>
+                {sub}
               </span>
-              <button onClick={handleReset}
-                className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 font-medium transition-colors">
-                <X className="w-3.5 h-3.5" /> Reset Filters
-              </button>
             </div>
-          )}
-        </div>
+            <p className="text-sm text-gray-500 mb-1">{label}</p>
+            <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
+          </div>
+        ))}
+      </div>
 
-        {/* Students Table */}
-        <div className="bg-white rounded-2xl shadow-lg border border-slate-100 overflow-hidden">
+      {/* ── Filter Bar ── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
 
-          {/* Table Header */}
-          <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border-b border-slate-200">
-            <div className="col-span-1 text-xs font-bold text-slate-400 uppercase tracking-wider">#</div>
-            <div className="col-span-4 text-xs font-bold text-slate-400 uppercase tracking-wider">Student</div>
-            <div className="col-span-3 text-xs font-bold text-slate-400 uppercase tracking-wider">Class / Section</div>
-            <div className="col-span-2 text-xs font-bold text-slate-400 uppercase tracking-wider">Admission No.</div>
-            <div className="col-span-2 text-xs font-bold text-slate-400 uppercase tracking-wider text-right">Action</div>
+          {/* Academic Year */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Academic Year</label>
+            <select
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:border-orange-500 bg-white"
+              style={{ '--tw-ring-color': '#EA580C' }}
+            >
+              <option>2025-26</option>
+              <option>2024-25</option>
+              <option>2023-24</option>
+            </select>
           </div>
 
-          {filteredStudents.length > 0 ? (
-            <div className="divide-y divide-slate-100">
-              {filteredStudents.map((student, idx) => {
-                const [fg, bg] = avatarColor(student.name);
-                return (
-                  <div
-                    key={student.student_id}
-                    className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-indigo-50/30 transition-all duration-150 group"
-                  >
-                    <div className="col-span-1 flex items-center">
-                      <span className="text-slate-400 text-sm font-medium">{idx + 1}</span>
-                    </div>
+          {/* Class */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Class</label>
+            <select
+              value={filters.className}
+              onChange={(e) => { handleFilterChange('className', e.target.value); handleFilterChange('sectionName', ''); }}
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:border-orange-500 bg-white"
+            >
+              <option value="">All Classes</option>
+              {getUniqueClasses().map(cls => <option key={cls} value={cls}>{cls}</option>)}
+            </select>
+          </div>
 
-                    <div className="col-span-4 flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm shadow-sm"
-                        style={{ background: bg, color: fg }}
-                      >
-                        {student.name?.charAt(0)?.toUpperCase()}
-                      </div>
-                      <div>
-                        <div className="font-semibold text-slate-800 text-sm group-hover:text-indigo-700 transition-colors">
-                          {student.name}
-                        </div>
-                        <div className="text-xs text-slate-400 capitalize">{student.gender?.toLowerCase()}</div>
-                      </div>
-                    </div>
+          {/* Section */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Section</label>
+            <select
+              value={filters.sectionName}
+              onChange={(e) => handleFilterChange('sectionName', e.target.value)}
+              disabled={!filters.className}
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:border-orange-500 bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">All Sections</option>
+              {getUniqueSections().map(sec => <option key={sec} value={sec}>{sec}</option>)}
+            </select>
+          </div>
 
-                    {/* Class + section_name only */}
-                    <div className="col-span-3 flex items-center">
-                      <span
-                        className="px-3 py-1 rounded-full text-xs font-semibold"
-                        style={{ background: '#DBEAFE', color: '#1E3A8A' }}
-                      >
-                        Class {student.class_name} – {student.section_name}
-                      </span>
-                    </div>
-
-                    <div className="col-span-2 flex items-center">
-                      <span className="font-mono text-slate-600 text-sm">{student.admission_no}</span>
-                    </div>
-
-                    <div className="col-span-2 flex items-center justify-end">
-                      <button
-                        onClick={() => handleCollect(student)}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-150"
-                        style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
-                      >
-                        Collect <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="py-20 text-center">
-              <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-                <Users className="w-10 h-10 text-slate-300" />
-              </div>
-              <h3 className="text-lg font-semibold text-slate-600 mb-1">No students found</h3>
-              <p className="text-slate-400 text-sm">
-                {allStudents.length === 0 ? 'No students in the system' : 'Try adjusting your filters'}
-              </p>
-              {allStudents.length > 0 && (
-                <button onClick={handleReset}
-                  className="mt-4 px-5 py-2 rounded-xl bg-indigo-50 text-indigo-600 font-semibold text-sm hover:bg-indigo-100 transition-colors">
-                  Clear Filters
+          {/* Search */}
+          <div className="md:col-span-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Search Student</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Name or Admission ID..."
+                value={filters.searchText}
+                onChange={(e) => handleFilterChange('searchText', e.target.value)}
+                className="w-full pl-9 pr-9 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:border-orange-500 bg-white placeholder-gray-400"
+              />
+              {filters.searchText && (
+                <button onClick={() => handleFilterChange('searchText', '')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
-          )}
-
-          {filteredStudents.length > 0 && (
-            <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-              <span className="text-xs text-slate-500">
-                {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''} listed
-              </span>
-              <span className="text-xs text-slate-400">Click "Collect" to process fee payment</span>
-            </div>
-          )}
+          </div>
         </div>
+
+        {(filters.className || filters.sectionName || filters.searchText) && (
+          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+            <span className="text-sm text-gray-500">
+              Showing <span className="font-semibold text-gray-900">{filteredStudents.length}</span> of <span className="font-semibold text-gray-900">{allStudents.length}</span> students
+            </span>
+            <button onClick={handleReset} className="text-sm font-semibold flex items-center gap-1.5 hover:opacity-80 transition-opacity" style={{ color: '#EA580C' }}>
+              <X className="w-3.5 h-3.5" /> Reset Filters
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Students Table ── */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+        {/* Table Title */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <h2 className="font-bold text-gray-900 text-base">Recent Fee Transactions</h2>
+          <button className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#EA580C' }}>
+            <Download className="w-4 h-4" /> Download Report
+          </button>
+        </div>
+
+        {/* Header Row */}
+        <div className="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-50 border-b border-gray-100">
+          {['Student', 'Admission No', 'Class', 'Total Fee', 'Paid', 'Pending', 'Status', 'Action'].map((h, i) => (
+            <div key={h}
+              className={`text-xs font-bold text-gray-500 uppercase tracking-wider ${
+                i === 0 ? 'col-span-3' :
+                i === 7 ? 'col-span-2 text-right' :
+                'col-span-1'
+              }`}>
+              {h}
+            </div>
+          ))}
+        </div>
+
+        {filteredStudents.length > 0 ? (
+          <div className="divide-y divide-gray-50">
+            {filteredStudents.map((student, idx) => {
+              const av = getAvatar(student.name);
+              const status = student.fee_status || 'pending';
+
+              const statusBadge = {
+                paid:    { label: 'PAID',    bg: '#DCFCE7', color: '#15803D' },
+                partial: { label: 'PARTIAL', bg: '#FEF9C3', color: '#A16207' },
+                pending: { label: 'PENDING', bg: '#FEE2E2', color: '#B91C1C' },
+              }[status] || { label: 'N/A', bg: '#F1F5F9', color: '#475569' };
+
+              return (
+                <div key={student.student_id}
+                  className="grid grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-orange-50/30 transition-colors group">
+
+                  {/* Student */}
+                  <div className="col-span-3 flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                      style={{ background: av.bg, color: av.text }}>
+                      {student.name?.charAt(0)?.toUpperCase()}
+                    </div>
+                    <span className="font-semibold text-gray-900 text-sm">{student.name}</span>
+                  </div>
+
+                  {/* Admission No */}
+                  <div className="col-span-1">
+                    <span className="text-sm text-gray-700 font-medium">{student.admission_no}</span>
+                  </div>
+
+                  {/* Class */}
+                  <div className="col-span-1">
+                    <span className="text-sm text-gray-700 font-medium">
+                      {student.class_name}{student.section_name ? `-${student.section_name}` : ''}
+                    </span>
+                  </div>
+
+                  {/* Total Fee */}
+                  <div className="col-span-1">
+                    <span className="text-sm font-semibold text-gray-900">
+                      {student.total_fee ? `₹${Number(student.total_fee).toLocaleString()}` : '—'}
+                    </span>
+                  </div>
+
+                  {/* Paid */}
+                  <div className="col-span-1">
+                    <span className="text-sm font-semibold" style={{ color: '#16A34A' }}>
+                      {student.paid_amount ? `₹${Number(student.paid_amount).toLocaleString()}` : '—'}
+                    </span>
+                  </div>
+
+                  {/* Pending */}
+                  <div className="col-span-1">
+                    <span className="text-sm font-semibold" style={{ color: student.pending_amount > 0 ? '#DC2626' : '#6B7280' }}>
+                      {student.pending_amount ? `₹${Number(student.pending_amount).toLocaleString()}` : '₹0'}
+                    </span>
+                  </div>
+
+                  {/* Status */}
+                  <div className="col-span-1">
+                    <span className="px-2.5 py-1 rounded text-xs font-bold"
+                      style={{ background: statusBadge.bg, color: statusBadge.color }}>
+                      {statusBadge.label}
+                    </span>
+                  </div>
+
+                  {/* Action */}
+                  <div className="col-span-2 text-right">
+                    <button
+                      onClick={() => handleCollect(student)}
+                      className="px-4 py-2 rounded-lg text-white text-xs font-bold transition-all hover:opacity-90 active:scale-95 shadow-sm"
+                      style={{ background: '#EA580C' }}
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="py-20 text-center">
+            <Users className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-semibold">No students found</p>
+            <p className="text-gray-400 text-sm mt-1">
+              {allStudents.length === 0 ? 'No students in the system' : 'Try adjusting your filters'}
+            </p>
+            {allStudents.length > 0 && (
+              <button onClick={handleReset}
+                className="mt-4 px-5 py-2 rounded-lg text-white font-semibold text-sm"
+                style={{ background: '#EA580C' }}>
+                Clear Filters
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Footer */}
+        {filteredStudents.length > 0 && (
+          <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <span className="text-xs text-gray-500">
+              Showing 1 to {Math.min(filteredStudents.length, 10)} of {filteredStudents.length} entries
+            </span>
+            <div className="flex items-center gap-1">
+              <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-400 hover:border-orange-400 hover:text-orange-500 text-sm transition-colors">‹</button>
+              <button className="w-8 h-8 flex items-center justify-center rounded text-white text-sm font-bold" style={{ background: '#EA580C' }}>1</button>
+              <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-700 hover:border-orange-400 hover:text-orange-500 text-sm transition-colors">2</button>
+              <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-700 hover:border-orange-400 hover:text-orange-500 text-sm transition-colors">3</button>
+              <button className="w-8 h-8 flex items-center justify-center rounded border border-gray-200 text-gray-400 hover:border-orange-400 hover:text-orange-500 text-sm transition-colors">›</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
