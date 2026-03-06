@@ -229,7 +229,7 @@ const StudentFeeProfile = () => {
                 </span>
                 <span className="flex items-center gap-1.5 text-sm text-gray-500">
                   <span>📚</span>
-                  Class {studentInfo?.class_name} - {studentInfo?.section_name}
+                   {studentInfo?.class_name} - {studentInfo?.section_name}
                 </span>
                 {studentInfo?.joined_on && (
                   <span className="flex items-center gap-1.5 text-sm text-gray-500">
@@ -240,14 +240,14 @@ const StudentFeeProfile = () => {
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          {/* <div className="flex items-center gap-2">
             <button className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors">
               <Edit className="w-4 h-4" />
             </button>
             <button className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors">
               <Printer className="w-4 h-4" />
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -371,13 +371,13 @@ const StudentFeeProfile = () => {
                   {/* Actions */}
                   <div className="col-span-2 flex items-center justify-end gap-2">
                     {/* View / Receipt icon */}
-                    <button
+                    {/* <button
                       onClick={() => navigate(`/admin/fees-payment/collect/${studentId}`)}
                       className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 hover:border-orange-200 transition-colors"
                       title="View Details"
                     >
                       <Eye className="w-3.5 h-3.5" />
-                    </button>
+                    </button> */}
 
                     {/* Pay Now */}
                     {!isDisc && !isPaid && (

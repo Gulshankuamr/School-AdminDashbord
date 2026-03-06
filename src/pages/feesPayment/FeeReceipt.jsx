@@ -179,7 +179,7 @@ const FeeReceipt = () => {
                 {[
                   ['Student Name', student?.name],
                   ['Admission No.', student?.admission_no],
-                  ['Class & Section', `Class ${student?.class_name || '–'} - ${student?.section_name || '–'}`],
+                  ['Class & Section', ` ${student?.class_name || '–'} - ${student?.section_name || '–'}`],
                 ].map(([label, val]) => (
                   <div key={label} className="flex items-start gap-2 mb-2">
                     <span className="text-gray-400 text-sm w-28 flex-shrink-0">{label}</span>
@@ -207,13 +207,12 @@ const FeeReceipt = () => {
             </div>
           </div>
 
-          {/* Fee Table */}
+          {/* Fee Table — Frequency column removed */}
           <div className="px-8 py-4 border-b border-gray-100">
             <table className="w-full">
               <thead>
                 <tr style={{ background: '#F8FAFC' }}>
                   <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-3 rounded-l-lg">Fee Description</th>
-                  <th className="text-center text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-3">Frequency</th>
                   <th className="text-right text-xs font-bold text-gray-500 uppercase tracking-wider py-3 px-3 rounded-r-lg">Amount (₹)</th>
                 </tr>
               </thead>
@@ -222,7 +221,6 @@ const FeeReceipt = () => {
                 {fee_head && (
                   <tr>
                     <td className="py-3 px-3 text-sm font-medium text-gray-800">{fee_head}</td>
-                    <td className="py-3 px-3 text-sm text-gray-500 text-center capitalize">—</td>
                     <td className="py-3 px-3 text-sm font-semibold text-gray-900 text-right">{fmt(amount)}</td>
                   </tr>
                 )}
@@ -232,7 +230,6 @@ const FeeReceipt = () => {
                     <td className="py-3 px-3 text-sm text-gray-700">
                       {fee_head ? `${fee_head} — Installment #${inst.installment_no || (i + 1)}` : `Installment #${inst.installment_no || (i + 1)}`}
                     </td>
-                    <td className="py-3 px-3 text-sm text-gray-500 text-center capitalize">—</td>
                     <td className="py-3 px-3 text-sm font-semibold text-gray-900 text-right">{fmt(inst.amount)}</td>
                   </tr>
                 ))}
@@ -240,18 +237,17 @@ const FeeReceipt = () => {
                 {lateCharge > 0 && (
                   <tr>
                     <td className="py-3 px-3 text-sm font-medium" style={{ color: '#DC2626' }}>Late Payment Penalty</td>
-                    <td className="py-3 px-3 text-sm text-gray-500 text-center">One-time</td>
                     <td className="py-3 px-3 text-sm font-semibold text-right" style={{ color: '#DC2626' }}>{fmt(lateCharge)}</td>
                   </tr>
                 )}
               </tbody>
               <tfoot>
                 <tr className="border-t border-gray-200">
-                  <td colSpan={2} className="py-3 px-3 text-sm font-semibold text-gray-700 text-right">SUBTOTAL</td>
+                  <td className="py-3 px-3 text-sm font-semibold text-gray-700 text-right">SUBTOTAL</td>
                   <td className="py-3 px-3 text-sm font-semibold text-gray-900 text-right">{fmt(subtotal + lateCharge)}</td>
                 </tr>
                 <tr style={{ background: '#EFF6FF' }}>
-                  <td colSpan={2} className="py-4 px-3 text-base font-bold text-right rounded-l-lg" style={{ color: '#EA580C' }}>
+                  <td className="py-4 px-3 text-base font-bold text-right rounded-l-lg" style={{ color: '#EA580C' }}>
                     TOTAL PAID
                   </td>
                   <td className="py-4 px-3 text-xl font-bold text-right rounded-r-lg" style={{ color: '#EA580C' }}>

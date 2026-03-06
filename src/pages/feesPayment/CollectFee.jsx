@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, SlidersHorizontal, X, ChevronRight,
-  GraduationCap, Users, Plus, Download
+  Search, X, Users, Download
 } from 'lucide-react';
 import feePaymentService from '../../services/feeallService/feePaymentService';
 
@@ -69,11 +68,6 @@ const CollectFee = () => {
   ];
   const getAvatar = (name) => avatarColors[(name?.charCodeAt(0) || 0) % avatarColors.length];
 
-  /* ── Stat counts ── */
-  const paidCount    = allStudents.filter(s => s.fee_status === 'paid').length;
-  const partialCount = allStudents.filter(s => s.fee_status === 'partial').length;
-  const pendingCount = allStudents.filter(s => s.fee_status === 'pending').length;
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -92,45 +86,6 @@ const CollectFee = () => {
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans', sans-serif" }}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-      {/* ── Page Header ── */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Fee Collection Dashboard</h1>
-            <p className="text-gray-500 text-sm mt-0.5">Manage student payments and financial records</p>
-          </div>
-          <button
-            onClick={() => navigate('/admin/fees-payment/collect')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-white font-semibold text-sm transition-all hover:opacity-90 active:scale-95"
-            style={{ background: '#EA580C' }}
-          >
-            <Plus className="w-4 h-4" />
-            Add New Record
-          </button>
-        </div>
-      </div>
-
-      {/* ── Stat Cards ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { label: 'Total Students', value: allStudents.length, icon: '👥', sub: '+2.5%',  subColor: '#16A34A' },
-          { label: 'Paid Full',      value: paidCount,          icon: '✅', sub: '85% total', subColor: '#16A34A' },
-          { label: 'Partial Payment',value: partialCount,       icon: '📋', sub: 'Due soon',  subColor: '#D97706' },
-          { label: 'Pending',        value: pendingCount,       icon: '⚠️', sub: 'Overdue',   subColor: '#DC2626' },
-        ].map(({ label, value, icon, sub, subColor }) => (
-          <div key={label} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
-            <div className="flex items-start justify-between mb-3">
-              <span className="text-2xl">{icon}</span>
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-50" style={{ color: subColor }}>
-                {sub}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 mb-1">{label}</p>
-            <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
-          </div>
-        ))}
-      </div>
-
       {/* ── Filter Bar ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
@@ -140,7 +95,6 @@ const CollectFee = () => {
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Academic Year</label>
             <select
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:border-orange-500 bg-white"
-              style={{ '--tw-ring-color': '#EA580C' }}
             >
               <option>2025-26</option>
               <option>2024-25</option>
@@ -220,85 +174,52 @@ const CollectFee = () => {
           </button>
         </div>
 
-        {/* Header Row */}
+        {/* Header Row — Student | Admission No | Paid | Action */}
         <div className="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-50 border-b border-gray-100">
-          {['Student', 'Admission No', 'Class', 'Total Fee', 'Paid', 'Pending', 'Status', 'Action'].map((h, i) => (
-            <div key={h}
-              className={`text-xs font-bold text-gray-500 uppercase tracking-wider ${
-                i === 0 ? 'col-span-3' :
-                i === 7 ? 'col-span-2 text-right' :
-                'col-span-1'
-              }`}>
-              {h}
+          {[
+            { label: 'Student',      span: 'col-span-5' },
+            { label: 'Admission No', span: 'col-span-3' },
+            // { label: 'Paid',         span: 'col-span-2' },
+            { label: 'Action',       span: 'col-span-2 text-right' },
+          ].map(({ label, span }) => (
+            <div key={label} className={`text-xs font-bold text-gray-500 uppercase tracking-wider ${span}`}>
+              {label}
             </div>
           ))}
         </div>
 
         {filteredStudents.length > 0 ? (
           <div className="divide-y divide-gray-50">
-            {filteredStudents.map((student, idx) => {
+            {filteredStudents.map((student) => {
               const av = getAvatar(student.name);
-              const status = student.fee_status || 'pending';
-
-              const statusBadge = {
-                paid:    { label: 'PAID',    bg: '#DCFCE7', color: '#15803D' },
-                partial: { label: 'PARTIAL', bg: '#FEF9C3', color: '#A16207' },
-                pending: { label: 'PENDING', bg: '#FEE2E2', color: '#B91C1C' },
-              }[status] || { label: 'N/A', bg: '#F1F5F9', color: '#475569' };
 
               return (
-                <div key={student.student_id}
-                  className="grid grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-orange-50/30 transition-colors group">
-
+                <div
+                  key={student.student_id}
+                  className="grid grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-orange-50/30 transition-colors group"
+                >
                   {/* Student */}
-                  <div className="col-span-3 flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
-                      style={{ background: av.bg, color: av.text }}>
+                  <div className="col-span-5 flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                      style={{ background: av.bg, color: av.text }}
+                    >
                       {student.name?.charAt(0)?.toUpperCase()}
                     </div>
                     <span className="font-semibold text-gray-900 text-sm">{student.name}</span>
                   </div>
 
                   {/* Admission No */}
-                  <div className="col-span-1">
+                  <div className="col-span-3">
                     <span className="text-sm text-gray-700 font-medium">{student.admission_no}</span>
                   </div>
 
-                  {/* Class */}
-                  <div className="col-span-1">
-                    <span className="text-sm text-gray-700 font-medium">
-                      {student.class_name}{student.section_name ? `-${student.section_name}` : ''}
-                    </span>
-                  </div>
-
-                  {/* Total Fee */}
-                  <div className="col-span-1">
-                    <span className="text-sm font-semibold text-gray-900">
-                      {student.total_fee ? `₹${Number(student.total_fee).toLocaleString()}` : '—'}
-                    </span>
-                  </div>
-
                   {/* Paid */}
-                  <div className="col-span-1">
+                  {/* <div className="col-span-2">
                     <span className="text-sm font-semibold" style={{ color: '#16A34A' }}>
                       {student.paid_amount ? `₹${Number(student.paid_amount).toLocaleString()}` : '—'}
                     </span>
-                  </div>
-
-                  {/* Pending */}
-                  <div className="col-span-1">
-                    <span className="text-sm font-semibold" style={{ color: student.pending_amount > 0 ? '#DC2626' : '#6B7280' }}>
-                      {student.pending_amount ? `₹${Number(student.pending_amount).toLocaleString()}` : '₹0'}
-                    </span>
-                  </div>
-
-                  {/* Status */}
-                  <div className="col-span-1">
-                    <span className="px-2.5 py-1 rounded text-xs font-bold"
-                      style={{ background: statusBadge.bg, color: statusBadge.color }}>
-                      {statusBadge.label}
-                    </span>
-                  </div>
+                  </div> */}
 
                   {/* Action */}
                   <div className="col-span-2 text-right">
@@ -322,9 +243,11 @@ const CollectFee = () => {
               {allStudents.length === 0 ? 'No students in the system' : 'Try adjusting your filters'}
             </p>
             {allStudents.length > 0 && (
-              <button onClick={handleReset}
+              <button
+                onClick={handleReset}
                 className="mt-4 px-5 py-2 rounded-lg text-white font-semibold text-sm"
-                style={{ background: '#EA580C' }}>
+                style={{ background: '#EA580C' }}
+              >
                 Clear Filters
               </button>
             )}
