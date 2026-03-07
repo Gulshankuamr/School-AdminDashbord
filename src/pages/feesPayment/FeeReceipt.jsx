@@ -342,7 +342,7 @@ const FeeReceipt = () => {
                 {[
                   ['Student Name',    student?.name],
                   ['Admission No.',   student?.admission_no],
-                  ['Class & Section', `Class ${student?.class_name || '–'} - ${student?.section_name || '–'}`],
+                  ['Class & Section', ` ${student?.class_name || '–'} - ${student?.section_name || '–'}`],
                 ].map(([label, val]) => (
                   <div key={label} className="flex items-start gap-2 mb-2">
                     <span className="text-gray-400 text-sm w-28 flex-shrink-0">{label}</span>

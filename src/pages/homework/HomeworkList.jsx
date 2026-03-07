@@ -1,178 +1,146 @@
+// src/pages/admin/Homework/HomeworkList.jsx
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { homeWorkService } from '../../services/homeWorkService/homeWorkService'
+import Sidebar from '../../components/Sidebar'
+import Navbar  from '../../components/Navbar'
+import {
+  Plus, RefreshCw,
+  BookOpen, Calendar, Users, ChevronRight,
+  AlertCircle, Inbox,
+} from 'lucide-react'
 
-// ─── helpers ────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────
 const fmt = (d) =>
   d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
-const progressColor = (pct) =>
-  pct >= 80 ? '#16a34a' : pct >= 40 ? '#d97706' : '#dc2626'
+const pctColor = (p) => p >= 80 ? 'text-green-600' : p >= 40 ? 'text-amber-500' : 'text-red-500'
+const pctBg    = (p) => p >= 80 ? 'bg-green-500'   : p >= 40 ? 'bg-amber-400'   : 'bg-red-500'
+
+const STATUS_STYLE = {
+  Active:    'bg-green-100 text-green-700',
+  Submitted: 'bg-blue-100  text-blue-700',
+  Pending:   'bg-amber-100 text-amber-700',
+  Overdue:   'bg-red-100   text-red-700',
+  Upcoming:  'bg-indigo-100 text-indigo-700',
+}
 
 const fileIcon = (name = '') => {
-  if (!name) return '📄'
-  const ext = name.split('.').pop().toLowerCase()
-  if (['jpg', 'jpeg', 'png', 'svg', 'webp'].includes(ext)) return '🖼️'
+  const ext = (name.split('.').pop() || '').toLowerCase()
+  if (['jpg','jpeg','png','svg','webp'].includes(ext)) return '🖼️'
   if (ext === 'pdf') return '📕'
   return '📄'
 }
 
-// ─── STATUS BADGE ────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-  const map = {
-    Active:   { bg: '#dcfce7', color: '#15803d', dot: '#16a34a' },
-    Overdue:  { bg: '#fee2e2', color: '#b91c1c', dot: '#dc2626' },
-    Upcoming: { bg: '#e0e7ff', color: '#3730a3', dot: '#4f46e5' },
-    Pending:  { bg: '#fef9c3', color: '#92400e', dot: '#d97706' },
-  }
-  const s = map[status] || { bg: '#f3f4f6', color: '#6b7280', dot: '#9ca3af' }
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: 5,
-      background: s.bg, color: s.color,
-      padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, display: 'inline-block' }} />
-      {status || 'Active'}
-    </span>
-  )
-}
+// ── Status Badge ──────────────────────────────────────────────
+const StatusBadge = ({ status }) => (
+  <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_STYLE[status] || 'bg-gray-100 text-gray-600'}`}>
+    <span className="w-1.5 h-1.5 rounded-full bg-current" />
+    {status || 'Active'}
+  </span>
+)
 
-// ─── PROGRESS BAR ────────────────────────────────────────────────────────────
-function ProgressRow({ total = 0, submitted = 0, pending = 0, overdue = 0 }) {
-  const pct = total > 0 ? Math.round((submitted / total) * 100) : 0
-  return (
-    <div style={{ marginTop: 12 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ display: 'flex', gap: 16, fontSize: 12 }}>
-          <span style={{ color: '#374151' }}>Total: <strong>{total}</strong></span>
-          <span style={{ color: '#16a34a' }}>Submitted: <strong>{submitted}</strong> 🟢</span>
-          <span style={{ color: '#d97706' }}>Pending: <strong>{pending}</strong> 🟡</span>
-          <span style={{ color: '#dc2626' }}>Overdue: <strong>{overdue}</strong> 🔴</span>
-        </div>
-        <span style={{ fontSize: 12, fontWeight: 700, color: progressColor(pct) }}>{pct}%</span>
-      </div>
-      <div style={{ background: '#f3f4f6', borderRadius: 99, height: 8, overflow: 'hidden' }}>
-        <div style={{
-          width: `${pct}%`,
-          height: '100%',
-          background: progressColor(pct),
-          borderRadius: 99,
-          transition: 'width 0.6s ease',
-        }} />
-      </div>
-    </div>
-  )
-}
+// ── Homework Card ─────────────────────────────────────────────
+const HomeworkCard = ({ hw, onView }) => {
+  const total     = hw.total_students    || 0
+  const submitted = Number(hw.submitted_count) || 0
+  const overdue   = Number(hw.overdue_count)   || 0
+  const pending   = Number(hw.pending_count)   ?? (total - submitted - overdue)
+  const pct       = total > 0 ? Math.round((submitted / total) * 100) : 0
 
-// ─── HOMEWORK CARD ────────────────────────────────────────────────────────────
-function HomeworkCard({ hw, onView }) {
   const attachments = (() => {
     if (!hw.attachment) return []
     if (Array.isArray(hw.attachment)) return hw.attachment
     return [{ url: hw.attachment, name: hw.attachment_name || 'Attachment' }]
   })()
 
-  const total     = hw.total_students  || 0
-  const submitted = Number(hw.submitted_count) || 0
-  const overdue   = Number(hw.overdue_count)   || 0
-  const pending   = Number(hw.pending_count)   ?? (total - submitted - overdue)
-
   return (
-    <div style={{
-      background: '#fff',
-      borderRadius: 14,
-      padding: '20px 24px',
-      boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-      border: '1px solid #e5e7eb',
-      transition: 'box-shadow 0.2s',
-    }}
-      onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.10)'}
-      onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.07)'}
-    >
-      {/* top row */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-          <span style={{ fontSize: 20, marginTop: 2 }}>📄</span>
-          <div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#111827', marginBottom: 4 }}>
-              {hw.title || hw.homework_title}
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+      {/* Top accent bar */}
+      <div className={`h-1 w-full ${pctBg(pct)}`} />
+
+      <div className="p-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-xl bg-violet-50 border border-violet-100 flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-5 h-5 text-violet-600" />
             </div>
-            <div style={{ fontSize: 13, color: '#6b7280', display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-              <span>Class: <strong style={{ color: '#374151' }}>{hw.class_name}{hw.section_name ? ` ${hw.section_name}` : ''}</strong></span>
-              <span>Subject: <strong style={{ color: '#374151' }}>{hw.subject_name || '—'}</strong></span>
-              <span>Due: <strong style={{ color: '#374151' }}>{fmt(hw.due_date)}</strong></span>
-            </div>
-            {hw.teacher_name && (
-              <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 3 }}>
-                Created by: {hw.created_by_role === 'school_admin' ? 'School Admin' : hw.teacher_name}
+            <div>
+              <h3 className="text-[15px] font-bold text-gray-900 leading-snug mb-1">
+                {hw.description || hw.title || hw.homework_title || `Homework #${hw.homework_id}`}
+              </h3>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                <span>Class: <strong className="text-gray-700">{hw.class_name}{hw.section_name ? ` ${hw.section_name}` : ''}</strong></span>
+                <span>Subject: <strong className="text-gray-700">{hw.subject_name || '—'}</strong></span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3" />
+                  Due: <strong className="text-gray-700">{fmt(hw.due_date)}</strong>
+                </span>
               </div>
-            )}
+              {hw.teacher_name && (
+                <p className="text-[11px] text-gray-400 mt-1">
+                  By: {hw.created_by_role === 'school_admin' ? 'School Admin' : hw.teacher_name}
+                </p>
+              )}
+            </div>
           </div>
         </div>
-        <StatusBadge status={hw.status} />
-      </div>
 
-      {/* attachments */}
-      {attachments.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-          {attachments.map((att, i) => {
-            const name = att.name || att.url?.split('/').pop() || `File ${i + 1}`
-            return (
-              <a
-                key={i}
-                href={att.url}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
-                  background: '#f0f9ff', color: '#0369a1',
-                  padding: '3px 10px', borderRadius: 8, fontSize: 12, fontWeight: 500,
-                  textDecoration: 'none', border: '1px solid #bae6fd',
-                }}
-              >
-                {fileIcon(name)} {name}
-              </a>
-            )
-          })}
+        {/* Attachments */}
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-3">
+            {attachments.map((att, i) => {
+              const name = att.name || att.url?.split('/').pop() || `File ${i+1}`
+              return (
+                <a key={i} href={att.url} target="_blank" rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-sky-700 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-lg hover:bg-sky-100 transition-colors"
+                >
+                  {fileIcon(name)} {name}
+                </a>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Progress */}
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="flex gap-4 text-xs">
+              <span className="text-gray-500">Total: <strong className="text-gray-800">{total}</strong></span>
+              <span className="text-green-600">Submitted: <strong>{submitted}</strong></span>
+              <span className="text-amber-500">Pending: <strong>{pending}</strong></span>
+              <span className="text-red-500">Overdue: <strong>{overdue}</strong></span>
+            </div>
+            <span className={`text-xs font-bold ${pctColor(pct)}`}>{pct}%</span>
+          </div>
+          <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${pctBg(pct)}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
         </div>
-      )}
-      {attachments.length === 0 && (
-        <div style={{ marginTop: 8, fontSize: 12, color: '#d1d5db' }}>📎 (no attachments)</div>
-      )}
 
-      {/* progress */}
-      <ProgressRow total={total} submitted={submitted} pending={pending} overdue={overdue} />
-
-      {/* action */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 14 }}>
-        <button
-          onClick={() => onView(hw.homework_id || hw.id)}
-          style={{
-            background: 'none',
-            border: '1px solid #2563eb',
-            color: '#2563eb',
-            borderRadius: 8,
-            padding: '7px 18px',
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          View Submissions <span>→</span>
-        </button>
+        {/* Action */}
+        <div className="flex justify-end">
+          <button
+            onClick={() => onView(hw.homework_id || hw.id)}
+            className="flex items-center gap-1.5 text-sm font-semibold text-violet-600 border border-violet-200 bg-violet-50 hover:bg-violet-100 px-4 py-2 rounded-xl transition-colors"
+          >
+            View Submissions <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-// ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────
 export default function HomeworkList() {
   const navigate = useNavigate()
-  const [homeworks,       setHomeworks]       = useState([])
+
+  const [allHomeworks,    setAllHomeworks]    = useState([])
   const [loading,         setLoading]         = useState(true)
   const [error,           setError]           = useState(null)
   const [classes,         setClasses]         = useState([])
@@ -186,14 +154,13 @@ export default function HomeworkList() {
     homeWorkService.getAllSubjects().then((d) => setSubjects(d.data || [])).catch(() => {})
   }, [])
 
-  const fetchHomework = useCallback(async (filters = {}) => {
-    setLoading(true)
-    setError(null)
+  const fetchHomework = useCallback(async () => {
+    setLoading(true); setError(null)
     try {
-      const data = await homeWorkService.getAllHomeworks(filters)
-      setHomeworks(data.data || [])
+      const data = await homeWorkService.getAllHomeworks()
+      setAllHomeworks(data.data || [])
     } catch (err) {
-      setError(err.message || 'Failed to load')
+      setError(err.message)
     } finally {
       setLoading(false)
     }
@@ -201,107 +168,199 @@ export default function HomeworkList() {
 
   useEffect(() => { fetchHomework() }, [fetchHomework])
 
-  const handleFilter = () => {
-    fetchHomework({
-      class_id:   selectedClass,
-      subject_id: selectedSubject,
-      status:     selectedStatus,
-    })
-  }
+  // ── Client-side instant filter — no API call on dropdown change ──
+  const homeworks = allHomeworks.filter((hw) => {
+    const okClass   = !selectedClass   || (hw.class_name   || '').toLowerCase() === selectedClass.toLowerCase()
+    const okSubject = !selectedSubject || (hw.subject_name || '').toLowerCase() === selectedSubject.toLowerCase()
 
-  const handleReset = () => {
-    setSelectedClass('')
-    setSelectedSubject('')
-    setSelectedStatus('')
-    fetchHomework()
-  }
+    // Status match — check hw.status OR derive from summary counts
+    const hwStatus = (hw.status || '').toLowerCase()
+    const isSubmitted = hwStatus === 'submitted' || Number(hw.submitted_count) > 0
+    const isPending   = hwStatus === 'pending'   || (Number(hw.pending_count) > 0 && Number(hw.submitted_count) === 0)
+    const isOverdue   = hwStatus === 'overdue'   || Number(hw.overdue_count)   > 0
+    const isActive    = hwStatus === 'active'    || (!isOverdue && !isSubmitted)
+
+    const sel = selectedStatus.toLowerCase()
+    const okStatus = !selectedStatus || (
+      (sel === 'submitted' && isSubmitted) ||
+      (sel === 'pending'   && isPending)   ||
+      (sel === 'overdue'   && isOverdue)   ||
+      (sel === 'active'    && isActive)    ||
+      hwStatus === sel
+    )
+    return okClass && okSubject && okStatus
+  })
+
+  const handleReset = () => { setSelectedClass(''); setSelectedSubject(''); setSelectedStatus('') }
 
   return (
-    <div style={{ padding: 24, background: '#f0f2f5', minHeight: '100vh', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
+    <div className="flex min-h-screen bg-gray-50" style={{ fontFamily: "'DM Sans','Nunito',sans-serif" }}>
+      <Sidebar />
 
-      {/* breadcrumb */}
-      <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 6 }}>
-        <span style={{ color: '#2563eb', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>Dashboard</span>
-        {' › '}
-        <span style={{ color: '#374151' }}>Homework</span>
-      </div>
+      <div className="flex-1 flex flex-col min-h-screen">
+        <Navbar />
 
-      {/* header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#111827' }}>Homework Management</h1>
-          <p style={{ margin: '4px 0 0', color: '#6b7280', fontSize: 13 }}>Manage and track student assignments across all grades.</p>
-        </div>
-        <button
-          onClick={() => navigate('/homework/create')}
-          style={{
-            background: '#2563eb', color: '#fff', border: 'none',
-            borderRadius: 9, padding: '10px 20px', fontWeight: 600,
-            fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-          }}
-        >
-          + Assign New Homework
-        </button>
-      </div>
+        <main className="flex-1 overflow-y-auto" style={{ padding: '28px 32px' }}>
 
-      {/* filters */}
-      <div style={{ background: '#fff', borderRadius: 12, padding: '16px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.07)', marginBottom: 20 }}>
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-          <div style={{ flex: '1 1 160px' }}>
-            <label style={lbl}>All Classes</label>
-            <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)} style={sel}>
-              <option value="">All Classes</option>
-              {classes.map((c) => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
-            </select>
+          {/* Page Header */}
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <p className="text-xs text-gray-400 mb-1">
+                <span className="cursor-pointer hover:text-violet-600" onClick={() => navigate('/admin/dashboard')}>Dashboard</span>
+                {' › '}
+                <span className="text-gray-600 font-medium">Homework</span>
+              </p>
+              <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">Homework Management</h1>
+              <p className="text-sm text-gray-400 mt-0.5">Manage and track student assignments across all grades.</p>
+            </div>
+            <button
+              onClick={() => navigate('/admin/homework/create')}
+              className="flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-sm shadow-violet-200 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Assign Homework
+            </button>
           </div>
-          <div style={{ flex: '1 1 160px' }}>
-            <label style={lbl}>All Subjects</label>
-            <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)} style={sel}>
-              <option value="">All Subjects</option>
-              {subjects.map((s) => <option key={s.subject_id} value={s.subject_id}>{s.subject_name}</option>)}
-            </select>
-          </div>
-          <div style={{ flex: '1 1 140px' }}>
-            <label style={lbl}>All Status</label>
-            <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)} style={sel}>
-              <option value="">All Status</option>
-              {['Active', 'Overdue', 'Upcoming', 'Pending'].map((s) => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-          <button onClick={handleReset} style={{ padding: '9px 20px', borderRadius: 8, border: '1px solid #d1d5db', background: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer', color: '#374151' }}>
-            Reset
-          </button>
-          <button onClick={handleFilter} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>
-            Apply Filter
-          </button>
-        </div>
-      </div>
 
-      {/* list */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#6b7280' }}>Loading homework...</div>
-      ) : error ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#ef4444' }}>{error}</div>
-      ) : homeworks.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, color: '#6b7280' }}>
-          <div style={{ fontSize: 48, marginBottom: 12 }}>📭</div>
-          <div style={{ fontSize: 16, fontWeight: 600 }}>No homework found</div>
-          <div style={{ fontSize: 13, marginTop: 4 }}>Try adjusting filters or create new homework.</div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {homeworks.map((hw) => (
-            <HomeworkCard
-              key={hw.homework_id || hw.id}
-              hw={hw}
-              onView={(id) => navigate(`/homework/${id}`)}
-            />
-          ))}
-        </div>
-      )}
+          {/* Filter Bar */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-6">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Class</label>
+                <select value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+                  <option value="">All Classes</option>
+                  {classes.map((c) => <option key={c.class_id} value={c.class_name}>{c.class_name}</option>)}
+                </select>
+              </div>
+              <div className="flex-1 min-w-[140px]">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Subject</label>
+                <select value={selectedSubject} onChange={(e) => setSelectedSubject(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+                  <option value="">All Subjects</option>
+                  {subjects.map((s) => <option key={s.subject_id} value={s.subject_name}>{s.subject_name}</option>)}
+                </select>
+              </div>
+              <div className="flex-1 min-w-[130px]">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Status</label>
+                <select value={selectedStatus} onChange={(e) => setSelectedStatus(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-violet-400">
+                  <option value="">All Status</option>
+                  {['Active','Submitted','Pending','Overdue'].map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <button onClick={handleReset}
+                className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                Reset
+              </button>
+              <button onClick={fetchHomework}
+                className="p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors"
+                title="Refresh">
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium mb-5">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {error}
+              <button onClick={() => fetchHomework()} className="ml-auto text-xs underline font-semibold">Retry</button>
+            </div>
+          )}
+
+          {/* Loading */}
+          {loading && (
+            <div className="flex flex-col gap-4">
+              {[1,2,3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl border border-gray-100 p-5 animate-pulse">
+                  <div className="flex gap-3 mb-3">
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl" />
+                    <div className="flex-1">
+                      <div className="h-4 w-1/2 bg-gray-100 rounded mb-2" />
+                      <div className="h-3 w-3/4 bg-gray-100 rounded" />
+                    </div>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full" />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Empty */}
+          {!loading && !error && homeworks.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              {/* Illustration */}
+              <div className="relative mb-6">
+                <div className="w-24 h-24 rounded-3xl bg-violet-50 border-2 border-dashed border-violet-200 flex items-center justify-center">
+                  <BookOpen className="w-10 h-10 text-violet-300" strokeWidth={1.2} />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-amber-100 border-2 border-white flex items-center justify-center text-base">
+                  🔍
+                </div>
+              </div>
+
+              {/* Message — changes based on filter active or not */}
+              {(selectedClass || selectedSubject || selectedStatus) ? (
+                <>
+                  <h3 className="text-lg font-extrabold text-gray-800 mb-2">No Results Found</h3>
+                  <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-3">
+                    No homework matches your current filters.
+                  </p>
+                  {/* Active filters pill display */}
+                  <div className="flex flex-wrap justify-center gap-2 mb-6">
+                    {selectedClass && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-violet-50 text-violet-700 border border-violet-200 px-3 py-1 rounded-full">
+                        Class: {selectedClass}
+                      </span>
+                    )}
+                    {selectedSubject && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200 px-3 py-1 rounded-full">
+                        Subject: {selectedSubject}
+                      </span>
+                    )}
+                    {selectedStatus && (
+                      <span className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1 rounded-full">
+                        Status: {selectedStatus}
+                      </span>
+                    )}
+                  </div>
+                  <button onClick={handleReset}
+                    className="flex items-center gap-2 bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-violet-700 transition-colors">
+                    Clear Filters
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-lg font-extrabold text-gray-800 mb-2">No Homework Assigned Yet</h3>
+                  <p className="text-sm text-gray-400 max-w-xs leading-relaxed mb-6">
+                    Start by assigning the first homework to a class.
+                  </p>
+                  <button onClick={() => navigate('/admin/homework/create')}
+                    className="flex items-center gap-2 bg-violet-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-violet-700 transition-colors">
+                    <Plus className="w-4 h-4" /> Assign Homework
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* List */}
+          {!loading && !error && homeworks.length > 0 && (
+            <div className="flex flex-col gap-4">
+              {homeworks.map((hw) => (
+                <HomeworkCard
+                  key={hw.homework_id || hw.id}
+                  hw={hw}
+                  onView={(id) => navigate(`/admin/homework/${id}`)}
+                />
+              ))}
+            </div>
+          )}
+
+        </main>
+      </div>
     </div>
   )
 }
-
-const lbl = { display: 'block', fontSize: 12, fontWeight: 600, color: '#6b7280', marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 }
-const sel = { width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #e5e7eb', fontSize: 14, color: '#374151', background: '#fff', outline: 'none', cursor: 'pointer' }
