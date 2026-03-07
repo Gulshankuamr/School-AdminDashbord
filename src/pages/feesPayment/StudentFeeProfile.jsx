@@ -22,6 +22,13 @@ const fmtDate = (d) => {
   } catch { return String(d); }
 };
 
+// ✅ Static academic years 2026-27 to 2032-33
+const ACADEMIC_YEARS = Array.from({ length: 7 }, (_, i) => {
+  const s = 2026 + i;
+  const e = (s + 1).toString().slice(-2);
+  return `${s}-${e}`;
+});
+
 const DISCONTINUE_REASONS = [
   'Student left school',
   'Service/facility stopped',
@@ -68,7 +75,8 @@ const StudentFeeProfile = () => {
   const [assignedFees, setAssignedFees] = useState([]);
   const [summary, setSummary] = useState({});
   const [error, setError] = useState('');
-  const [academicYear, setAcademicYear] = useState('2025-26');
+  // ✅ Default to first year in the list
+  const [academicYear, setAcademicYear] = useState('2026-27');
 
   /* Discontinue modal */
   const [modal, setModal] = useState(false);
@@ -198,16 +206,18 @@ const StudentFeeProfile = () => {
           <h1 className="text-2xl font-bold text-gray-900">Student Fee Profile</h1>
           <p className="text-gray-500 text-sm mt-0.5">Manage and view detailed fee information</p>
         </div>
+
+        {/* ✅ Academic Year Dropdown 2026-27 to 2032-33 */}
         <div className="flex items-center gap-3">
           <select
             value={academicYear}
             onChange={e => setAcademicYear(e.target.value)}
             className="px-3 py-2 rounded-lg border border-gray-300 text-gray-900 text-sm font-semibold bg-white focus:outline-none"
-            style={{ minWidth: 160 }}
+            style={{ minWidth: 180 }}
           >
-            <option value="2025-26">Academic Year 2025-26</option>
-            <option value="2024-25">Academic Year 2024-25</option>
-            <option value="2023-24">Academic Year 2023-24</option>
+            {ACADEMIC_YEARS.map(yr => (
+              <option key={yr} value={yr}>Academic Year {yr}</option>
+            ))}
           </select>
         </div>
       </div>
@@ -229,7 +239,7 @@ const StudentFeeProfile = () => {
                 </span>
                 <span className="flex items-center gap-1.5 text-sm text-gray-500">
                   <span>📚</span>
-                   {studentInfo?.class_name} - {studentInfo?.section_name}
+                  {studentInfo?.class_name} - {studentInfo?.section_name}
                 </span>
                 {studentInfo?.joined_on && (
                   <span className="flex items-center gap-1.5 text-sm text-gray-500">
@@ -240,24 +250,16 @@ const StudentFeeProfile = () => {
               </div>
             </div>
           </div>
-          {/* <div className="flex items-center gap-2">
-            <button className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors">
-              <Edit className="w-4 h-4" />
-            </button>
-            <button className="w-9 h-9 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors">
-              <Printer className="w-4 h-4" />
-            </button>
-          </div> */}
         </div>
       </div>
 
       {/* ── Summary Cards ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
         {[
-          { label: 'Total Fee', value: cy.total || 0, sub: 'Standard annual curriculum', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
-          { label: 'Paid Amount', value: cy.paid || 0, sub: `${cy.total ? Math.round((cy.paid / cy.total) * 100) : 0}% of total collected`, color: '#15803D', bg: '#F0FDF4', border: '#BBF7D0' },
-          { label: 'Pending', value: cy.pending || 0, sub: cy.pending > 0 ? 'Next due: Soon' : 'No pending dues', color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-          { label: 'Late Fine', value: cy.fine || 0, sub: cy.fine > 0 ? 'Applied for overdue fees' : 'No fines', color: '#DC2626', bg: '#FFF5F5', border: '#FECACA' },
+          { label: 'Total Fee',    value: cy.total || 0,   sub: 'Standard annual curriculum',                                             color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
+          { label: 'Paid Amount', value: cy.paid || 0,    sub: `${cy.total ? Math.round((cy.paid / cy.total) * 100) : 0}% of total`,     color: '#15803D', bg: '#F0FDF4', border: '#BBF7D0' },
+          { label: 'Pending',     value: cy.pending || 0, sub: cy.pending > 0 ? 'Next due: Soon' : 'No pending dues',                    color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
+          { label: 'Late Fine',   value: cy.fine || 0,    sub: cy.fine > 0 ? 'Applied for overdue fees' : 'No fines',                    color: '#DC2626', bg: '#FFF5F5', border: '#FECACA' },
         ].map(({ label, value, sub, color, bg, border }) => (
           <div key={label} className="rounded-xl border p-5" style={{ background: bg, borderColor: border }}>
             <p className="text-sm font-semibold mb-1" style={{ color }}>{label}</p>
@@ -269,8 +271,6 @@ const StudentFeeProfile = () => {
 
       {/* ── Assigned Fee Breakdown ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-
-        {/* Table Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">Assigned Fee Breakdown</h2>
           <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-orange-50 text-orange-600">
@@ -278,7 +278,6 @@ const StudentFeeProfile = () => {
           </span>
         </div>
 
-        {/* Column Headers */}
         <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-gray-50 border-b border-gray-100">
           {[
             { h: 'Fee Head', s: 'col-span-3' },
@@ -293,7 +292,6 @@ const StudentFeeProfile = () => {
           ))}
         </div>
 
-        {/* Rows */}
         {assignedFees.length === 0 ? (
           <div className="py-16 text-center">
             <FileText className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -319,7 +317,6 @@ const StudentFeeProfile = () => {
                 <div key={fee.student_fee_id ?? idx}
                   className={`grid grid-cols-12 gap-2 px-6 py-4 items-center hover:bg-gray-50/60 transition-colors ${isDisc ? 'opacity-60' : ''}`}>
 
-                  {/* Fee Head */}
                   <div className="col-span-3 flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-orange-50">
                       <FileText className="w-3.5 h-3.5 text-orange-500" />
@@ -334,52 +331,31 @@ const StudentFeeProfile = () => {
                     </div>
                   </div>
 
-                  {/* Total */}
                   <div className="col-span-1">
                     <span className="text-sm font-semibold text-gray-900">{fmt(fee.total_amount)}</span>
                   </div>
-
-                  {/* Paid */}
                   <div className="col-span-1">
                     <span className="text-sm font-semibold" style={{ color: '#15803D' }}>{fmt(fee.paid_amount)}</span>
                   </div>
-
-                  {/* Pending */}
                   <div className="col-span-2">
                     <span className="text-sm font-semibold"
                       style={{ color: parseFloat(fee.pending_amount) > 0 && !isDisc ? '#DC2626' : '#6B7280' }}>
-                      {isDisc ? '$0' : fmt(fee.pending_amount)}
+                      {isDisc ? '₹0' : fmt(fee.pending_amount)}
                     </span>
                   </div>
-
-                  {/* Fine */}
                   <div className="col-span-1">
                     <span className="text-sm font-semibold"
                       style={{ color: parseFloat(fee.fine_amount) > 0 ? '#DC2626' : '#6B7280' }}>
                       {fmt(fee.fine_amount || 0)}
                     </span>
                   </div>
-
-                  {/* Status */}
                   <div className="col-span-2">
                     <span className="inline-block px-2.5 py-1 rounded text-xs font-bold"
                       style={{ background: statusBadge.bg, color: statusBadge.color }}>
                       {statusBadge.label}
                     </span>
                   </div>
-
-                  {/* Actions */}
                   <div className="col-span-2 flex items-center justify-end gap-2">
-                    {/* View / Receipt icon */}
-                    {/* <button
-                      onClick={() => navigate(`/admin/fees-payment/collect/${studentId}`)}
-                      className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-orange-50 hover:text-orange-500 hover:border-orange-200 transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button> */}
-
-                    {/* Pay Now */}
                     {!isDisc && !isPaid && (
                       <button
                         onClick={() => handlePay(fee)}
@@ -389,8 +365,6 @@ const StudentFeeProfile = () => {
                         Pay Now
                       </button>
                     )}
-
-                    {/* Discontinue */}
                     {!isDisc && !isPaid && (
                       <button
                         onClick={() => openDiscontinue(fee)}
@@ -429,126 +403,77 @@ const StudentFeeProfile = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}>
           <div className="modal-enter bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100">
-
-            {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: '#FFF3E0' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: '#FFF3E0' }}>
                   <Ban className="w-4 h-4" style={{ color: '#EA580C' }} />
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900 text-base">Discontinue Fee Service</h3>
-                </div>
+                <h3 className="font-bold text-gray-900 text-base">Discontinue Fee Service</h3>
               </div>
-              <button onClick={closeModal}
-                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+              <button onClick={closeModal} className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-
-              {/* Error */}
               {discError && (
                 <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                   <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
                   <p className="text-red-700 text-sm font-medium">{discError}</p>
                 </div>
               )}
-
-              {/* Fee Head + Financial Balance */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Fee Head</label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={activeFee.fee_head_name}
-                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm font-semibold cursor-default"
-                  />
+                  <input type="text" readOnly value={activeFee.fee_head_name}
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-sm font-semibold cursor-default" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Financial Balance</label>
                   <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg border border-gray-200 bg-gray-50">
-                    <span className="text-sm font-semibold" style={{ color: '#15803D' }}>
-                      Paid {fmt(activeFee.paid_amount)}
-                    </span>
+                    <span className="text-sm font-semibold" style={{ color: '#15803D' }}>Paid {fmt(activeFee.paid_amount)}</span>
                     <span className="text-gray-300">|</span>
-                    <span className="text-sm font-semibold" style={{ color: '#DC2626' }}>
-                      Pending: {fmt(activeFee.pending_amount)}
-                    </span>
+                    <span className="text-sm font-semibold" style={{ color: '#DC2626' }}>Pending: {fmt(activeFee.pending_amount)}</span>
                   </div>
                 </div>
               </div>
-
-              {/* Date + Reason */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Discontinue Date <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={discDate}
-                      onChange={e => setDiscDate(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium bg-white transition-all"
-                    />
-                  </div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Discontinue Date <span className="text-red-500">*</span></label>
+                  <input type="date" value={discDate} onChange={e => setDiscDate(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium bg-white transition-all" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Reason for Discontinuation <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Reason <span className="text-red-500">*</span></label>
                   <div className="relative">
-                    <select
-                      value={discReason}
-                      onChange={e => setDiscReason(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium bg-white appearance-none cursor-pointer transition-all"
-                    >
+                    <select value={discReason} onChange={e => setDiscReason(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium bg-white appearance-none cursor-pointer transition-all">
                       <option value="">Select reason...</option>
-                      {DISCONTINUE_REASONS.map(r => (
-                        <option key={r} value={r}>{r}</option>
-                      ))}
+                      {DISCONTINUE_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
               </div>
-
-              {/* Notes */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                   Additional Notes <span className="text-gray-400 font-normal normal-case">(Optional)</span>
                 </label>
-                <textarea
-                  rows={3}
-                  placeholder="Provide detailed explanation for records..."
-                  value={discNotes}
-                  onChange={e => setDiscNotes(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm resize-none bg-white transition-all placeholder-gray-400"
-                  maxLength={300}
-                />
+                <textarea rows={3} placeholder="Provide detailed explanation for records..."
+                  value={discNotes} onChange={e => setDiscNotes(e.target.value)} maxLength={300}
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm resize-none bg-white transition-all placeholder-gray-400" />
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="px-6 pb-5 flex items-center justify-end gap-3">
-              <button onClick={closeModal}
-                disabled={discLoading}
+              <button onClick={closeModal} disabled={discLoading}
                 className="px-5 py-2.5 rounded-lg border border-gray-200 font-semibold text-gray-700 text-sm hover:bg-gray-50 transition-colors disabled:opacity-50">
                 Cancel
               </button>
-              <button
-                onClick={handleDiscontinue}
-                disabled={discLoading}
+              <button onClick={handleDiscontinue} disabled={discLoading}
                 className="px-5 py-2.5 rounded-lg text-white font-bold text-sm flex items-center gap-2 transition-all hover:opacity-90 active:scale-95 disabled:opacity-50"
-                style={{ background: discLoading ? '#9CA3AF' : '#EA580C' }}
-              >
-                {discLoading
-                  ? <><Loader2 className="w-4 h-4 animate-spin" />Processing...</>
-                  : 'Confirm Discontinuation'}
+                style={{ background: discLoading ? '#9CA3AF' : '#EA580C' }}>
+                {discLoading ? <><Loader2 className="w-4 h-4 animate-spin" />Processing...</> : 'Confirm Discontinuation'}
               </button>
             </div>
           </div>

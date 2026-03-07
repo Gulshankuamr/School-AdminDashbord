@@ -266,7 +266,7 @@ const ExamList = () => {
                   <tr>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">SR NO</th>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">Exam Name</th>
-                    <th className="p-4 text-left text-sm font-semibold text-gray-700">Exam Type</th>
+                    {/* <th className="p-4 text-left text-sm font-semibold text-gray-700">Exam Type</th> */}
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">Academic Year</th>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">Start Date</th>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">End Date</th>
@@ -405,7 +405,7 @@ const ExamList = () => {
                           <td className="p-4">
                             <div className="font-medium text-gray-900">{exam.exam_name}</div>
                           </td>
-                          <td className="p-4 text-gray-600">{getExamTypeName(exam.exam_type_id)}</td>
+                          {/* <td className="p-4 text-gray-600">{getExamTypeName(exam.exam_type_id)}</td> */}
                           <td className="p-4 text-gray-600">{exam.academic_year}</td>
                           <td className="p-4 text-gray-600">{formatDate(exam.start_date)}</td>
                           <td className="p-4 text-gray-600">{formatDate(exam.end_date)}</td>

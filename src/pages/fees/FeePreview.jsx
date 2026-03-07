@@ -36,6 +36,13 @@ const FeeList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [feeToDelete, setFeeToDelete] = useState(null);
 
+  // ✅ Static academic years from 2026-27 to 2032-33
+  const academicYears = Array.from({ length: 7 }, (_, i) => {
+    const startYear = 2026 + i;
+    const endYear = (startYear + 1).toString().slice(-2);
+    return `${startYear}-${endYear}`;
+  });
+
   // Fetch data on component mount
   useEffect(() => {
     fetchData();
@@ -214,9 +221,6 @@ const FeeList = () => {
     localStorage.removeItem('auth_token');
     navigate('/login');
   };
-
-  // Get unique academic years from fees
-  const academicYears = [...new Set(fees.map(fee => fee.academic_year).filter(Boolean))];
 
   if (loading && fees.length === 0 && !authError) {
     return (

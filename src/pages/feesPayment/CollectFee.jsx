@@ -5,13 +5,25 @@ import {
 } from 'lucide-react';
 import feePaymentService from '../../services/feeallService/feePaymentService';
 
+// ✅ Static academic years 2026-27 to 2032-33
+const ACADEMIC_YEARS = Array.from({ length: 7 }, (_, i) => {
+  const s = 2026 + i;
+  const e = (s + 1).toString().slice(-2);
+  return `${s}-${e}`;
+});
+
 const CollectFee = () => {
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
   const [allStudents, setAllStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
-  const [filters, setFilters] = useState({ className: '', sectionName: '', searchText: '' });
+  const [filters, setFilters] = useState({
+    academicYear: '2026-27',
+    className: '',
+    sectionName: '',
+    searchText: '',
+  });
 
   useEffect(() => { fetchAllStudents(); }, []);
   useEffect(() => { applyFilters(); }, [filters, allStudents]);
@@ -55,7 +67,7 @@ const CollectFee = () => {
   };
 
   const handleFilterChange = (key, value) => setFilters(prev => ({ ...prev, [key]: value }));
-  const handleReset = () => setFilters({ className: '', sectionName: '', searchText: '' });
+  const handleReset = () => setFilters({ academicYear: '2026-27', className: '', sectionName: '', searchText: '' });
   const handleCollect = (student) => navigate(`/admin/fees-payment/student/${student.student_id}`);
 
   const avatarColors = [
@@ -90,15 +102,17 @@ const CollectFee = () => {
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-5">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
 
-          {/* Academic Year */}
+          {/* ✅ Academic Year - 2026-27 to 2032-33 */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Academic Year</label>
             <select
+              value={filters.academicYear}
+              onChange={(e) => handleFilterChange('academicYear', e.target.value)}
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:border-orange-500 bg-white"
             >
-              <option>2025-26</option>
-              <option>2024-25</option>
-              <option>2023-24</option>
+              {ACADEMIC_YEARS.map(yr => (
+                <option key={yr} value={yr}>{yr}</option>
+              ))}
             </select>
           </div>
 
@@ -166,7 +180,6 @@ const CollectFee = () => {
       {/* ── Students Table ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 
-        {/* Table Title */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">Recent Fee Transactions</h2>
           <button className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#EA580C' }}>
@@ -174,12 +187,10 @@ const CollectFee = () => {
           </button>
         </div>
 
-        {/* Header Row — Student | Admission No | Paid | Action */}
         <div className="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-50 border-b border-gray-100">
           {[
             { label: 'Student',      span: 'col-span-5' },
             { label: 'Admission No', span: 'col-span-3' },
-            // { label: 'Paid',         span: 'col-span-2' },
             { label: 'Action',       span: 'col-span-2 text-right' },
           ].map(({ label, span }) => (
             <div key={label} className={`text-xs font-bold text-gray-500 uppercase tracking-wider ${span}`}>
@@ -192,13 +203,11 @@ const CollectFee = () => {
           <div className="divide-y divide-gray-50">
             {filteredStudents.map((student) => {
               const av = getAvatar(student.name);
-
               return (
                 <div
                   key={student.student_id}
                   className="grid grid-cols-12 gap-3 px-6 py-4 items-center hover:bg-orange-50/30 transition-colors group"
                 >
-                  {/* Student */}
                   <div className="col-span-5 flex items-center gap-3">
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
@@ -208,20 +217,9 @@ const CollectFee = () => {
                     </div>
                     <span className="font-semibold text-gray-900 text-sm">{student.name}</span>
                   </div>
-
-                  {/* Admission No */}
                   <div className="col-span-3">
                     <span className="text-sm text-gray-700 font-medium">{student.admission_no}</span>
                   </div>
-
-                  {/* Paid */}
-                  {/* <div className="col-span-2">
-                    <span className="text-sm font-semibold" style={{ color: '#16A34A' }}>
-                      {student.paid_amount ? `₹${Number(student.paid_amount).toLocaleString()}` : '—'}
-                    </span>
-                  </div> */}
-
-                  {/* Action */}
                   <div className="col-span-2 text-right">
                     <button
                       onClick={() => handleCollect(student)}
@@ -254,7 +252,6 @@ const CollectFee = () => {
           </div>
         )}
 
-        {/* Footer */}
         {filteredStudents.length > 0 && (
           <div className="px-6 py-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
             <span className="text-xs text-gray-500">

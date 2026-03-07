@@ -22,36 +22,8 @@ const feePaymentService = {
 
   // ===============================
   // 2️⃣ GET STUDENT FEES
-  //    GET /api/schooladmin/getStudentFees?academic_year=2025-26&student_id=194
-  //
-  //    Response shape:
-  //    {
-  //      success: true,
-  //      data: {
-  //        student_info: { student_id, name, admission_no, class_name, section_name, class_id, section_id },
-  //        current_academic_year: "2025-26",
-  //        fee_breakdown: [
-  //          {
-  //            student_fee_id, fee_id, fee_head_name, academic_year, class_name,
-  //            base_amount, fee_frequency, total_amount, paid_amount,
-  //            pending_amount, fine_amount, status, assigned_on,
-  //            installments: [
-  //              { id, student_fee_id, installment_no, amount, start_due_date,
-  //                end_due_date, status, paid_on, created_at,
-  //                calculated_status, fine_amount, total_amount }
-  //            ]
-  //          }
-  //        ],
-  //        payment_history: [],
-  //        summary: {
-  //          current_year: { total, paid, pending, fine },
-  //          previous_pending, previous_fine,
-  //          grand_total_pending, grand_total_fine
-  //        }
-  //      }
-  //    }
   // ===============================
-  getStudentFees: async (studentId, academicYear = '2025-26') => {
+  getStudentFees: async (studentId, academicYear = '2026-27') => {
     const token = getAuthToken();
     if (!token) throw new Error('Token missing');
 
@@ -94,9 +66,6 @@ const feePaymentService = {
 
   // ===============================
   // 3️⃣ COLLECT FEE PAYMENT (Offline/Manual)
-  //    POST /api/schooladmin/collectFeePayment
-  //    Body: { student_id, installment_ids, payment_mode,
-  //            transaction_ref, payment_gateway, remarks }
   // ===============================
   collectFeePayment: async (paymentData) => {
     const token = getAuthToken();
@@ -137,7 +106,6 @@ const feePaymentService = {
 
   // ===============================
   // 4️⃣ GET ALL CLASSES
-  //    GET /api/schooladmin/getAllClasses
   // ===============================
   getAllClasses: async () => {
     const token = getAuthToken();
@@ -156,17 +124,6 @@ const feePaymentService = {
 
   // ===============================
   // 5️⃣ GET ALL SECTIONS BY CLASS ID
-  //    GET /api/schooladmin/getAllSections?class_id=110
-  //
-  //    Response shape:
-  //    {
-  //      success: true,
-  //      data: [
-  //        { section_id, class_id, section_name, capacity,
-  //          current_students, display_name, full }
-  //      ]
-  //    }
-  //    ⚠️  We only use `section_name` from each item.
   // ===============================
   getAllSections: async (classId) => {
     const token = getAuthToken();
@@ -181,15 +138,12 @@ const feePaymentService = {
     const data = await response.json();
     if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch sections');
 
-    // Return only section_name list for simplicity
     const sectionNames = (data.data || []).map((s) => s.section_name).filter(Boolean);
     return { ...data, sectionNames };
   },
 
   // ===============================
   // 6️⃣ DISCONTINUE FEE
-  //    POST /api/schooladmin/discontinueFee
-  //    Body: { student_id, student_fee_id, discontinued_on, discontinue_reason }
   // ===============================
   discontinueFee: async (payload) => {
     const token = getAuthToken();
@@ -215,6 +169,53 @@ const feePaymentService = {
     }
 
     return data;
+  },
+
+  // ===============================
+  // 7️⃣ GET SCHOOL ADMIN PROFILE ✅ NEW
+  //    GET /api/schooladmin/getSchoolAdminProfile
+  //    Returns school name, address, contact, email, logo etc.
+  // ===============================
+  getSchoolProfile: async () => {
+    const token = getAuthToken();
+    if (!token) throw new Error('Token missing');
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/schooladmin/getSchoolAdminProfile`,
+        { method: 'GET', headers: { 'Authorization': `Bearer ${token}` } }
+      );
+
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      const data = await response.json();
+      console.log('getSchoolProfile response:', data);
+
+      if (data?.success) {
+        // Normalize — API may nest under data.data or data directly
+        const profile = data?.data?.school || data?.data || data?.school || {};
+        return {
+          success: true,
+          profile: {
+            school_name:  profile.school_name  || profile.name         || 'School',
+            address:      profile.address      || profile.school_address || '',
+            city:         profile.city         || '',
+            state:        profile.state        || '',
+            pincode:      profile.pincode      || profile.pin_code      || '',
+            phone:        profile.phone        || profile.contact_no    || profile.mobile || '',
+            email:        profile.email        || profile.school_email  || '',
+            website:      profile.website      || '',
+            logo_url:     profile.logo_url     || profile.logo          || null,
+            // Admin info
+            admin_name:   profile.admin_name   || data?.data?.name      || '',
+          },
+        };
+      }
+
+      return { success: false, profile: null };
+    } catch (error) {
+      console.error('getSchoolProfile error:', error);
+      return { success: false, profile: null };
+    }
   },
 };
 

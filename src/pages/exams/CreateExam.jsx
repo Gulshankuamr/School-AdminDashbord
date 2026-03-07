@@ -46,9 +46,9 @@ const CreateExam = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.exam_type_id) {
-      newErrors.exam_type_id = 'Exam type is required';
-    }
+    // if (!formData.exam_type_id) {
+    //   newErrors.exam_type_id = 'Exam type is required';
+    // }
     if (!formData.exam_name.trim()) {
       newErrors.exam_name = 'Exam name is required';
     }
@@ -152,29 +152,7 @@ const CreateExam = () => {
           <form onSubmit={handleSubmit} className="p-6">
             <div className="space-y-6">
               {/* Exam Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  EXAM TYPE <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="exam_type_id"
-                  value={formData.exam_type_id}
-                  onChange={handleChange}
-                  className={`w-full border rounded-xl p-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                    errors.exam_type_id ? 'border-red-500 bg-red-50' : 'border-gray-200'
-                  }`}
-                >
-                  <option value="">Select Exam Type</option>
-                  {examTypes.map((type) => (
-                    <option key={type.exam_type_id} value={type.exam_type_id}>
-                      {type.type_name}
-                    </option>
-                  ))}
-                </select>
-                {errors.exam_type_id && (
-                  <p className="mt-1 text-sm text-red-600">{errors.exam_type_id}</p>
-                )}
-              </div>
+            
 
               {/* Exam Name */}
               <div>

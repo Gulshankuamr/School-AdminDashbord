@@ -10,7 +10,7 @@ const CreateFee = () => {
   
   // Form state
   const [formData, setFormData] = useState({
-    academicYear: '2024-25',
+    academicYear: '2026-27',
     classId: '',
     feeHeadId: '',
     baseAmount: '',
@@ -35,21 +35,21 @@ const CreateFee = () => {
   const [authError, setAuthError] = useState('');
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  // Payment frequency options
+  // Payment frequency options (Annually removed)
   const frequencyOptions = [
     { value: 'monthly', label: 'Monthly' },
     { value: 'quarterly', label: 'Quarterly' },
     { value: 'half_yearly', label: 'Half-Yearly' },
-    { value: 'yearly', label: 'Annually' },
     { value: 'one_time', label: 'One-Time' },
   ];
   
-  // Academic year options
-  const academicYears = [
-    { value: '2024-25', label: '2024-25' },
-    { value: '2025-26', label: '2025-26' },
-    { value: '2026-27', label: '2026-27' },
-  ];
+  // ✅ UPDATED: Dynamic academic years from 2026-27 to 2032-33
+  const academicYears = Array.from({ length: 7 }, (_, i) => {
+    const startYear = 2026 + i;
+    const endYear = (startYear + 1).toString().slice(-2);
+    const value = `${startYear}-${endYear}`;
+    return { value, label: value };
+  });
 
   useEffect(() => {
     fetchData();
@@ -102,63 +102,75 @@ const CreateFee = () => {
 
     setIsGeneratingInstallments(true);
     setError('');
-    
-    let installmentCount = 0;
-    let installmentName = '';
-    
-    switch (formData.feeFrequency) {
-      case 'monthly':
-        installmentCount = 12;
-        installmentName = 'Monthly Installment';
-        break;
-      case 'quarterly':
-        installmentCount = 4;
-        installmentName = 'Quarterly Installment';
-        break;
-      case 'half_yearly':
-        installmentCount = 2;
-        installmentName = 'Half-Yearly Installment';
-        break;
-      case 'yearly':
-        installmentCount = 1;
-        installmentName = 'Annual Fee';
-        break;
-      case 'one_time':
-        installmentCount = 1;
-        installmentName = 'One-Time Fee';
-        break;
-      default:
-        installmentCount = 1;
-        installmentName = 'Fee';
-    }
-    
-    const newInstallments = [];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 
+
+    // Parse start and end dates (no timezone shift)
+    const [sY, sM, sD] = formData.startDueDate.split('-').map(Number);
+    const [eY, eM, eD] = formData.endDueDate.split('-').map(Number);
+
+    // Helper: format Date as YYYY-MM-DD
+    const toDateStr = (date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    };
+
+    // Helper: add N months to a year+month pair, return { year, month (0-indexed) }
+    const addMonths = (year, month0, n) => {
+      const total = month0 + n;
+      return { year: year + Math.floor(total / 12), month: total % 12 };
+    };
+
+    // Helper: clamp day to last valid day of given month
+    const clampDay = (year, month0, day) => {
+      const max = new Date(year, month0 + 1, 0).getDate();
+      return Math.min(day, max);
+    };
+
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
                    'July', 'August', 'September', 'October', 'November', 'December'];
-    
-    const currentDate = new Date();
-    let currentMonth = currentDate.getMonth();
-    let currentYear = currentDate.getFullYear();
-    
-    for (let i = 0; i < installmentCount; i++) {
-      const monthIndex = (currentMonth + i) % 12;
-      const year = currentYear + Math.floor((currentMonth + i) / 12);
-      const dueDate = new Date(year, monthIndex, 10);
-      
+
+    // Fixed installment counts & step per frequency
+    const freqConfig = {
+      monthly:    { count: 12, step: 1,  name: 'Monthly Installment' },
+      quarterly:  { count: 4,  step: 3,  name: 'Quarterly Installment' },
+      half_yearly:{ count: 2,  step: 6,  name: 'Half-Yearly Installment' },
+      one_time:   { count: 1,  step: 0,  name: 'One-Time Fee' },
+    };
+
+    const config = freqConfig[formData.feeFrequency] || freqConfig['monthly'];
+    const newInstallments = [];
+
+    for (let i = 0; i < config.count; i++) {
+      // Each installment's start_due_date: start date shifted by i * step months
+      const instStart = addMonths(sY, sM - 1, i * config.step);
+      const instStartDay = clampDay(instStart.year, instStart.month, sD);
+      const instStartDate = new Date(instStart.year, instStart.month, instStartDay);
+
+      // Each installment's end_due_date: end date shifted by i * step months
+      const instEnd = addMonths(eY, eM - 1, i * config.step);
+      const instEndDay = clampDay(instEnd.year, instEnd.month, eD);
+      const instEndDate = new Date(instEnd.year, instEnd.month, instEndDay);
+
+      // Due date shown in table = start_due_date of that installment
+      const dueDateStr = toDateStr(instStartDate);
+      const endDateStr = toDateStr(instEndDate);
+
       newInstallments.push({
         id: i + 1,
-        name: `${installmentName} ${i + 1}`,
-        month: months[monthIndex],
-        year: year,
+        name: `${config.name} ${i + 1}`,
+        month: months[instStart.month],
+        year: instStart.year,
         amount: baseAmount.toFixed(2),
-        dueDate: dueDate.toISOString().split('T')[0],
-        status: 'Draft',
-        displayDate: `${months[monthIndex].substring(0, 3)} ${year}`
+        dueDate: dueDateStr,
+        startDate: dueDateStr,
+        endDate: endDateStr,
+        displayDate: `${months[instStart.month].substring(0, 3)} ${instStart.year}`
       });
     }
-    
+
     setInstallments(newInstallments);
-    setTotalAmount(baseAmount * installmentCount);
+    setTotalAmount(baseAmount * newInstallments.length);
     setIsGeneratingInstallments(false);
     
     setTimeout(() => {
@@ -229,7 +241,7 @@ const CreateFee = () => {
         setSuccess('✅ Fee structure created successfully!');
         
         setFormData({
-          academicYear: '2024-25',
+          academicYear: '2026-27',
           classId: '',
           feeHeadId: '',
           baseAmount: '',
@@ -594,8 +606,9 @@ const CreateFee = () => {
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Installment</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Month & Year</th>
                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Amount (₹)</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Due Date</th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Start Due Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">End Due Date</th>
+                            {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">Due Date</th> */}
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
@@ -616,7 +629,13 @@ const CreateFee = () => {
                                   min="0"
                                 />
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                                {inst.startDate}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                                {inst.endDate}
+                              </td>
+                              {/* <td className="px-4 py-3">
                                 <div className="flex items-center gap-2">
                                   <Calendar className="w-4 h-4 text-gray-500" />
                                   <input
@@ -626,12 +645,7 @@ const CreateFee = () => {
                                     className="px-3 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                                   />
                                 </div>
-                              </td>
-                              <td className="px-4 py-3">
-                                <span className="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-medium rounded-full">
-                                  {inst.status}
-                                </span>
-                              </td>
+                              </td> */}
                             </tr>
                           ))}
                         </tbody>
@@ -694,13 +708,13 @@ const CreateFee = () => {
                       {/* ✅ Due dates in summary */}
                       {formData.startDueDate && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-900">Start Date</span>
+                          <span className="text-gray-900">Start Due Date</span>
                           <span className="font-semibold text-gray-900 text-sm">{formData.startDueDate}</span>
                         </div>
                       )}
                       {formData.endDueDate && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-900">End Date</span>
+                          <span className="text-gray-900">End Due Date</span>
                           <span className="font-semibold text-gray-900 text-sm">{formData.endDueDate}</span>
                         </div>
                       )}
