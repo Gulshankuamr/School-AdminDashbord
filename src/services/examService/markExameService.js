@@ -1,184 +1,209 @@
 import { API_BASE_URL, getAuthToken } from '../api'
 
-export const markExameService = {
+// ─────────────────────────────────────────────────────────────────────────────
+// markExameService — all exam-related API calls
+// ─────────────────────────────────────────────────────────────────────────────
 
-  // ===============================
-  // 1️⃣ GET EXAM TIMETABLE
-  // GET /api/schooladmin/getExamTimetable
-  // Returns: timetable_id, class_id, section_id, subject_id,
-  //          exam_date, start_time, end_time, room_no,
-  //          max_marks, min_passing_marks, subject_name
-  // ===============================
-  getExamTimetable: async () => {
+const markExameService = {
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 1. GET EXAMS LIST
+  //    GET /api/schooladmin/getExams
+  //    Returns: exam_id, exam_name, weightage_percentage, term,
+  //             academic_year, start_date, end_date, status
+  // ═══════════════════════════════════════════════════════════════════════════
+  getExams: async () => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/schooladmin/getExamTimetable`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      const data = await response.json()
-      console.log('📅 getExamTimetable:', data)
-      if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch timetable')
-      return data
-    } catch (error) {
-      console.error('getExamTimetable error:', error)
-      throw error
-    }
+    const response = await fetch(`${API_BASE_URL}/schooladmin/getExams`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) throw new Error(`getExams failed: ${response.status}`)
+    const data = await response.json()
+    console.log('📅 getExams:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch exams')
+    return data
   },
 
-  // ===============================
-  // 2️⃣ GET ALL CLASSES
-  // GET /api/schooladmin/getAllClassList
-  // Returns: [{ class_id, class_name, ... }]
-  // ===============================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 2. GET EXAM TIMETABLE
+  //    GET /api/schooladmin/getExamTimetable?exam_id=6&class_id=88&section_id=6
+  //    Returns: timetable_id, subject_id, subject_name, exam_date,
+  //             start_time, end_time, room_no, max_marks, min_passing_marks
+  //    NOTE: Returns [] when no timetable for given combination
+  // ═══════════════════════════════════════════════════════════════════════════
+  getExamTimetable: async (examId, classId, sectionId) => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
+    const params = new URLSearchParams()
+    if (examId)    params.append('exam_id',    examId)
+    if (classId)   params.append('class_id',   classId)
+    if (sectionId) params.append('section_id', sectionId)
+    const qs = params.toString()
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/getExamTimetable${qs ? `?${qs}` : ''}`,
+      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+    )
+    if (!response.ok) throw new Error(`getExamTimetable failed: ${response.status}`)
+    const data = await response.json()
+    console.log('🗓️ getExamTimetable:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch timetable')
+    return data
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 3. GET ALL CLASSES
+  //    GET /api/schooladmin/getAllClasses  (fallback: getAllClassList)
+  //    Returns: class_id, class_name, class_code, status
+  // ═══════════════════════════════════════════════════════════════════════════
   getAllClassList: async () => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/schooladmin/getAllClassList`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      const data = await response.json()
-      console.log('🏫 getAllClassList:', data)
-      if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch classes')
-      return data
-    } catch (error) {
-      console.error('getAllClassList error:', error)
-      throw error
+    const endpoints = [
+      `${API_BASE_URL}/schooladmin/getAllClasses`,
+      `${API_BASE_URL}/schooladmin/getAllClassList`,
+    ]
+    for (const url of endpoints) {
+      try {
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data?.success) {
+            console.log('🏫 getAllClasses:', data)
+            return data
+          }
+        }
+      } catch (_) {}
     }
+    throw new Error('Failed to fetch classes')
   },
 
-  // ===============================
-  // 3️⃣ GET ALL SECTIONS (by class_id)
-  // GET /api/schooladmin/getAllSections?class_id=2
-  // Returns: [{ section_id, section_name, class_id, class_name }]
-  // ===============================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 4. GET ALL SECTIONS (by class_id)
+  //    GET /api/schooladmin/getAllSections?class_id=122
+  //    Returns: section_id, class_id, section_name, capacity,
+  //             current_students, display_name, full
+  // ═══════════════════════════════════════════════════════════════════════════
   getAllSections: async (classId) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/schooladmin/getAllSections?class_id=${classId}`,
-        {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      const data = await response.json()
-      console.log('📋 getAllSections:', data)
-      if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch sections')
-      return data
-    } catch (error) {
-      console.error('getAllSections error:', error)
-      throw error
-    }
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/getAllSections?class_id=${classId}`,
+      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+    )
+    if (!response.ok) throw new Error(`getAllSections failed: ${response.status}`)
+    const data = await response.json()
+    console.log('📋 getAllSections:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch sections')
+    return data
   },
 
-  // ===============================
-  // 4️⃣ GET ALL SUBJECTS
-  // GET /api/schooladmin/getAllSubjects
-  // Returns: [{ subject_id, subject_name }]
-  // ===============================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 5. GET ALL SUBJECTS
+  //    GET /api/schooladmin/getAllSubjects
+  //    Returns: subject_id, subject_name, assessment_model, status
+  // ═══════════════════════════════════════════════════════════════════════════
   getAllSubjects: async () => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/schooladmin/getAllSubjects`, {
-        method: 'GET',
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      const data = await response.json()
-      console.log('📚 getAllSubjects:', data)
-      if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch subjects')
-      return data
-    } catch (error) {
-      console.error('getAllSubjects error:', error)
-      throw error
-    }
+    const response = await fetch(`${API_BASE_URL}/schooladmin/getAllSubjects`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) throw new Error(`getAllSubjects failed: ${response.status}`)
+    const data = await response.json()
+    console.log('📚 getAllSubjects:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch subjects')
+    return data
   },
 
-  // ===============================
-  // 5️⃣ GET STUDENTS BY CLASS + SECTION
-  // GET /api/schooladmin/getStudentList?class_id=2&section_id=5
-  // Returns: [{ student_id, student_name, roll_no, avatar }]
-  // ===============================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 6. ✅ GET STUDENTS BY CLASS + SECTION  ← CORRECT ENDPOINT
+  //    GET /api/schooladmin/getTotalStudentsListBySchoolId?class_id=133&section_id=150
+  //    Returns: user_id, name, student_id, class_id, section_id,
+  //             admission_no, roll_no, gender, dob, mobile_number, ...
+  // ═══════════════════════════════════════════════════════════════════════════
   getStudentsByClass: async (classId, sectionId) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
 
-    try {
-      const params = new URLSearchParams({ class_id: classId })
-      if (sectionId) params.append('section_id', sectionId)
+    const params = new URLSearchParams()
+    params.append('class_id', classId)
+    if (sectionId) params.append('section_id', sectionId)
 
-      const response = await fetch(
-        `${API_BASE_URL}/schooladmin/getStudentList?${params.toString()}`,
-        {
-          method: 'GET',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      )
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      const data = await response.json()
-      console.log('👨‍🎓 getStudentsByClass:', data)
-      if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch students')
-      return data
-    } catch (error) {
-      console.error('getStudentsByClass error:', error)
-      throw error
-    }
+    const url = `${API_BASE_URL}/schooladmin/getTotalStudentsListBySchoolId?${params.toString()}`
+    console.log('👨‍🎓 fetching students from:', url)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!response.ok) throw new Error(`getStudents failed: ${response.status}`)
+    const data = await response.json()
+    console.log('👨‍🎓 students data:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch students')
+    return data
   },
 
-  // ===============================
-  // 6️⃣ CREATE EXAM MARKS (Single Student)
-  // POST /api/schooladmin/createExamMarks
-  // Body: { timetable_id, student_id, marks_obtained, is_absent, remarks }
-  // Response: { success: true, message: "Marks entered successfully", data: { mark_id: 10 } }
-  // ===============================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 7. GET EXAM MARKS LIST (MarksList page)
+  //    GET /api/schooladmin/getExamMarks?exam_id=&class_id=&section_id=&subject_id=
+  // ═══════════════════════════════════════════════════════════════════════════
+  getExamMarks: async (params = {}) => {
+    const token = getAuthToken()
+    if (!token) throw new Error('Token missing')
+    const query = new URLSearchParams()
+    if (params.exam_id)    query.append('exam_id',    params.exam_id)
+    if (params.class_id)   query.append('class_id',   params.class_id)
+    if (params.section_id) query.append('section_id', params.section_id)
+    if (params.subject_id) query.append('subject_id', params.subject_id)
+    const qs = query.toString()
+    const response = await fetch(
+      `${API_BASE_URL}/schooladmin/getExamMarks${qs ? `?${qs}` : ''}`,
+      { method: 'GET', headers: { Authorization: `Bearer ${token}` } }
+    )
+    if (!response.ok) throw new Error(`getExamMarks failed: ${response.status}`)
+    const data = await response.json()
+    console.log('📊 getExamMarks:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to fetch marks')
+    return data
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 8. CREATE EXAM MARKS (single student)
+  //    POST /api/schooladmin/createExamMarks
+  //    Body: { timetable_id, student_id, marks_obtained, is_absent, remarks }
+  // ═══════════════════════════════════════════════════════════════════════════
   createExamMarks: async (payload) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/schooladmin/createExamMarks`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        // payload: { timetable_id, student_id, marks_obtained, is_absent, remarks }
-      })
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
-      const data = await response.json()
-      console.log('✅ createExamMarks:', data)
-      if (!data || data.success !== true) throw new Error(data?.message || 'Failed to save marks')
-      return data
-    } catch (error) {
-      console.error('createExamMarks error:', error)
-      throw error
-    }
+    const response = await fetch(`${API_BASE_URL}/schooladmin/createExamMarks`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) throw new Error(`createExamMarks failed: ${response.status}`)
+    const data = await response.json()
+    console.log('✅ createExamMarks:', data)
+    if (!data?.success) throw new Error(data?.message || 'Failed to save marks')
+    return data
   },
 
-  // ===============================
-  // 7️⃣ SAVE ALL MARKS (Loop POST per student)
-  // ===============================
+  // ═══════════════════════════════════════════════════════════════════════════
+  // 9. SAVE ALL MARKS (batch loop per student)
+  // ═══════════════════════════════════════════════════════════════════════════
   saveAllMarks: async (studentsArray, timetableId) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
-
     const results = []
     const errors  = []
-
     for (const student of studentsArray) {
       try {
         const payload = {
@@ -188,7 +213,6 @@ export const markExameService = {
           is_absent:      student.is_absent ? 1 : 0,
           remarks:        student.remark || '',
         }
-
         const response = await fetch(`${API_BASE_URL}/schooladmin/createExamMarks`, {
           method: 'POST',
           headers: {
@@ -197,27 +221,24 @@ export const markExameService = {
           },
           body: JSON.stringify(payload),
         })
-
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
         const data = await response.json()
-        console.log(`✅ Student ${student.id} marks saved:`, data)
         results.push({ studentId: student.id, success: true, data })
       } catch (err) {
-        console.error(`❌ Student ${student.id} failed:`, err)
+        console.error(`❌ Student ${student.id}:`, err)
         errors.push({ studentId: student.id, error: err.message })
       }
     }
-
     return {
       success: errors.length === 0,
       results,
       errors,
-      message:
-        errors.length === 0
-          ? `All ${results.length} marks saved successfully`
-          : `Saved ${results.length}, Failed ${errors.length}`,
+      message: errors.length === 0
+        ? `All ${results.length} marks saved successfully`
+        : `Saved ${results.length}, Failed ${errors.length}`,
     }
   },
 }
 
+export { markExameService }
 export default markExameService

@@ -1,14 +1,33 @@
+// src/pages/SubjectDetailsModal.js
 import { BookOpen, Edit } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
+const ASSESSMENT_MODEL_BADGE = {
+  scholastic: {
+    label: 'Scholastic',
+    className: 'bg-blue-100 text-blue-700',
+    dot: 'bg-blue-500',
+  },
+  co_scholastic: {
+    label: 'Co-Scholastic',
+    className: 'bg-emerald-100 text-emerald-700',
+    dot: 'bg-emerald-500',
+  },
+}
+
+const getBadge = (model) => {
+  if (!model) return null
+  const key = model.toLowerCase().replace(/[\s-]/g, '_')
+  return ASSESSMENT_MODEL_BADGE[key] || null
+}
+
 function SubjectDetailsModal({ subject, onClose }) {
   const navigate = useNavigate()
+  const badge = getBadge(subject.assessment_model)
 
   const handleEdit = () => {
-    if (onClose) {
-      onClose() // Close modal first
-    }
-    navigate(`/admin/subjects/edit/${subject.subject_id}`)
+    if (onClose) onClose()
+    navigate(`/admin/subject/edit/${subject.subject_id}`)
   }
 
   return (
@@ -24,43 +43,40 @@ function SubjectDetailsModal({ subject, onClose }) {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">{subject.subject_name}</h2>
-                  <p className="text-gray-600 text-sm mt-1">
-                    Subject ID: <span className="font-semibold">{subject.subject_id}</span>
-                  </p>
                 </div>
               </div>
 
-              {/* Status Badge */}
-              <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold ${
-                subject.status === 1 
-                  ? 'bg-green-100 text-green-700' 
-                  : 'bg-red-100 text-red-700'
-              }`}>
-                <span className={`w-2 h-2 rounded-full ${subject.status === 1 ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                {subject.status === 1 ? 'Active' : 'Inactive'}
-              </span>
+              {/* Assessment Model Badge */}
+              {badge && (
+                <span className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-semibold ${badge.className}`}>
+                  <span className={`w-2 h-2 rounded-full ${badge.dot}`}></span>
+                  {badge.label}
+                </span>
+              )}
             </div>
 
             {/* Details Grid */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Subject Details</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Subject ID</label>
-                  <p className="text-gray-900 font-semibold mt-1">{subject.subject_id}</p>
-                </div>
-                
                 <div>
                   <label className="text-xs font-semibold text-gray-500 uppercase">Subject Name</label>
                   <p className="text-gray-900 font-semibold mt-1">{subject.subject_name}</p>
                 </div>
-                
+
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Status</label>
-                  <p className="text-gray-900 font-semibold mt-1 capitalize">
-                    {subject.status === 1 ? 'Active' : 'Inactive'}
-                  </p>
+                  <label className="text-xs font-semibold text-gray-500 uppercase">Assessment Model</label>
+                  <div className="mt-1">
+                    {badge ? (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${badge.className}`}>
+                        <span className={`w-2 h-2 rounded-full ${badge.dot}`}></span>
+                        {badge.label}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">Not set</span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

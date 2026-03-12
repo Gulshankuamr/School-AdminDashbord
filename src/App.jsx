@@ -124,6 +124,13 @@ import TimetablePreview from './pages/exams/TimetablePreview'
 import AssignMarks from './pages/exams/AssignMarks'
 import MarksList from './pages/exams/MarksList'
 import PrintMarksheet from './pages/exams/PrintMarksheet'
+          import GenerateAdmitCard from './pages/exams/GenerateAdmitCard'
+
+import MarksheetGenerator from './pages/exams/MarksheetGenerator'
+
+// colastic----------------------
+import CreateCoScholasticGrades from './pages/exams/CreateCoScholasticGrades'
+import CoScholasticGradesList   from './pages/exams/CoScholasticGradesList'
 
 // ════════════════════════════════════════════════
 // 📖 HOMEWORK MODULE
@@ -271,8 +278,17 @@ function App() {
           <Route path="exams/timetable/edit/:id"    element={<CreateExamTimetable />} />
           <Route path="exams/timetable/preview/:id" element={<TimetablePreview />} />
           <Route path="exams/assign-marks"          element={<AssignMarks />} />
-          <Route path="exams/marks"                 element={<MarksList />} />
+          <Route path="exams/marks-list"                 element={<MarksList />} />
           <Route path="exams/print-marksheet"       element={<PrintMarksheet />} />
+
+<Route path="exams/admit-card" element={<GenerateAdmitCard />} />
+           
+          <Route path="exams/marksheet-generator" element={<MarksheetGenerator />} />
+  
+          {/* colstic */}
+
+          <Route path="exams/co-scholastic"      element={<CreateCoScholasticGrades />} />
+<Route path="exams/co-scholastic/list" element={<CoScholasticGradesList />}   />
 
           {/* ── Homework ────────────────────────────── */}
           <Route path="homework"          element={<HomeworkList />} />

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as svc from '../../services/examService/examTimetableService';
+import { API_BASE_URL, getAuthToken } from '../../services/api';
 import { toast } from 'react-hot-toast';
 
 // ─── Helpers ────────────────────────────────────────────────────────
@@ -17,6 +18,21 @@ const fmtTime = (t) => {
 const dayName = (d) => {
   if (!d) return '';
   return new Date(d).toLocaleDateString('en-US', { weekday: 'long' });
+};
+
+// ─── Fetch School Profile ────────────────────────────────────────────
+const fetchSchoolProfile = async () => {
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${API_BASE_URL}/schooladmin/getSchoolAdminProfile`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data?.success ? data.data : null;
+  } catch (_) { return null; }
 };
 
 // ─── Delete Modal ────────────────────────────────────────────────────
@@ -55,26 +71,26 @@ const DeleteModal = ({ item, onCancel, onConfirm, loading }) => (
 
 // ─── Main ────────────────────────────────────────────────────────────
 const ViewExamTimetable = () => {
-  const navigate  = useNavigate();
-  const printRef  = useRef();
+  const navigate = useNavigate();
+  const printRef = useRef();
 
-  // Dropdown lists
-  const [allData,   setAllData]   = useState([]);   // raw timetable records
-  const [exams,     setExams]     = useState([]);   // unique exams from data
-  const [classes,   setClasses]   = useState([]);
-  const [sections,  setSections]  = useState([]);
+  // Data
+  const [allData,       setAllData]       = useState([]);
+  const [exams,         setExams]         = useState([]);   // ✅ from getExams API directly
+  const [classes,       setClasses]       = useState([]);
+  const [sections,      setSections]      = useState([]);
+  const [schoolProfile, setSchoolProfile] = useState(null); // ✅ from getSchoolAdminProfile
 
   // Filters
   const [selExam,    setSelExam]    = useState('');
   const [selClass,   setSelClass]   = useState('');
   const [selSection, setSelSection] = useState('');
-  const [selDate,    setSelDate]    = useState('');
 
   // Display
-  const [loadedRows,  setLoadedRows]  = useState(null);   // null = not loaded
-  const [loadedMeta,  setLoadedMeta]  = useState(null);
-  const [initLoading, setInitLoading] = useState(true);
-  const [tableLoading,setTableLoading]= useState(false);
+  const [loadedRows,   setLoadedRows]   = useState(null);
+  const [loadedMeta,   setLoadedMeta]   = useState(null);
+  const [initLoading,  setInitLoading]  = useState(true);
+  const [tableLoading, setTableLoading] = useState(false);
 
   // Delete
   const [delTarget, setDelTarget] = useState(null);
@@ -84,24 +100,23 @@ const ViewExamTimetable = () => {
   useEffect(() => {
     (async () => {
       try {
-        const [ttRes, clRes] = await Promise.all([
-          svc.getExamTimetable(),
-          svc.getAllClasses(),
+        // ✅ Fetch exams from getExams, classes, timetable, and school profile in parallel
+        const [examRes, clRes, ttRes, profile] = await Promise.all([
+          svc.getAllExams(),          // ✅ GET /schooladmin/getExams → exam_id, exam_name
+          svc.getAllClasses(),        // GET /schooladmin/getAllClassList
+          svc.getExamTimetable(),    // GET /schooladmin/getExamTimetable (all)
+          fetchSchoolProfile(),      // GET /schooladmin/getSchoolAdminProfile
         ]);
+
+        // ✅ Set exams directly from getExams API — shows exam_name in dropdown
+        if (examRes?.success) setExams(examRes.data || []);
+
+        if (clRes?.success) setClasses(clRes.data || []);
 
         const raw = ttRes?.success ? (ttRes.data || []) : [];
         setAllData(raw);
 
-        // Build unique exams from timetable data
-        const examMap = {};
-        raw.forEach(r => {
-          if (r.exam_id && !examMap[r.exam_id]) {
-            examMap[r.exam_id] = { exam_id: r.exam_id, exam_name: r.exam_name || `Exam #${r.exam_id}` };
-          }
-        });
-        setExams(Object.values(examMap));
-
-        if (clRes?.success) setClasses(clRes.data || []);
+        setSchoolProfile(profile);
       } catch {
         toast.error('Failed to load data');
       } finally {
@@ -120,27 +135,24 @@ const ViewExamTimetable = () => {
 
   // ── Load Timetable ──────────────────────────────────────────────────
   const handleLoad = () => {
-    if (!selExam)    { toast.error('Please select an Exam');    return; }
-    if (!selClass)   { toast.error('Please select a Class');    return; }
-    if (!selSection) { toast.error('Please select a Section');  return; }
+    if (!selExam)    { toast.error('Please select an Exam');   return; }
+    if (!selClass)   { toast.error('Please select a Class');   return; }
+    if (!selSection) { toast.error('Please select a Section'); return; }
 
     setTableLoading(true);
     setTimeout(() => {
-      let result = allData.filter(r =>
-        r.exam_id    === parseInt(selExam) &&
-        r.class_id   === parseInt(selClass) &&
-        r.section_id === parseInt(selSection)
-      );
+      const result = allData
+        .filter(r =>
+          String(r.exam_id)    === String(selExam)    &&
+          String(r.class_id)   === String(selClass)   &&
+          String(r.section_id) === String(selSection)
+        )
+        .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
 
-      if (selDate) {
-        result = result.filter(r => r.exam_date?.startsWith(selDate));
-      }
-
-      result.sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
-
-      const examObj  = exams.find(e => e.exam_id === parseInt(selExam));
-      const classObj = classes.find(c => c.class_id === parseInt(selClass));
-      const secObj   = sections.find(s => s.section_id === parseInt(selSection));
+      // ✅ Find exam name from exams list (loaded from getExams)
+      const examObj  = exams.find(e => String(e.exam_id) === String(selExam));
+      const classObj = classes.find(c => String(c.class_id) === String(selClass));
+      const secObj   = sections.find(s => String(s.section_id) === String(selSection));
 
       setLoadedRows(result);
       setLoadedMeta({
@@ -160,16 +172,16 @@ const ViewExamTimetable = () => {
       const res = await svc.deleteExamTimetable(delTarget.timetable_id);
       if (res?.success) {
         toast.success('Deleted successfully');
-        // Refresh allData
         const fresh = await svc.getExamTimetable();
-        const raw = fresh?.success ? (fresh.data || []) : [];
+        const raw   = fresh?.success ? (fresh.data || []) : [];
         setAllData(raw);
-        // Re-run filter
-        const updated = raw.filter(r =>
-          r.exam_id    === parseInt(selExam) &&
-          r.class_id   === parseInt(selClass) &&
-          r.section_id === parseInt(selSection)
-        ).sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
+        const updated = raw
+          .filter(r =>
+            String(r.exam_id)    === String(selExam)    &&
+            String(r.class_id)   === String(selClass)   &&
+            String(r.section_id) === String(selSection)
+          )
+          .sort((a, b) => new Date(a.exam_date) - new Date(b.exam_date));
         setLoadedRows(updated);
       } else {
         toast.error('Failed to delete');
@@ -183,6 +195,13 @@ const ViewExamTimetable = () => {
     if (!loadedRows?.length || !loadedMeta) return;
     const { exam_name, class_name, section_name } = loadedMeta;
 
+    // ✅ Use school data from API
+    const schoolName    = schoolProfile?.school_name         || 'School Name';
+    const schoolAddress = schoolProfile?.school_address      || '';
+    const schoolPhone   = schoolProfile?.school_phone_number || '';
+    const schoolEmail   = schoolProfile?.school_email        || '';
+    const schoolSub     = [schoolAddress, schoolPhone, schoolEmail].filter(Boolean).join(' | ');
+
     const win = window.open('', '_blank', 'width=1050,height=800');
     win.document.write(`<!DOCTYPE html>
 <html>
@@ -192,8 +211,6 @@ const ViewExamTimetable = () => {
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Arial,sans-serif;color:#111;background:#fff}
     .page{max-width:950px;margin:0 auto;padding:36px 44px}
-
-    /* Header */
     .hdr{display:flex;align-items:center;gap:18px;border-bottom:3px solid #1e3a8a;padding-bottom:16px;margin-bottom:16px}
     .logo{width:58px;height:58px;background:#1e3a8a;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .logo svg{width:32px;height:32px;fill:#fff}
@@ -202,26 +219,20 @@ const ViewExamTimetable = () => {
     .badge{margin-left:auto;border:1.5px solid #c7d2fe;background:#f0f4ff;border-radius:6px;padding:6px 14px;text-align:center;flex-shrink:0}
     .badge-lbl{font-size:9px;font-weight:700;color:#6366f1;text-transform:uppercase;letter-spacing:1px}
     .badge-val{font-size:10px;color:#64748b;margin-top:2px}
-
-    /* Title */
     .title-wrap{text-align:center;margin:14px 0 12px}
     .title{font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:2px;color:#1e3a8a}
     .title-sub{font-size:12px;color:#64748b;margin-top:4px}
     .divider{display:flex;align-items:center;gap:10px;margin:10px 0}
     .divider::before,.divider::after{content:'';flex:1;height:1px;background:#cbd5e1}
     .divider span{font-size:11px;color:#94a3b8;font-weight:600;white-space:nowrap}
-
-    /* Info strip */
     .info-strip{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:16px}
     .info-cell{padding:9px 14px;background:#f8fafc}
     .info-cell:not(:last-child){border-right:1px solid #e2e8f0}
     .info-lbl{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#94a3b8;margin-bottom:2px}
     .info-val{font-size:13px;font-weight:700;color:#1e293b}
-
-    /* Table */
     table{width:100%;border-collapse:collapse;font-size:12px}
     thead tr{background:#1e3a8a}
-    th{color:#fff;font-weight:700;padding:10px 10px;text-align:left;font-size:11px;letter-spacing:.3px;border:1px solid #1e40af}
+    th{color:#fff;font-weight:700;padding:10px;text-align:left;font-size:11px;letter-spacing:.3px;border:1px solid #1e40af}
     td{padding:9px 10px;border:1px solid #e2e8f0;color:#334155;vertical-align:top}
     tr:nth-child(even) td{background:#f8fafc}
     .c-sno{text-align:center;width:36px;color:#94a3b8;font-size:11px}
@@ -232,16 +243,11 @@ const ViewExamTimetable = () => {
     .c-room{font-weight:600}
     .c-marks{text-align:center;font-weight:700}
     .c-pass{text-align:center;font-weight:700;color:#16a34a}
-    .c-inst{font-size:11px;color:#64748b;max-width:150px}
-
-    /* Instructions box */
     .inst-box{margin-top:16px;border:1.5px solid #bfdbfe;border-radius:8px;overflow:hidden}
     .inst-hdr{background:#eff6ff;padding:8px 14px;border-bottom:1px solid #bfdbfe;font-size:12px;font-weight:700;color:#1e3a8a}
     .inst-body{padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:3px 20px}
     .inst-body li{font-size:11px;color:#475569;list-style:none;padding-left:14px;position:relative;line-height:1.6}
     .inst-body li::before{content:'✓';position:absolute;left:0;color:#16a34a;font-weight:700;font-size:10px;top:2px}
-
-    /* Signatures */
     .sig-row{display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;padding-top:14px;border-top:1px solid #e2e8f0}
     .sig{text-align:center}
     .sig-line{border-top:2px solid #1e3a8a;width:150px;margin-bottom:5px}
@@ -253,22 +259,20 @@ const ViewExamTimetable = () => {
     @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   </style>
 </head>
-<body>
-<div class="page">
+<body><div class="page">
 
-  <!-- Header -->
+  <!-- Header — school from API -->
   <div class="hdr">
     <div class="logo">
       <svg viewBox="0 0 24 24"><path d="M12 3L1 9L12 15L21 10.09V17H23V9M5 13.18V17.18L12 21L19 17.18V13.18L12 17L5 13.18Z"/></svg>
     </div>
     <div>
-      <div class="school-name">GREENWOOD INTERNATIONAL SCHOOL</div>
-      <div class="school-sub">Affiliated to Central Board of Secondary Education (CBSE)</div>
-      <div class="school-sub">123 Academic Lane, Education Hub, State – 560001 &nbsp;|&nbsp; contact@greenwood.edu</div>
+      <div class="school-name">${schoolName}</div>
+      ${schoolSub ? `<div class="school-sub">${schoolSub}</div>` : ''}
     </div>
     <div class="badge">
       <div class="badge-lbl">OFFICIAL DOCUMENT</div>
-      <div class="badge-val">${new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'})}</div>
+      <div class="badge-val">${new Date().toLocaleDateString('en-US', { year:'numeric', month:'short', day:'numeric' })}</div>
     </div>
   </div>
 
@@ -299,13 +303,8 @@ const ViewExamTimetable = () => {
   <table>
     <thead>
       <tr>
-        <th>S.No</th>
-        <th>Subject</th>
-        <th>Date</th>
-        <th>Day</th>
-        <th>Start Time</th>
-        <th>End Time</th>
-        <th>Room</th>
+        <th>S.No</th><th>Subject</th><th>Date</th><th>Day</th>
+        <th>Start Time</th><th>End Time</th><th>Room</th>
         <th style="text-align:center">Max Marks</th>
         <th style="text-align:center">Pass Marks</th>
       </tr>
@@ -322,12 +321,11 @@ const ViewExamTimetable = () => {
           <td class="c-room">${s.room_no || '—'}</td>
           <td class="c-marks">${s.max_marks ?? '—'}</td>
           <td class="c-pass">${s.min_passing_marks ?? '—'}</td>
-        </tr>
-      `).join('')}
+        </tr>`).join('')}
     </tbody>
   </table>
 
-  <!-- Important Instructions -->
+  <!-- Instructions -->
   <div class="inst-box">
     <div class="inst-hdr">📋 IMPORTANT INSTRUCTIONS FOR STUDENTS</div>
     <ul class="inst-body">
@@ -343,24 +341,23 @@ const ViewExamTimetable = () => {
   <!-- Signatures -->
   <div class="sig-row">
     <div style="font-size:11px;color:#64748b">
-      Date: ${new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'})}
+      Date: ${new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}
     </div>
     <div class="stamp"><div class="stamp-txt">SCHOOL<br>STAMP</div></div>
     <div class="sig">
       <div class="sig-line"></div>
-      <div class="sig-name">Dr. Robert Henderson</div>
-      <div class="sig-title">Principal</div>
+      <div class="sig-name">Class Teacher</div>
+      <div class="sig-title">Signature</div>
     </div>
     <div class="sig">
       <div class="sig-line"></div>
-      <div class="sig-name">Prof. Sarah Jenkins</div>
-      <div class="sig-title">Controller of Examinations</div>
+      <div class="sig-name">Principal</div>
+      <div class="sig-title">Signature</div>
     </div>
   </div>
 
-  <div class="footer">Greenwood International School &nbsp;|&nbsp; 123 Academic Lane, Education Hub, State – 560001 &nbsp;|&nbsp; +91 900-000-1234 &nbsp;|&nbsp; contact@greenwood.edu</div>
-</div>
-</body></html>`);
+  <div class="footer">${schoolName}${schoolSub ? ' | ' + schoolSub : ''}</div>
+</div></body></html>`);
     win.document.close();
     setTimeout(() => { win.focus(); win.print(); }, 300);
   };
@@ -368,6 +365,7 @@ const ViewExamTimetable = () => {
   // ─── select style ────────────────────────────────────────────────
   const sel = "w-full border border-gray-300 rounded-lg px-3 py-2.5 text-gray-900 bg-white text-sm focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer disabled:bg-gray-100 disabled:cursor-not-allowed";
 
+  // ════════════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen bg-gray-50">
 
@@ -385,8 +383,10 @@ const ViewExamTimetable = () => {
             <h1 className="text-2xl font-bold text-gray-900">View Exam Timetable</h1>
             <p className="text-sm text-gray-500 mt-0.5">Select Exam, Class & Section then load timetable.</p>
           </div>
-          <button onClick={() => navigate('/admin/exams/timetable/create')}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-sm shadow-sm whitespace-nowrap">
+          <button
+            onClick={() => navigate('/admin/exams/timetable/create')}
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold text-sm shadow-sm whitespace-nowrap"
+          >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -397,7 +397,7 @@ const ViewExamTimetable = () => {
 
       <div className="max-w-7xl mx-auto p-6">
 
-        {/* ── Filter Row ─── */}
+        {/* ── Filter Row ── */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 mb-6">
           {initLoading ? (
             <div className="flex items-center gap-2 text-gray-400 text-sm">
@@ -405,47 +405,60 @@ const ViewExamTimetable = () => {
               Loading filters...
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-              {/* Exam (required) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+
+              {/* ✅ EXAM — from getExams, shows exam_name */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                   Exam <span className="text-red-500">*</span>
                 </label>
                 <select value={selExam} onChange={e => setSelExam(e.target.value)} className={sel}>
-                  <option value="">Select Exam</option>
-                  {exams.map(e => <option key={e.exam_id} value={e.exam_id}>{e.exam_name}</option>)}
+                  <option value="">-- Select Exam --</option>
+                  {exams.map(e => (
+                    <option key={e.exam_id} value={e.exam_id}>
+                      {e.exam_name}
+                    </option>
+                  ))}
                 </select>
               </div>
-              {/* Class (required) */}
+
+              {/* CLASS */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                   Class <span className="text-red-500">*</span>
                 </label>
                 <select value={selClass} onChange={e => { setSelClass(e.target.value); setSelSection(''); }} className={sel}>
-                  <option value="">Select Class</option>
-                  {classes.map(c => <option key={c.class_id} value={c.class_id}>{c.class_name}</option>)}
+                  <option value="">-- Select Class --</option>
+                  {classes.map(c => (
+                    <option key={c.class_id} value={c.class_id}>
+                      {c.class_name}
+                    </option>
+                  ))}
                 </select>
               </div>
-              {/* Section (required) */}
+
+              {/* SECTION */}
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+                <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                   Section <span className="text-red-500">*</span>
                 </label>
                 <select value={selSection} onChange={e => setSelSection(e.target.value)} disabled={!selClass} className={sel}>
-                  <option value="">Select Section</option>
-                  {sections.map(s => <option key={s.section_id} value={s.section_id}>{s.section_name}</option>)}
+                  <option value="">-- Select Section --</option>
+                  {sections.map(s => (
+                    <option key={s.section_id} value={s.section_id}>
+                      {s.section_name}
+                    </option>
+                  ))}
                 </select>
               </div>
-              {/* Date (optional) */}
-              {/* <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1.5">Date (optional)</label>
-                <input type="date" value={selDate} onChange={e => setSelDate(e.target.value)}
-                  className={sel} />
-              </div> */}
-              {/* Load button */}
+
+              {/* LOAD button */}
               <div>
-                <button onClick={handleLoad} disabled={tableLoading || initLoading}
-                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors">
+                <button
+                  onClick={handleLoad}
+                  disabled={tableLoading || initLoading}
+                  className="w-full py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold text-sm disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                >
                   {tableLoading
                     ? <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />Loading...</>
                     : <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -457,7 +470,7 @@ const ViewExamTimetable = () => {
           )}
         </div>
 
-        {/* ── Not loaded yet ─── */}
+        {/* ── Not loaded yet ── */}
         {loadedRows === null && !tableLoading && (
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center py-20">
             <div className="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
@@ -470,23 +483,16 @@ const ViewExamTimetable = () => {
           </div>
         )}
 
-        {/* ── Loaded ─── */}
+        {/* ── Loaded ── */}
         {loadedRows !== null && (
           <>
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               {[
-                { label: 'Total Subjects',  value: loadedRows.length,
-                  color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
-                { label: 'Exam Days',
-                  value: new Set(loadedRows.map(r => r.exam_date?.split('T')[0])).size,
-                  color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-100' },
-                { label: 'Unique Subjects',
-                  value: new Set(loadedRows.map(r => r.subject_id)).size,
-                  color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
-                { label: 'Max Marks',
-                  value: loadedRows.length ? Math.max(...loadedRows.map(r => r.max_marks || 0)) : 0,
-                  color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
+                { label: 'Total Subjects',  value: loadedRows.length,                                            color: 'text-blue-600',   bg: 'bg-blue-50',   border: 'border-blue-100' },
+                { label: 'Exam Days',       value: new Set(loadedRows.map(r => r.exam_date?.split('T')[0])).size, color: 'text-green-600',  bg: 'bg-green-50',  border: 'border-green-100' },
+                { label: 'Unique Subjects', value: new Set(loadedRows.map(r => r.subject_id)).size,               color: 'text-purple-600', bg: 'bg-purple-50', border: 'border-purple-100' },
+                { label: 'Max Marks',       value: loadedRows.length ? Math.max(...loadedRows.map(r => r.max_marks || 0)) : 0, color: 'text-orange-500', bg: 'bg-orange-50', border: 'border-orange-100' },
               ].map(card => (
                 <div key={card.label} className={`${card.bg} border ${card.border} rounded-xl p-4`}>
                   <p className={`text-3xl font-black ${card.color}`}>{card.value}</p>
@@ -497,7 +503,6 @@ const ViewExamTimetable = () => {
 
             {/* Table Card */}
             <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              {/* Table Header */}
               <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div>
                   <h2 className="font-bold text-gray-900">{loadedMeta?.exam_name}</h2>
@@ -505,8 +510,11 @@ const ViewExamTimetable = () => {
                     {loadedMeta?.class_name} – Section {loadedMeta?.section_name} &nbsp;•&nbsp; {loadedRows.length} record(s)
                   </p>
                 </div>
-                <button onClick={handlePrint} disabled={!loadedRows.length}
-                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold disabled:opacity-40 transition-colors">
+                <button
+                  onClick={handlePrint}
+                  disabled={!loadedRows.length}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-semibold disabled:opacity-40 transition-colors"
+                >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
@@ -533,8 +541,10 @@ const ViewExamTimetable = () => {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-gray-50 border-b border-gray-200">
-                        {['#','Subject','Date','Day','Start Time','End Time','Room','Max Marks','Pass Marks','Actions'].map((h,i) => (
-                          <th key={i} className={`px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${i >= 7 && i <= 8 ? 'text-center' : 'text-left'}`}>{h}</th>
+                        {['#','Subject','Date','Day','Start Time','End Time','Room','Max Marks','Pass Marks','Actions'].map((h, i) => (
+                          <th key={i} className={`px-4 py-3 text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap ${i >= 7 && i <= 8 ? 'text-center' : 'text-left'}`}>
+                            {h}
+                          </th>
                         ))}
                       </tr>
                     </thead>

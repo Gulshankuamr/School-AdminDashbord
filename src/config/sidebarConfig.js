@@ -111,12 +111,20 @@ export const sidebarMenuItems = [
         highlight: true,
         hasDropdown: true,
         subItems: [
-          { id: 'exam-list',             label: 'Exam List',             path: '/admin/exams' },
-          { id: 'create-exam',           label: 'Create Exam',           path: '/admin/exams/add' },
-          { id: 'exam-timetable-create', label: 'Create Exam Timetable', path: '/admin/exams/timetable/create' },
-          { id: 'assign-marks',          label: 'Assign Marks',          path: '/admin/exams/assign-marks' },
-          { id: 'marks-list',            label: 'Marks List',            path: '/admin/exams/marks-list' },
-        ],
+  // { id: 'exam-list',             label: 'Exam List',             path: '/admin/exams'                      },
+  { id: 'create-exam',           label: 'Create Exam',           path: '/admin/exams/add'                  },
+  { id: 'exam-timetable-create', label: 'Create Exam Timetable', path: '/admin/exams/timetable/create'     },
+  { id: 'assign-marks',          label: 'Create Marks',          path: '/admin/exams/assign-marks'         },
+  { id: 'marks-list',            label: 'Marks List',            path: '/admin/exams/marks-list'           },
+  { id: 'co-scholastic-grades',  label: 'Co-Scholastic Grades',  path: '/admin/exams/co-scholastic' },  // ✅ NEW
+   // ✅ ADD THIS
+    { id: 'marksheet-generator', label: 'Generate Marksheet', path: '/admin/exams/marksheet-generator' },
+   {
+  id: 'generate-admit-card',
+  label: 'Generate Admit & ID Cards',
+  path: '/admin/exams/admit-card'
+}
+],
       },
 
       // ── Timetable Module ─────────────────────────

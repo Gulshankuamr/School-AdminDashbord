@@ -1,4 +1,4 @@
-// src/services/subjectService.js
+// src/services/subjectService/subjectService.js
 import { API_BASE_URL, getAuthToken } from "../api.js"
 
 export const subjectService = {
@@ -26,7 +26,6 @@ export const subjectService = {
       throw new Error(data.message || 'Failed to fetch subjects')
     }
 
-    // Return only the data array
     return data.data || []
   },
 
@@ -37,7 +36,6 @@ export const subjectService = {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
 
-    // First get all subjects
     const response = await fetch(
       `${API_BASE_URL}/schooladmin/getAllSubjects`,
       {
@@ -55,9 +53,8 @@ export const subjectService = {
       throw new Error(data.message || 'Failed to fetch subjects')
     }
 
-    // Find the specific subject
-    const subject = (data.data || []).find(s => 
-      String(s.subject_id) === String(subjectId) || 
+    const subject = (data.data || []).find(s =>
+      String(s.subject_id) === String(subjectId) ||
       s.subject_id === parseInt(subjectId)
     )
 
@@ -84,7 +81,8 @@ export const subjectService = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          subject_name: subjectData.subject_name
+          subject_name: subjectData.subject_name,
+          assessment_model: subjectData.assessment_model,
         }),
       }
     )
@@ -106,6 +104,14 @@ export const subjectService = {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
 
+    const payload = {
+      subject_id:       parseInt(subjectId),
+      subject_name:     subjectData.subject_name,
+      assessment_model: subjectData.assessment_model,
+    }
+
+    console.log('UPDATE SUBJECT PAYLOAD:', payload)
+
     const response = await fetch(
       `${API_BASE_URL}/schooladmin/updateSubject`,
       {
@@ -114,10 +120,7 @@ export const subjectService = {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          subject_id: parseInt(subjectId),
-          subject_name: subjectData.subject_name
-        }),
+        body: JSON.stringify(payload),
       }
     )
 
@@ -128,7 +131,16 @@ export const subjectService = {
       throw new Error(data.message || 'Failed to update subject')
     }
 
-    return data
+    // ✅ FIX: Always return the updated fields so the UI can sync local state
+    // regardless of whether the API returns the updated object or not
+    return {
+      ...data,
+      data: data.data || {
+        subject_id:       parseInt(subjectId),
+        subject_name:     subjectData.subject_name,
+        assessment_model: subjectData.assessment_model,
+      },
+    }
   },
 
   // ===============================
@@ -147,7 +159,7 @@ export const subjectService = {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          subject_id: parseInt(subjectId)
+          subject_id: parseInt(subjectId),
         }),
       }
     )
@@ -180,21 +192,21 @@ export const subjectService = {
     )
 
     const data = await response.json()
-    
+
     if (!response.ok || !data.success) {
       throw new Error(data.message || 'Failed to fetch subjects')
     }
 
     const allSubjects = data.data || []
-    
-    // Filter locally based on search term
+
     if (searchTerm) {
       return allSubjects.filter(subject =>
         subject.subject_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        String(subject.subject_id).includes(searchTerm)
+        String(subject.subject_id).includes(searchTerm) ||
+        (subject.assessment_model || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
     return allSubjects
-  }
+  },
 }
