@@ -132,6 +132,12 @@ import MarksheetGenerator from './pages/exams/MarksheetGenerator'
 import CreateCoScholasticGrades from './pages/exams/CreateCoScholasticGrades'
 import CoScholasticGradesList   from './pages/exams/CoScholasticGradesList'
 
+
+// 🚍 TRANSPORT MODULE
+import RouteManagement from './pages/transport/RouteManagement'
+import StopManagement from './pages/transport/StopManagement'
+import AssignStudentTransport from "./pages/transport/AssignStudentTransport";
+
 // ════════════════════════════════════════════════
 // 📖 HOMEWORK MODULE
 // ════════════════════════════════════════════════
@@ -139,6 +145,8 @@ import HomeworkList from './pages/homework/HomeworkList'
 import CreateHomework from './pages/homework/CreateHomework'
 import HomeworkDetails from './pages/homework/HomeworkDetails'
 import EditHomework from './pages/homework/EditHomework'
+
+
 
 // ════════════════════════════════════════════════
 // 👤 PROFILE MODULE
@@ -295,6 +303,12 @@ function App() {
           <Route path="homework/create"   element={<CreateHomework />} />
           <Route path="homework/:id"      element={<HomeworkDetails />} />
           <Route path="homework/edit/:id" element={<EditHomework />} />
+
+{/* ── Transport ───────────────────────── */}
+
+<Route path="transport/routes" element={<RouteManagement />} />
+<Route path="transport/stops" element={<StopManagement />} />
+<Route path="transport/assign-student" element={<AssignStudentTransport />}/>
 
           {/* ── Reports ─────────────────────────────── */}
           <Route path="reports" element={<Report />} />

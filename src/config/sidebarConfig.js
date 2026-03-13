@@ -10,6 +10,7 @@ import {
   Settings,
   Layers,
   Inbox,
+  MapPin,
   List,
   Bell,
   Send,
@@ -19,6 +20,7 @@ import {
   UserCheck,
   BadgeDollarSign,
   MessageSquare,
+  Bus,
   Cpu,
   UsersRound,
   BookUser,
@@ -198,6 +200,46 @@ export const sidebarMenuItems = [
 
     ],
   },
+
+
+// ════════════════════════════════════════════════
+// 🚍 TRANSPORT GROUP
+// ════════════════════════════════════════════════
+{
+  id: 'group-transport',
+  label: 'Transport',
+  icon: Bus,
+  isGroup: true,
+  color: 'orange',
+  items: [
+
+    {
+      id: 'transport-routes',
+      label: 'Routes Management',
+      icon: Bus,
+      highlight: true,
+      hasDropdown: false,
+      path: '/admin/transport/routes'
+    },
+
+    {
+      id: 'transport-stops',
+      label: 'Stops Management',
+      icon: MapPin,
+      highlight: true,
+      hasDropdown: false,
+      path: '/admin/transport/stops'
+    },
+
+    {
+      id: "assign-transport",
+      label: "Assign Transport",
+      icon: UserCheck,
+      path: "/admin/transport/assign-student"
+    }
+
+  ],
+},
 
   // ════════════════════════════════════════════════
   // 👨‍🏫 STAFF GROUP

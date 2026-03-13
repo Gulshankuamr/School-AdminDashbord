@@ -13,7 +13,7 @@ const fmtDay = (dateStr) => {
   return new Date(dateStr).toLocaleDateString("en-IN", { weekday: "short" });
 };
 
-// ─── Inline CSS strings for print/download (no CSS variables, no external fonts) ───
+// ─── Admit Card Print CSS ─────────────────────────────────────────────────────
 const ADMIT_PRINT_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -102,64 +102,116 @@ const ADMIT_PRINT_CSS = `
   }
 `;
 
+// ─── ID Card Print CSS — A4 Full Page ─────────────────────────────────────────
 const ID_PRINT_CSS = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Libre+Baskerville:wght@400;700&display=swap');
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'DM Sans', Arial, sans-serif; background: #fff; padding: 20px; display: flex; justify-content: center; }
-  @page { size: 90mm 140mm; margin: 5mm; }
+  body {
+    font-family: 'DM Sans', Arial, sans-serif;
+    background: #fff;
+    width: 210mm;
+    min-height: 297mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 0;
+  }
+  @page { size: A4 portrait; margin: 0; }
+
+  .id-card-wrapper {
+    width: 210mm;
+    min-height: 297mm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 
   .id-card {
     font-family: 'DM Sans', Arial, sans-serif;
     background: #fff;
-    border: 2px solid #dc2626;
-    border-radius: 20px;
-    width: 350px;
+    border: 3px solid #dc2626;
+    border-radius: 24px;
+    width: 160mm;
     overflow: hidden;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
+
   .id-card-header {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    padding: 18px 16px 14px;
-    display: flex; align-items: center; gap: 12px;
+    padding: 26px 20px 20px;
+    display: flex; align-items: center; gap: 16px;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
-  .id-logo-img { width: 60px; height: 60px; object-fit: contain; border-radius: 10px; background: #fff; padding: 3px; }
+  .id-logo-img {
+    width: 80px; height: 80px; object-fit: contain;
+    border-radius: 12px; background: #fff; padding: 4px;
+  }
   .id-logo-placeholder {
-    width: 60px; height: 60px; border-radius: 10px; background: #fff;
+    width: 80px; height: 80px; border-radius: 12px; background: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem; font-weight: 700; color: #dc2626;
+    font-size: 2rem; font-weight: 700; color: #dc2626;
     font-family: 'Libre Baskerville', Georgia, serif;
   }
   .id-school-info { flex: 1; }
-  .id-school-name { font-family: 'Libre Baskerville', Georgia, serif; font-size: 1rem; font-weight: 700; color: #fff; line-height: 1.3; }
-  .id-school-addr { font-size: .65rem; color: rgba(255,255,255,.9); margin-top: 4px; line-height: 1.4; }
-  .id-photo-section { display: flex; justify-content: center; padding: 20px 0 12px; background: #fff; }
+  .id-school-name {
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1.3rem; font-weight: 700; color: #fff; line-height: 1.3;
+  }
+  .id-school-addr {
+    font-size: .8rem; color: rgba(255,255,255,.9); margin-top: 6px; line-height: 1.5;
+  }
+
+  .id-photo-section {
+    display: flex; justify-content: center;
+    padding: 28px 0 16px; background: #fff;
+  }
   .id-photo-box {
-    width: 110px; height: 130px; border: 3px solid #dc2626;
-    border-radius: 12px; overflow: hidden; background: #f8f8f8;
+    width: 150px; height: 180px;
+    border: 4px solid #dc2626; border-radius: 16px;
+    overflow: hidden; background: #f8f8f8;
     display: flex; align-items: center; justify-content: center;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   .id-photo-box img { width: 100%; height: 100%; object-fit: cover; }
-  .id-photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .id-photo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+
   .id-student-name {
-    text-align: center; font-family: 'Libre Baskerville', Georgia, serif;
-    font-size: 1.1rem; font-weight: 700; color: #1e293b;
-    padding: 0 16px 4px; text-transform: uppercase;
+    text-align: center;
+    font-family: 'Libre Baskerville', Georgia, serif;
+    font-size: 1.4rem; font-weight: 700; color: #1e293b;
+    padding: 0 20px 6px; text-transform: uppercase; letter-spacing: .02em;
   }
-  .id-academic-year { text-align: center; font-size: .75rem; color: #64748b; margin-bottom: 12px; font-weight: 500; }
-  .id-details-table { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 5px; }
-  .id-detail-row { display: flex; align-items: baseline; font-size: .8rem; line-height: 1.7; }
-  .id-detail-key { color: #dc2626; font-weight: 600; white-space: nowrap; min-width: 68px; }
-  .id-detail-sep { color: #64748b; width: 12px; flex-shrink: 0; }
+  .id-academic-year {
+    text-align: center; font-size: .9rem; color: #64748b;
+    margin-bottom: 16px; font-weight: 500;
+  }
+
+  .id-details-table { padding: 0 24px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .id-detail-row { display: flex; align-items: baseline; font-size: .95rem; line-height: 1.8; }
+  .id-detail-key { color: #dc2626; font-weight: 600; white-space: nowrap; min-width: 80px; }
+  .id-detail-sep { color: #64748b; width: 14px; flex-shrink: 0; }
   .id-detail-val { color: #1e293b; flex: 1; }
   .id-detail-val.id-red { color: #dc2626; font-weight: 700; }
-  .id-detail-val.id-uc { text-transform: uppercase; font-size: .75rem; }
-  .roll-key { padding-left: 15px; min-width: 55px; }
+  .id-detail-val.id-uc { text-transform: uppercase; font-size: .85rem; }
+  .roll-key { padding-left: 20px; min-width: 60px; }
+
+  .id-sig-row {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    padding: 20px 36px 16px; border-top: 1.5px solid #e2e8f0;
+    font-size: .8rem; color: #1e293b; font-weight: 500;
+  }
+  .id-sig-box { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .id-sig-line { width: 100px; border-top: 1.5px solid #1e293b; }
+
   .id-footer {
     background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    color: #fff; text-align: center; font-size: .8rem; font-weight: 700;
-    letter-spacing: .04em; padding: 10px 12px; margin-top: 8px;
+    color: #fff; text-align: center; font-size: .9rem; font-weight: 700;
+    letter-spacing: .05em; padding: 14px 16px;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
 `;
@@ -183,7 +235,6 @@ const triggerPrint = (contentHtml, cssString, title) => {
   doc.open();
   doc.write(buildHtml(contentHtml, cssString, title));
   doc.close();
-  // Wait for fonts / images
   iframe.contentWindow.onload = () => {
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
@@ -380,7 +431,7 @@ const AdmitCardView = ({ data, school }) => {
   );
 };
 
-// ─── ID CARD VIEW ─────────────────────────────────────────────────────────────
+// ─── ID CARD VIEW — A4 Print Ready ───────────────────────────────────────────
 const IdCardView = ({ data, school }) => {
   const student = data?.students?.[0];
   if (!student) return null;
@@ -395,85 +446,105 @@ const IdCardView = ({ data, school }) => {
     : "2025-2026");
 
   return (
-    <div className="id-card" id="id-card-print">
-      {/* School Header */}
-      <div className="id-card-header">
-        <div className="id-card-logo">
-          {school?.logo_url
-            ? <img src={school.logo_url} alt="logo" className="id-logo-img" />
-            : <div className="id-logo-placeholder">{schoolName[0] || "S"}</div>
-          }
-        </div>
-        <div className="id-school-info">
-          <div className="id-school-name">{schoolName}</div>
-          {schoolAddr && <div className="id-school-addr">{schoolAddr}</div>}
-        </div>
-      </div>
+    // id-card-wrapper: print pe A4 full page center mein card dikhayega
+    <div className="id-card-wrapper" id="id-card-print">
+      <div className="id-card">
 
-      {/* Photo */}
-      <div className="id-photo-section">
-        <div className="id-photo-box">
-          {student.student_photo
-            ? <img src={student.student_photo} alt={student.name} />
-            : <div className="id-photo-placeholder">
-                <svg viewBox="0 0 40 40" fill="none" style={{ width: 44, height: 44, opacity: .4 }}>
-                  <circle cx="20" cy="14" r="8" stroke="#555" strokeWidth="1.5"/>
-                  <path d="M5 38c0-8.284 6.716-15 15-15s15 6.716 15 15" stroke="#555" strokeWidth="1.5"/>
-                </svg>
-              </div>
-          }
+        {/* School Header */}
+        <div className="id-card-header">
+          <div className="id-card-logo">
+            {school?.logo_url
+              ? <img src={school.logo_url} alt="logo" className="id-logo-img" />
+              : <div className="id-logo-placeholder">{schoolName[0] || "S"}</div>
+            }
+          </div>
+          <div className="id-school-info">
+            <div className="id-school-name">{schoolName}</div>
+            {schoolAddr && <div className="id-school-addr">{schoolAddr}</div>}
+          </div>
         </div>
-      </div>
 
-      <div className="id-student-name">{student.name}</div>
-      <div className="id-academic-year">{academicYear}</div>
+        {/* Photo */}
+        <div className="id-photo-section">
+          <div className="id-photo-box">
+            {student.student_photo
+              ? <img src={student.student_photo} alt={student.name} />
+              : <div className="id-photo-placeholder">
+                  <svg viewBox="0 0 40 40" fill="none" style={{ width: 54, height: 54, opacity: .4 }}>
+                    <circle cx="20" cy="14" r="8" stroke="#555" strokeWidth="1.5"/>
+                    <path d="M5 38c0-8.284 6.716-15 15-15s15 6.716 15 15" stroke="#555" strokeWidth="1.5"/>
+                  </svg>
+                </div>
+            }
+          </div>
+        </div>
 
-      <div className="id-details-table">
-        <div className="id-detail-row">
-          <span className="id-detail-key">Class-Sec</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val">{data?.class_info?.class_name} {data?.class_info?.section_name}</span>
-          <span className="id-detail-key roll-key">Roll No.</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val id-red">{student.roll_no || "—"}</span>
-        </div>
-        <div className="id-detail-row">
-          <span className="id-detail-key">D.O.B.</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val">{fmt(student.dob)}</span>
-          <span className="id-detail-key roll-key">Reg. No.</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val id-red">{student.admission_no || "—"}</span>
-        </div>
-        <div className="id-detail-row">
-          <span className="id-detail-key">Father</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val" style={{ flex: 3 }}>{student.father_name}</span>
-        </div>
-        <div className="id-detail-row">
-          <span className="id-detail-key">Mother</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val" style={{ flex: 3 }}>{student.mother_name}</span>
-        </div>
-        <div className="id-detail-row">
-          <span className="id-detail-key">Address</span>
-          <span className="id-detail-sep">:</span>
-          <span className="id-detail-val id-uc" style={{ flex: 3 }}>{student.address}</span>
-        </div>
-        {student.mobile_no && (
+        {/* Student Name & Year */}
+        <div className="id-student-name">{student.name}</div>
+        <div className="id-academic-year">{academicYear}</div>
+
+        {/* Details */}
+        <div className="id-details-table">
           <div className="id-detail-row">
-            <span className="id-detail-key">Mobile No.</span>
+            <span className="id-detail-key">Class-Sec</span>
             <span className="id-detail-sep">:</span>
-            <span className="id-detail-val id-red" style={{ flex: 3 }}>{student.mobile_no}</span>
+            <span className="id-detail-val">{data?.class_info?.class_name} {data?.class_info?.section_name}</span>
+            <span className="id-detail-key roll-key">Roll No.</span>
+            <span className="id-detail-sep">:</span>
+            <span className="id-detail-val id-red">{student.roll_no || "—"}</span>
+          </div>
+          <div className="id-detail-row">
+            <span className="id-detail-key">D.O.B.</span>
+            <span className="id-detail-sep">:</span>
+            <span className="id-detail-val">{fmt(student.dob)}</span>
+            <span className="id-detail-key roll-key">Reg. No.</span>
+            <span className="id-detail-sep">:</span>
+            <span className="id-detail-val id-red">{student.admission_no || "—"}</span>
+          </div>
+          <div className="id-detail-row">
+            <span className="id-detail-key">Father</span>
+            <span className="id-detail-sep">:</span>
+            <span className="id-detail-val" style={{ flex: 3 }}>{student.father_name}</span>
+          </div>
+          <div className="id-detail-row">
+            <span className="id-detail-key">Mother</span>
+            <span className="id-detail-sep">:</span>
+            <span className="id-detail-val" style={{ flex: 3 }}>{student.mother_name}</span>
+          </div>
+          <div className="id-detail-row">
+            <span className="id-detail-key">Address</span>
+            <span className="id-detail-sep">:</span>
+            <span className="id-detail-val id-uc" style={{ flex: 3 }}>{student.address}</span>
+          </div>
+          {student.mobile_no && (
+            <div className="id-detail-row">
+              <span className="id-detail-key">Mobile No.</span>
+              <span className="id-detail-sep">:</span>
+              <span className="id-detail-val id-red" style={{ flex: 3 }}>{student.mobile_no}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Signature Row */}
+        <div className="id-sig-row">
+          <div className="id-sig-box">
+            <div className="id-sig-line" />
+            <span>Student Signature</span>
+          </div>
+          <div className="id-sig-box">
+            <div className="id-sig-line" />
+            <span>Principal Signature</span>
+          </div>
+        </div>
+
+        {/* Footer */}
+        {schoolPhone && (
+          <div className="id-footer">
+            School Contact # {schoolPhone.replace(/^\+91/, "")}
           </div>
         )}
-      </div>
 
-      {schoolPhone && (
-        <div className="id-footer">
-          School Contact # {schoolPhone.replace(/^\+91/, "")}
-        </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -558,7 +629,7 @@ const GenerateAdmitCard = () => {
     finally { setGenerating(false); }
   };
 
-  // ── Print: capture the rendered DOM node's outerHTML ──
+  // ── Print ──
   const handlePrint = () => {
     const elId  = activeView === "admit" ? "admit-card-print" : "id-card-print";
     const el    = document.getElementById(elId);
@@ -568,7 +639,7 @@ const GenerateAdmitCard = () => {
     triggerPrint(el.outerHTML, css, title);
   };
 
-  // ── Download HTML file ──
+  // ── Download HTML ──
   const handleDownload = () => {
     const student = admitCardData?.students?.[0];
     const elId    = activeView === "admit" ? "admit-card-print" : "id-card-print";
@@ -719,20 +790,11 @@ const GenerateAdmitCard = () => {
           cursor:pointer;transition:all .2s;
         }
         .ac-btn-icon svg{width:16px;height:16px;flex-shrink:0;}
-
-        .ac-btn-print{
-          background:var(--ink);color:#fff;
-        }
+        .ac-btn-print{ background:var(--ink);color:#fff; }
         .ac-btn-print:hover{background:#1e293b;transform:translateY(-1px);box-shadow:0 5px 15px rgba(0,0,0,.15);}
-
-        .ac-btn-download{
-          background:linear-gradient(135deg,#059669,#047857);color:#fff;
-        }
+        .ac-btn-download{ background:linear-gradient(135deg,#059669,#047857);color:#fff; }
         .ac-btn-download:hover{transform:translateY(-1px);box-shadow:0 5px 15px rgba(5,150,105,.25);}
-
-        .ac-btn-reset{
-          background:transparent;color:var(--muted);border:2px solid var(--border);
-        }
+        .ac-btn-reset{ background:transparent;color:var(--muted);border:2px solid var(--border); }
         .ac-btn-reset:hover{border-color:var(--ink);color:var(--ink);background:white;}
 
         /* card container */
@@ -742,7 +804,7 @@ const GenerateAdmitCard = () => {
           overflow-x:auto;
         }
 
-        /* ── ADMIT CARD ── */
+        /* ── ADMIT CARD (screen) ── */
         .admit-card{
           font-family:'DM Sans',sans-serif;background:#fff;
           border:2px solid #e2e8f0;border-radius:16px;
@@ -813,7 +875,10 @@ const GenerateAdmitCard = () => {
           border-top:1px solid #e2e8f0;font-size:.8rem;color:#1e293b;font-weight:500;
         }
 
-        /* ── ID CARD ── */
+        /* ── ID CARD (screen) ── */
+        .id-card-wrapper{
+          display:flex; justify-content:center; align-items:center; width:100%;
+        }
         .id-card{
           font-family:'DM Sans',sans-serif;background:#fff;
           border:2px solid #dc2626;border-radius:20px;width:350px;
@@ -855,10 +920,17 @@ const GenerateAdmitCard = () => {
         .id-detail-val.id-red{color:#dc2626;font-weight:700;}
         .id-detail-val.id-uc{text-transform:uppercase;font-size:.75rem;}
         .roll-key{padding-left:15px;min-width:55px;}
+        .id-sig-row{
+          display:flex;justify-content:space-between;align-items:flex-end;
+          padding:14px 24px 12px;border-top:1px solid #e2e8f0;
+          font-size:.75rem;color:#1e293b;font-weight:500;
+        }
+        .id-sig-box{display:flex;flex-direction:column;align-items:center;gap:5px;}
+        .id-sig-line{width:80px;border-top:1.5px solid #1e293b;}
         .id-footer{
           background:linear-gradient(135deg,#dc2626 0%,#b91c1c 100%);
           color:#fff;text-align:center;font-size:.8rem;font-weight:700;
-          letter-spacing:.04em;padding:10px 12px;margin-top:8px;
+          letter-spacing:.04em;padding:10px 12px;margin-top:0;
         }
 
         @media(max-width:768px){
@@ -883,7 +955,6 @@ const GenerateAdmitCard = () => {
           </div>
           <div>
             <div className="ac-page-title">Generate Admit Card &amp; ID Card</div>
-            <div className="ac-page-sub">Select exam, class, section &amp; student to generate both cards simultaneously</div>
           </div>
         </div>
 
@@ -956,7 +1027,6 @@ const GenerateAdmitCard = () => {
 
             {/* Action Bar */}
             <div className="ac-action-bar">
-              {/* Print */}
               <button className="ac-btn-icon ac-btn-print" onClick={handlePrint}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/>
@@ -965,7 +1035,6 @@ const GenerateAdmitCard = () => {
                 Print {activeView === "admit" ? "Admit Card" : "ID Card"}
               </button>
 
-              {/* Download */}
               <button className="ac-btn-icon ac-btn-download" onClick={handleDownload}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
@@ -975,7 +1044,6 @@ const GenerateAdmitCard = () => {
                 Download {activeView === "admit" ? "Admit Card" : "ID Card"}
               </button>
 
-              {/* Reset */}
               <button className="ac-btn-icon ac-btn-reset" onClick={handleReset}>
                 ← Generate New Cards
               </button>
