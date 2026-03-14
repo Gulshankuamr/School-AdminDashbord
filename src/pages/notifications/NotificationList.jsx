@@ -1,6 +1,14 @@
+// pages/notifications/NotificationList.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX:
+//   • Row click → markReadLocal (orange dot hata) + markAllAsRead API
+//   • Navbar badge refreshed via context's refreshUnreadCount
+// ─────────────────────────────────────────────────────────────────────────────
+
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { notificationService } from '../../services/notificationService/notificationService'
+import { useNotifications } from '../../context/NotificationContext'
 import {
   Bell, Check, Trash2, Users, Calendar,
   BookOpen, FileText, Clock, ChevronRight, ArrowLeft,
@@ -71,7 +79,6 @@ const formatFullTime = (date) => {
 }
 
 // getSentNotifications response normalise
-// API: notification_id, title, description, status, created_at, recipients_count, read_count
 const normalise = (n) => {
   if (!n || typeof n !== 'object') return null
   return {
@@ -80,9 +87,6 @@ const normalise = (n) => {
     message:         n.description       ?? n.message ?? '',
     type:            n.type              ?? 'general',
     status:          n.status === 1 || n.status === 'SENT' ? 'SENT' : String(n.status || ''),
-    // ── Admin (SENDER) ke notifications start as "unread" locally
-    //    getSentNotifications mein is_read field nahi hota
-    //    To hum locally track karte hain — row click = read mark
     read:            n.is_read === 1     || n.is_read === true || n.read === true || false,
     createdAt:       n.created_at        ?? n.createdAt ?? new Date().toISOString(),
     recipientsCount: n.recipients_count  ?? 0,
@@ -123,14 +127,13 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:Georgia,serif;color:#111;padding:48px;line-height:1.7}
         .header{border-bottom:3px solid #f97316;padding-bottom:22px;margin-bottom:28px}
-        .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:2.5px;color:#888;margin-bottom:8px;font-family:Arial,sans-serif}
         h1{font-size:26px;font-weight:bold;margin-bottom:8px;color:#111}
-        .badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:700;font-family:Arial,sans-serif;margin-right:8px}
-        .sent{background:#d1fae5;color:#065f46}
+        .badge{display:inline-block;padding:3px 12px;background:#d1fae5;color:#065f46;border-radius:20px;font-size:11px;font-weight:700;font-family:Arial,sans-serif;margin-right:8px}
+        .meta{font-size:12px;color:#666;font-family:Arial,sans-serif}
         .lbl{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#aaa;font-weight:700;font-family:Arial,sans-serif;margin-bottom:8px}
         .msgbox{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px 20px;font-size:14px;white-space:pre-wrap;color:#111}
         .tag{display:inline-block;padding:4px 12px;background:#fff7ed;border:1px solid #fdba74;border-radius:20px;font-size:12px;color:#c2410c;margin:3px;font-family:Arial,sans-serif}
-        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+        .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
         .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px 16px}
         .blbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#aaa;font-family:Arial,sans-serif;margin-bottom:5px}
         .bval{font-size:14px;font-weight:600;color:#111}
@@ -158,11 +161,6 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
           <div className="flex items-center gap-2 text-gray-900 text-sm font-semibold">
             <FileText className="w-4 h-4 text-orange-500" />
             Notification Details
-            {!n.read && (
-              <span className="ml-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full font-semibold">
-                Unread
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handlePrint}
@@ -184,14 +182,14 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
         <div className="overflow-y-auto flex-1 p-6">
           <div ref={printRef}>
             {/* Header */}
-            <div className="header border-b-2 border-orange-400 pb-5 mb-6">
-              <p className="eyebrow text-xs uppercase tracking-widest text-gray-500 mb-2 font-semibold font-sans">
+            <div className="border-b-2 border-orange-400 pb-5 mb-6">
+              <p className="text-xs uppercase tracking-widest text-gray-500 mb-2 font-semibold font-sans">
                 School Notification
               </p>
               <h1 className="text-2xl font-bold text-gray-900 mb-3">{n.title}</h1>
               <div className="flex flex-wrap items-center gap-3">
                 {(n.status === 'SENT' || n.status === 1) && (
-                  <span className="badge sent px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold font-sans">
+                  <span className="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs font-bold font-sans">
                     ✓ Sent
                   </span>
                 )}
@@ -203,8 +201,8 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
 
             {/* Message */}
             <div className="mb-6">
-              <p className="lbl text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Message</p>
-              <div className="msgbox bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Message</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <p className="text-gray-900 text-sm leading-relaxed whitespace-pre-wrap">
                   {n.message || 'No message content.'}
                 </p>
@@ -214,10 +212,10 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
             {/* Sent To */}
             {n.targets && n.targets.length > 0 && (
               <div className="mb-6">
-                <p className="lbl text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Sent To</p>
+                <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Sent To</p>
                 <div className="flex flex-wrap gap-2">
                   {n.targets.map((t, i) => (
-                    <span key={i} className="tag flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-800 border border-orange-200 rounded-lg text-sm font-medium">
+                    <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 text-orange-800 border border-orange-200 rounded-lg text-sm font-medium">
                       <Users className="w-3.5 h-3.5" />
                       {getTargetLabel(t)}
                     </span>
@@ -228,30 +226,30 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1">Date</p>
-                <p className="bval font-semibold text-gray-900 text-sm">{formatFullDate(n.createdAt)}</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1">Date</p>
+                <p className="font-semibold text-gray-900 text-sm">{formatFullDate(n.createdAt)}</p>
               </div>
-              <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1">Time</p>
-                <p className="bval font-semibold text-gray-900 text-sm">{formatFullTime(n.createdAt)}</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1">Time</p>
+                <p className="font-semibold text-gray-900 text-sm">{formatFullTime(n.createdAt)}</p>
               </div>
-              <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
                   <Users className="w-3.5 h-3.5" /> Total Recipients
                 </p>
-                <p className="bvallg font-bold text-gray-900 text-xl">{n.recipientsCount}</p>
+                <p className="font-bold text-gray-900 text-xl">{n.recipientsCount}</p>
               </div>
-              <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
                   <CheckCircle className="w-3.5 h-3.5" /> Read By
                 </p>
-                <p className="bvallg font-bold text-gray-900 text-xl">{n.readCount}</p>
+                <p className="font-bold text-gray-900 text-xl">{n.readCount}</p>
               </div>
             </div>
 
             {/* Print footer */}
-            <div className="footer mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center font-sans">
+            <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center font-sans">
               Generated on {new Date().toLocaleString()} · School Management System
             </div>
           </div>
@@ -276,6 +274,9 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => 
 // ─── Main Component ────────────────────────────────────────────────────────────
 const NotificationList = () => {
   const navigate = useNavigate()
+  // ✅ Get refreshUnreadCount from context to update navbar badge
+  const { refreshUnreadCount } = useNotifications()
+
   const [allNotifications, setAllNotifications] = useState([])
   const [loading,          setLoading]          = useState(true)
   const [actionLoading,    setActionLoading]    = useState(null)
@@ -291,7 +292,7 @@ const NotificationList = () => {
   const [selectedNotif, setSelectedNotif] = useState(null)
   const [modalDeleting, setModalDeleting] = useState(false)
 
-  // ── Fetch sent notifications ───────────────────────────────────────────────
+  // ── Fetch sent notifications ─────────────────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
@@ -314,13 +315,13 @@ const NotificationList = () => {
     fetchData()
   }, [])
 
-  // ── Debounce search ────────────────────────────────────────────────────────
+  // ── Debounce search ──────────────────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1) }, 400)
     return () => clearTimeout(t)
   }, [searchInput])
 
-  // ── Filter + paginate ──────────────────────────────────────────────────────
+  // ── Filter + paginate ────────────────────────────────────────────────────
   const filtered = allNotifications.filter(n => {
     if (readFilter === 'unread' && n.read) return false
     if (readFilter === 'read'   && !n.read) return false
@@ -336,20 +337,44 @@ const NotificationList = () => {
   const paginated   = filtered.slice((page - 1) * LIMIT, page * LIMIT)
   const unreadCount = allNotifications.filter(n => !n.read).length
 
-  // ── Mark as read — LOCAL STATE ONLY — no API call (404 fix) ───────────────
-  // Admin row click kare to: orange dot hatao, bg white karo, unread count ghataao
-  const markReadLocal = (id) => {
+  // ── ✅ Mark as read — LOCAL + markAllAsRead API + navbar badge refresh ────
+  const markReadLocal = async (id) => {
+    // Local state update (orange dot hata)
     setAllNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     )
-    // Update modal too if open
     setSelectedNotif(prev => prev?.id === id ? { ...prev, read: true } : prev)
+
+    // ✅ Background: call markAllAsRead API so server stays in sync
+    try {
+      await notificationService.markAllAsRead()
+      // ✅ Refresh navbar badge count from server
+      refreshUnreadCount?.()
+    } catch (err) {
+      console.error('markAllAsRead background failed:', err)
+      // UI is already updated — silent fail is ok
+    }
   }
 
-  // ── Delete ─────────────────────────────────────────────────────────────────
+  // ── ✅ Mark All as Read ─────────────────────────────────────────────────
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead()
+      setAllNotifications(prev => prev.map(n => ({ ...n, read: true })))
+      setSelectedNotif(prev => prev ? { ...prev, read: true } : null)
+      // ✅ Refresh navbar badge
+      refreshUnreadCount?.()
+      setToast({ type: 'success', message: 'All notifications marked as read' })
+    } catch {
+      setToast({ type: 'error', message: 'Failed to mark all as read' })
+    }
+  }
+
+  // ── Delete ───────────────────────────────────────────────────────────────
   const handleDelete = async (id, e) => {
     if (e) e.stopPropagation()
     setActionLoading(id)
+    setModalDeleting(true)
     try {
       await notificationService.deleteNotification(id)
       setAllNotifications(prev => prev.filter(n => n.id !== id))
@@ -363,22 +388,10 @@ const NotificationList = () => {
     }
   }
 
-  // ── Row click — open modal + mark read locally ─────────────────────────────
+  // ── ✅ Row click — open modal + mark read ────────────────────────────────
   const handleRowClick = (n) => {
-    if (!n.read) markReadLocal(n.id)   // orange dot hatao, local only
-    setSelectedNotif(n.read ? n : { ...n, read: true })
-  }
-
-  // ── Mark all as read — API call (PUT /markAllAsRead) ──────────────────────
-  const handleMarkAllAsRead = async () => {
-    try {
-      await notificationService.markAllAsRead()
-      setAllNotifications(prev => prev.map(n => ({ ...n, read: true })))
-      setSelectedNotif(prev => prev ? { ...prev, read: true } : null)
-      setToast({ type: 'success', message: 'All notifications marked as read' })
-    } catch {
-      setToast({ type: 'error', message: 'Failed to mark all as read' })
-    }
+    setSelectedNotif({ ...n, read: true })
+    if (!n.read) markReadLocal(n.id) // orange dot hata + navbar badge update
   }
 
   return (
@@ -389,10 +402,7 @@ const NotificationList = () => {
         <NotificationModal
           notification={selectedNotif}
           onClose={() => setSelectedNotif(null)}
-          onDelete={(id) => {
-            setModalDeleting(true)
-            handleDelete(id)
-          }}
+          onDelete={(id) => handleDelete(id)}
           deleting={modalDeleting}
         />
       )}
@@ -407,8 +417,12 @@ const NotificationList = () => {
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
               <Bell className="w-6 h-6 text-orange-500" />
               Notifications
-              {/* 🔴 Unread badge — jaise read karo, number ghatte */}
-            
+              {/* ✅ Unread badge — decrements as you read */}
+              {unreadCount > 0 && (
+                <span className="ml-1 px-2.5 py-0.5 bg-orange-500 text-white text-xs font-bold rounded-full">
+                  {unreadCount}
+                </span>
+              )}
             </h1>
             <p className="text-gray-600 text-sm">Manage and broadcast school-wide announcements</p>
           </div>
@@ -432,9 +446,9 @@ const NotificationList = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
-          { label: 'Total',  value: allNotifications.length,             Icon: Bell,  bg: 'bg-blue-100',   color: 'text-blue-700'  },
-          { label: 'Unread', value: unreadCount,                              Icon: Clock, bg: 'bg-orange-100', color: 'text-orange-700' },
-          { label: 'Read',   value: allNotifications.length - unreadCount, Icon: Check, bg: 'bg-green-100',  color: 'text-green-700'  },
+          { label: 'Total',  value: allNotifications.length,              Icon: Bell,  bg: 'bg-blue-100',   color: 'text-blue-700'  },
+          { label: 'Unread', value: unreadCount,                          Icon: Clock, bg: 'bg-orange-100', color: 'text-orange-700' },
+          { label: 'Read',   value: allNotifications.length - unreadCount, Icon: Check, bg: 'bg-green-100', color: 'text-green-700'  },
         ].map(({ label, value, Icon, bg, color }) => (
           <div key={label} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center gap-3">
@@ -523,83 +537,82 @@ const NotificationList = () => {
         ) : (
           <div className="divide-y divide-gray-100">
             {paginated.map((n) => (
-                <div
-                  key={n.id}
-                  onClick={() => handleRowClick(n)}
-                  className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors group
-                    ${!n.read ? 'bg-orange-50/50' : 'bg-white'}`}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Bell Icon */}
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
-                      ${!n.read ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                      <Bell className={`w-5 h-5 ${!n.read ? 'text-orange-600' : 'text-gray-500'}`} />
-                    </div>
+              <div
+                key={n.id}
+                onClick={() => handleRowClick(n)}
+                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors group
+                  ${!n.read ? 'bg-orange-50/50' : 'bg-white'}`}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Bell Icon */}
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0
+                    ${!n.read ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                    <Bell className={`w-5 h-5 ${!n.read ? 'text-orange-600' : 'text-gray-500'}`} />
+                  </div>
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <h3 className={`text-sm truncate ${!n.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
-                            {n.title}
-                          </h3>
-                          {n.message && (
-                            <p className="text-sm text-gray-500 mt-0.5 line-clamp-2 text-xs">{n.message}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(n.createdAt)}</span>
-                          {/* 🔴 Orange dot for unread */}
-                          {!n.read && (
-                            <span className="w-2.5 h-2.5 bg-orange-500 rounded-full flex-shrink-0" />
-                          )}
-                        </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className={`text-sm truncate ${!n.read ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                          {n.title}
+                        </h3>
+                        {n.message && (
+                          <p className="text-sm text-gray-500 mt-0.5 line-clamp-2 text-xs">{n.message}</p>
+                        )}
                       </div>
-
-                      <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatDate(n.createdAt)}
-                        </span>
-                        <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700 capitalize">
-                          {n.type === 'general' ? 'General' : n.type}
-                        </span>
-                        {n.recipientsCount > 0 && (
-                          <span className="text-xs text-gray-500 flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {n.recipientsCount} recipients
-                          </span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(n.createdAt)}</span>
+                        {/* ✅ Orange dot — hatega jab read hoga */}
+                        {!n.read && (
+                          <span className="w-2.5 h-2.5 bg-orange-500 rounded-full flex-shrink-0" />
                         )}
                       </div>
                     </div>
 
-                    {/* Hover actions */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                      <button
-                        onClick={e => { e.stopPropagation(); handleRowClick(n) }}
-                        className="p-2 hover:bg-blue-50 rounded-lg" title="View">
-                        <Eye className="w-4 h-4 text-gray-500 hover:text-blue-600" />
-                      </button>
-                      {/* Mark read button — local only, no API */}
-                      {!n.read && (
-                        <button
-                          onClick={e => { e.stopPropagation(); markReadLocal(n.id) }}
-                          className="p-2 hover:bg-green-50 rounded-lg" title="Mark as Read">
-                          <Check className="w-4 h-4 text-gray-500 hover:text-green-600" />
-                        </button>
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      <span className="text-xs text-gray-500 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatDate(n.createdAt)}
+                      </span>
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-gray-100 text-gray-700 capitalize">
+                        {n.type === 'general' ? 'General' : n.type}
+                      </span>
+                      {n.recipientsCount > 0 && (
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {n.recipientsCount} recipients
+                        </span>
                       )}
-                      <button
-                        onClick={e => handleDelete(n.id, e)}
-                        disabled={actionLoading === n.id}
-                        className="p-2 hover:bg-red-50 rounded-lg" title="Delete">
-                        {actionLoading === n.id
-                          ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                          : <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500" />
-                        }
-                      </button>
-                      <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-400" />
                     </div>
                   </div>
+
+                  {/* Hover actions */}
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                    <button
+                      onClick={e => { e.stopPropagation(); handleRowClick(n) }}
+                      className="p-2 hover:bg-blue-50 rounded-lg" title="View">
+                      <Eye className="w-4 h-4 text-gray-500 hover:text-blue-600" />
+                    </button>
+                    {!n.read && (
+                      <button
+                        onClick={e => { e.stopPropagation(); markReadLocal(n.id) }}
+                        className="p-2 hover:bg-green-50 rounded-lg" title="Mark as Read">
+                        <Check className="w-4 h-4 text-gray-500 hover:text-green-600" />
+                      </button>
+                    )}
+                    <button
+                      onClick={e => handleDelete(n.id, e)}
+                      disabled={actionLoading === n.id}
+                      className="p-2 hover:bg-red-50 rounded-lg" title="Delete">
+                      {actionLoading === n.id
+                        ? <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                        : <Trash2 className="w-4 h-4 text-gray-500 hover:text-red-500" />
+                      }
+                    </button>
+                    <ChevronRight className="w-5 h-5 text-gray-300 group-hover:text-gray-400" />
+                  </div>
                 </div>
+              </div>
             ))}
           </div>
         )}

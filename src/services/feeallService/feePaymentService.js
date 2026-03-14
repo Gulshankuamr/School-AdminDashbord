@@ -41,6 +41,7 @@ const feePaymentService = {
               student_info: null,
               current_academic_year: academicYear,
               fee_breakdown: [],
+              transport_fee_breakdown: [],   // ✅ transport added
               payment_history: [],
               summary: {
                 current_year: { total: 0, paid: 0, pending: 0, fine: 0 },
@@ -66,18 +67,20 @@ const feePaymentService = {
 
   // ===============================
   // 3️⃣ COLLECT FEE PAYMENT (Offline/Manual)
+  //    ✅ Now supports transport_installment_ids
   // ===============================
   collectFeePayment: async (paymentData) => {
     const token = getAuthToken();
     if (!token) throw new Error('Token missing');
 
     const requestData = {
-      student_id:      paymentData.student_id,
-      installment_ids: paymentData.installment_ids,
-      payment_mode:    paymentData.payment_mode,
-      transaction_ref: paymentData.transaction_ref || null,
-      payment_gateway: 'offline',
-      remarks:         paymentData.remarks || '',
+      student_id:                paymentData.student_id,
+      installment_ids:           paymentData.installment_ids           || [],
+      transport_installment_ids: paymentData.transport_installment_ids || [],  // ✅ NEW
+      payment_mode:              paymentData.payment_mode,
+      transaction_ref:           paymentData.transaction_ref || null,
+      payment_gateway:           'offline',
+      remarks:                   paymentData.remarks || '',
     };
 
     console.log('collectFeePayment payload:', requestData);
@@ -87,8 +90,8 @@ const feePaymentService = {
       {
         method: 'POST',
         headers: {
-          'Authorization':  `Bearer ${token}`,
-          'Content-Type':   'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Content-Type':  'application/json',
         },
         body: JSON.stringify(requestData),
       }
@@ -155,7 +158,7 @@ const feePaymentService = {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          'Content-Type':  'application/json',
         },
         body: JSON.stringify(payload),
       }
@@ -172,9 +175,7 @@ const feePaymentService = {
   },
 
   // ===============================
-  // 7️⃣ GET SCHOOL ADMIN PROFILE ✅ NEW
-  //    GET /api/schooladmin/getSchoolAdminProfile
-  //    Returns school name, address, contact, email, logo etc.
+  // 7️⃣ GET SCHOOL ADMIN PROFILE
   // ===============================
   getSchoolProfile: async () => {
     const token = getAuthToken();
@@ -191,22 +192,20 @@ const feePaymentService = {
       console.log('getSchoolProfile response:', data);
 
       if (data?.success) {
-        // Normalize — API may nest under data.data or data directly
         const profile = data?.data?.school || data?.data || data?.school || {};
         return {
           success: true,
           profile: {
-            school_name:  profile.school_name  || profile.name         || 'School',
-            address:      profile.address      || profile.school_address || '',
+            school_name:  profile.school_name  || profile.name            || 'School',
+            address:      profile.address      || profile.school_address   || '',
             city:         profile.city         || '',
             state:        profile.state        || '',
-            pincode:      profile.pincode      || profile.pin_code      || '',
-            phone:        profile.phone        || profile.contact_no    || profile.mobile || '',
-            email:        profile.email        || profile.school_email  || '',
+            pincode:      profile.pincode      || profile.pin_code         || '',
+            phone:        profile.phone        || profile.contact_no       || profile.mobile || '',
+            email:        profile.email        || profile.school_email     || '',
             website:      profile.website      || '',
-            logo_url:     profile.logo_url     || profile.logo          || null,
-            // Admin info
-            admin_name:   profile.admin_name   || data?.data?.name      || '',
+            logo_url:     profile.logo_url     || profile.logo             || null,
+            admin_name:   profile.admin_name   || data?.data?.name         || '',
           },
         };
       }

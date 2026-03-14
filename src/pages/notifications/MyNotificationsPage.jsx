@@ -1,7 +1,10 @@
 // pages/notifications/MyNotificationsPage.jsx
-// Recipient inbox — teacher / student / admin
-// ⚠️  markAsRead = local state only (no API — /markNotificationRead is 404)
-// markAllAsRead = API call (PUT /markAllAsRead)
+// ─────────────────────────────────────────────────────────────────────────────
+// FIX:
+//   • handleRowClick → calls context's markAsRead (which hits markAllAsRead API)
+//   • navbar unread badge auto-decrements via context
+//   • handleMarkAllAsRead → API + local state
+// ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from 'react';
 import { notificationService } from '../../services/notificationService/notificationService';
@@ -101,8 +104,8 @@ const roleColor = (role) => {
 
 const LIMIT = 15;
 
-// ─── PDF Detail Modal ─────────────────────────────────────────────────────────
-const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actionLoading }) => {
+// ─── Notification Detail Modal ────────────────────────────────────────────────
+const NotificationModal = ({ notification: n, onClose, onDelete, deleting }) => {
   const printRef = useRef(null);
 
   useEffect(() => {
@@ -155,11 +158,7 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actio
           <div className="flex items-center gap-2 text-gray-900 text-sm font-semibold">
             <FileText className="w-4 h-4 text-orange-500" />
             Notification
-            {!n.read && (
-              <span className="ml-1 px-2 py-0.5 bg-orange-100 text-orange-800 text-xs rounded-full font-semibold">
-                Unread
-              </span>
-            )}
+            {/* ✅ Modal opens = already marked read, so no "Unread" badge here */}
           </div>
           <div className="flex items-center gap-2">
             <button onClick={handlePrint}
@@ -183,17 +182,16 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actio
         {/* Scrollable body */}
         <div className="overflow-y-auto flex-1 p-6">
           <div ref={printRef}>
-
             {/* Header */}
-            <div className="header border-b-2 border-orange-400 pb-5 mb-6">
-              <p className="eyebrow text-xs uppercase tracking-widest text-gray-500 mb-2 font-semibold font-sans">
+            <div className="border-b-2 border-orange-400 pb-5 mb-6">
+              <p className="text-xs uppercase tracking-widest text-gray-500 mb-2 font-semibold font-sans">
                 School Notification
               </p>
               <h1 className="text-2xl font-bold text-gray-900 mb-3">{n.title}</h1>
               <div className="flex flex-wrap items-center gap-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold font-sans
-                  ${n.read ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
-                  {n.read ? '✓ Read' : '● Unread'}
+                {/* ✅ Always show "Read" since modal opens after marking read */}
+                <span className="px-3 py-1 rounded-full text-xs font-bold font-sans bg-green-100 text-green-800">
+                  ✓ Read
                 </span>
                 <span className="text-xs text-gray-600 font-sans">
                   {formatFullDate(n.createdAt)} &nbsp;·&nbsp; {formatFullTime(n.createdAt)}
@@ -202,9 +200,9 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actio
             </div>
 
             {/* Message */}
-            <div className="section mb-6">
-              <p className="lbl text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Message</p>
-              <div className="msgbox bg-gray-50 border border-gray-200 rounded-xl p-4">
+            <div className="mb-6">
+              <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Message</p>
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <p className="text-gray-900 text-sm leading-relaxed whitespace-pre-wrap">
                   {n.message || 'No message content.'}
                 </p>
@@ -213,21 +211,21 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actio
 
             {/* Sender */}
             {(n.senderName || n.senderRole || n.senderEmail) && (
-              <div className="section mb-6">
-                <p className="lbl text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Sent By</p>
-                <div className="senderbox flex items-start gap-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
+              <div className="mb-6">
+                <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold font-sans mb-2">Sent By</p>
+                <div className="flex items-start gap-4 bg-gray-50 border border-gray-200 rounded-xl p-4">
                   <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center flex-shrink-0">
                     <User className="w-5 h-5 text-orange-600" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="sname font-semibold text-gray-900 text-sm">{n.senderName}</p>
+                    <p className="font-semibold text-gray-900 text-sm">{n.senderName}</p>
                     {n.senderRole && (
                       <span className={`inline-block mt-0.5 px-2 py-0.5 rounded-full text-xs font-semibold ${roleColor(n.senderRole)}`}>
                         {roleLabel(n.senderRole)}
                       </span>
                     )}
                     {n.senderEmail && (
-                      <p className="semail text-xs text-gray-600 mt-1.5 flex items-center gap-1 font-sans">
+                      <p className="text-xs text-gray-600 mt-1.5 flex items-center gap-1 font-sans">
                         <Mail className="w-3 h-3" /> {n.senderEmail}
                       </p>
                     )}
@@ -238,32 +236,22 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actio
 
             {/* Date / Time */}
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" /> Date
                 </p>
-                <p className="bval font-semibold text-gray-900 text-sm">{formatFullDate(n.createdAt)}</p>
+                <p className="font-semibold text-gray-900 text-sm">{formatFullDate(n.createdAt)}</p>
               </div>
-              <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4">
-                <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" /> Time
                 </p>
-                <p className="bval font-semibold text-gray-900 text-sm">{formatFullTime(n.createdAt)}</p>
+                <p className="font-semibold text-gray-900 text-sm">{formatFullTime(n.createdAt)}</p>
               </div>
-              {n.readAt && (
-                <div className="box bg-gray-50 border border-gray-200 rounded-xl p-4 col-span-2">
-                  <p className="blbl text-xs text-gray-500 uppercase tracking-wide font-semibold font-sans mb-1 flex items-center gap-1">
-                    <MailOpen className="w-3.5 h-3.5" /> Read At
-                  </p>
-                  <p className="bval font-semibold text-gray-900 text-sm">
-                    {formatFullDate(n.readAt)} at {formatFullTime(n.readAt)}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Print footer */}
-            <div className="footer mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center font-sans">
+            <div className="mt-8 pt-4 border-t border-gray-100 text-xs text-gray-400 text-center font-sans">
               Generated on {new Date().toLocaleString()} · School Management System
             </div>
           </div>
@@ -287,7 +275,8 @@ const NotificationModal = ({ notification: n, onClose, onDelete, deleting, actio
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 const MyNotificationsPage = () => {
-  const { refreshUnreadCount } = useNotifications();
+  // ✅ Use context's markAsRead which handles API + navbar badge update
+  const { markAsRead: contextMarkAsRead, refreshUnreadCount } = useNotifications();
 
   const [allNotifications, setAllNotifications] = useState([]);
   const [loading,          setLoading]          = useState(true);
@@ -304,7 +293,7 @@ const MyNotificationsPage = () => {
   const [selectedNotif, setSelectedNotif] = useState(null);
   const [modalDeleting, setModalDeleting] = useState(false);
 
-  // ── Fetch ────────────────────────────────────────────────────────────────────
+  // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchData = async () => {
     setLoading(true);
     setError('');
@@ -323,13 +312,13 @@ const MyNotificationsPage = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  // ── Debounce search ──────────────────────────────────────────────────────────
+  // ── Debounce search ────────────────────────────────────────────────────────
   useEffect(() => {
     const t = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // ── Filter + paginate ────────────────────────────────────────────────────────
+  // ── Filter + paginate ──────────────────────────────────────────────────────
   const filtered = allNotifications.filter(n => {
     if (readFilter === 'unread' && n.read)  return false;
     if (readFilter === 'read'   && !n.read) return false;
@@ -344,21 +333,31 @@ const MyNotificationsPage = () => {
   const paginated   = filtered.slice((page - 1) * LIMIT, page * LIMIT);
   const unreadCount = allNotifications.filter(n => !n.read).length;
 
-  // ── Mark single as read — LOCAL STATE ONLY (no API — 404 fix) ───────────────
-  const handleMarkAsRead = (id) => {
+  // ── ✅ Mark single as read ─────────────────────────────────────────────────
+  // 1. Update local page state (orange dot hata)
+  // 2. Call context markAsRead (calls markAllAsRead API → navbar badge updates)
+  const handleMarkAsRead = async (id) => {
+    // Local page state update
     setAllNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
     setTotalUnread(prev => Math.max(0, prev - 1));
-    refreshUnreadCount?.();
     // Update modal too if open
     setSelectedNotif(prev => prev?.id === id ? { ...prev, read: true } : prev);
+
+    // ✅ Context call: hits markAllAsRead API + refreshes navbar badge
+    try {
+      await contextMarkAsRead(id);
+    } catch {
+      // Silent — UI already updated
+    }
   };
 
-  // ── Mark all as read — API call ──────────────────────────────────────────────
+  // ── ✅ Mark all as read ────────────────────────────────────────────────────
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
       setAllNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setTotalUnread(0);
+      // ✅ Refresh navbar badge from server
       refreshUnreadCount?.();
       setToast({ type: 'success', message: 'All notifications marked as read' });
     } catch {
@@ -366,7 +365,7 @@ const MyNotificationsPage = () => {
     }
   };
 
-  // ── Delete ───────────────────────────────────────────────────────────────────
+  // ── Delete ─────────────────────────────────────────────────────────────────
   const handleDelete = async (id) => {
     setActionLoading(id);
     setModalDeleting(true);
@@ -374,7 +373,11 @@ const MyNotificationsPage = () => {
       await notificationService.deleteNotification(id);
       const wasUnread = allNotifications.find(n => n.id === id)?.read === false;
       setAllNotifications(prev => prev.filter(n => n.id !== id));
-      if (wasUnread) { setTotalUnread(prev => Math.max(0, prev - 1)); refreshUnreadCount?.(); }
+      if (wasUnread) {
+        setTotalUnread(prev => Math.max(0, prev - 1));
+        // ✅ Refresh navbar badge
+        refreshUnreadCount?.();
+      }
       setSelectedNotif(null);
       setToast({ type: 'success', message: 'Notification deleted' });
     } catch {
@@ -385,10 +388,12 @@ const MyNotificationsPage = () => {
     }
   };
 
-  // ── Open modal — mark as read locally on open ────────────────────────────────
+  // ── ✅ Open modal — mark as read on open (WhatsApp style) ─────────────────
   const handleRowClick = (n) => {
-    setSelectedNotif(n);
-    if (!n.read) handleMarkAsRead(n.id); // local only, no API
+    setSelectedNotif({ ...n, read: true }); // show as read in modal immediately
+    if (!n.read) {
+      handleMarkAsRead(n.id); // orange dot hata + navbar badge update
+    }
   };
 
   return (
@@ -401,7 +406,6 @@ const MyNotificationsPage = () => {
           onClose={() => setSelectedNotif(null)}
           onDelete={handleDelete}
           deleting={modalDeleting}
-          actionLoading={actionLoading}
         />
       )}
 
@@ -517,6 +521,7 @@ const MyNotificationsPage = () => {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(n.createdAt)}</span>
+                        {/* ✅ Orange dot — hatega jab read hoga */}
                         {!n.read && <span className="w-2 h-2 bg-orange-500 rounded-full" />}
                       </div>
                     </div>
