@@ -9,147 +9,141 @@ import Unauthorized from './pages/Unauthorized'
 import Report from './pages/Report'
 
 // ════════════════════════════════════════════════
-// 🔔 NOTIFICATIONS MODULE
+// 🔔 NOTIFICATIONS
 // ════════════════════════════════════════════════
-import CreateNotification from './pages/notifications/CreateNotification'
-import NotificationList from './pages/notifications/NotificationList'
+import CreateNotification  from './pages/notifications/CreateNotification'
+import NotificationList    from './pages/notifications/NotificationList'
 import NotificationDetails from './pages/notifications/NotificationDetails'
 import MyNotificationsPage from './pages/notifications/MyNotificationsPage'
 
 // ════════════════════════════════════════════════
-// 📊 DASHBOARD MODULE
+// 📊 DASHBOARD
 // ════════════════════════════════════════════════
-import AdminDashboard from './pages/admin/AdminDashboard'
-// import RolePermissions from './pages/admin/RolePermissions'
+import AdminDashboard  from './pages/admin/AdminDashboard'
 import RolePermissions from './pages/admin/RolePermissions'
 import UserPermissions from './pages/admin/UserPermissions'
 
 // ════════════════════════════════════════════════
-// 🎓 STUDENTS MODULE
+// 🎓 STUDENTS
 // ════════════════════════════════════════════════
 import StudentList from './pages/students/StudentList'
-import AddStudent from './pages/students/AddStudent'
+import AddStudent  from './pages/students/AddStudent'
 import EditStudent from './pages/students/EditStudent'
 
 // ════════════════════════════════════════════════
-// 👨‍🏫 TEACHERS MODULE
+// 👨‍🏫 TEACHERS
 // ════════════════════════════════════════════════
 import TeacherList from './pages/teachers/TeacherList'
-import AddTeacher from './pages/teachers/AddTeacher'
+import AddTeacher  from './pages/teachers/AddTeacher'
 import EditTeacher from './pages/teachers/EditTeacher'
 
 // ════════════════════════════════════════════════
-// 💼 ACCOUNTANTS MODULE
+// 💼 ACCOUNTANTS
 // ════════════════════════════════════════════════
 import AccountantList from './pages/accountants/AccountantList'
-import AddAccountant from './pages/accountants/AddAccountant'
+import AddAccountant  from './pages/accountants/AddAccountant'
 import EditAccountant from './pages/accountants/EditAccountant'
 
 // ════════════════════════════════════════════════
-// 🏫 CLASSES MODULE
+// 🏫 CLASSES
 // ════════════════════════════════════════════════
-import ClassList from './pages/classes/ClassList'
-import AddClass from './pages/classes/AddClass'
-import EditClass from './pages/classes/EditClass'
-// ✅ NEW — Classes & Sections Manager (accordion view)
+import ClassList           from './pages/classes/ClassList'
+import AddClass            from './pages/classes/AddClass'
+import EditClass           from './pages/classes/EditClass'
 import ClassSectionManager from './pages/classes/ClassSectionManager'
 
 // ════════════════════════════════════════════════
-// 📋 SECTIONS MODULE
+// 📋 SECTIONS
 // ════════════════════════════════════════════════
 import SectionList from './pages/sections/SectionList'
-import AddSection from './pages/sections/AddSection'
+import AddSection  from './pages/sections/AddSection'
 import EditSection from './pages/sections/EditSection'
 
 // ════════════════════════════════════════════════
-// 📚 SUBJECTS MODULE
+// 📚 SUBJECTS
 // ════════════════════════════════════════════════
-import AddSubject from './pages/subject/AddSubject'
-import EditSubject from './pages/subject/EditSubject'
 import SubjectList from './pages/subject/SubjectList'
+import AddSubject  from './pages/subject/AddSubject'
+import EditSubject from './pages/subject/EditSubject'
 
 // ════════════════════════════════════════════════
-// ✅ STUDENT ATTENDANCE MODULE
+// ✅ ATTENDANCE — STUDENT
 // ════════════════════════════════════════════════
-import MarkAttendance from './pages/attendance/MarkAttendance'
-import AttendanceList from './pages/attendance/AttendanceList'
+import MarkAttendance   from './pages/attendance/MarkAttendance'
+import AttendanceList   from './pages/attendance/AttendanceList'
 import AttendanceReport from './pages/attendance/AttendanceReport'
 
 // ════════════════════════════════════════════════
-// ✅ TEACHER ATTENDANCE MODULE
+// ✅ ATTENDANCE — TEACHER
 // ════════════════════════════════════════════════
-import MarkTeacherAttendance from './pages/teacherAttendance/MarkTeacherAttendance'
-import TeacherAttendanceList from './pages/teacherAttendance/TeacherAttendanceList'
+import MarkTeacherAttendance   from './pages/teacherAttendance/MarkTeacherAttendance'
+import TeacherAttendanceList   from './pages/teacherAttendance/TeacherAttendanceList'
 import TeacherAttendanceReport from './pages/teacherAttendance/TeacherAttendanceReport'
 
 // ════════════════════════════════════════════════
-// ✅ ACCOUNTANT ATTENDANCE MODULE
+// ✅ ATTENDANCE — ACCOUNTANT
 // ════════════════════════════════════════════════
-import MarkAccountantAttendance from './pages/accountantAttendance/MarkAccountantAttendance'
-import AccountantAttendanceList from './pages/accountantAttendance/AccountantAttendanceList'
+import MarkAccountantAttendance   from './pages/accountantAttendance/MarkAccountantAttendance'
+import AccountantAttendanceList   from './pages/accountantAttendance/AccountantAttendanceList'
 import AccountantAttendanceReport from './pages/accountantAttendance/AccountantAttendanceReport'
 
 // ════════════════════════════════════════════════
-// 📅 TIMETABLE MODULE
+// 📅 TIMETABLE
 // ════════════════════════════════════════════════
 import CreateTimetable from './pages/timetable/CreateTimetable'
-import ViewTimetable from './pages/timetable/ViewTimetable'
+import ViewTimetable   from './pages/timetable/ViewTimetable'
 
 // ════════════════════════════════════════════════
-// 💰 FEES MODULE
+// 💰 FEES
 // ════════════════════════════════════════════════
-import FeeHeads from './pages/fees/FeeHeads'
-import FineRule from './pages/fees/FineRule'
-import CreateFee from './pages/fees/CreateFee'
+import FeeHeads   from './pages/fees/FeeHeads'
+import FineRule   from './pages/fees/FineRule'
+import CreateFee  from './pages/fees/CreateFee'
 import FeePreview from './pages/fees/FeePreview'
 
 // ════════════════════════════════════════════════
-// 💳 FEE PAYMENT MODULE
+// 💳 FEE PAYMENT
 // ════════════════════════════════════════════════
 import CollectFee        from './pages/feesPayment/CollectFee'
-import StudentFeeProfile from './pages/feesPayment/StudentFeeProfile'   // ✅ NEW
+import StudentFeeProfile from './pages/feesPayment/StudentFeeProfile'
 import CollectFeePayment from './pages/feesPayment/CollectFeePayment'
 import FeeReceipt        from './pages/feesPayment/FeeReceipt'
 
 // ════════════════════════════════════════════════
-// 📝 EXAMS MODULE
+// 📝 EXAMS
 // ════════════════════════════════════════════════
-import ExamTypeList from './pages/exams/ExamTypeList'
-import CreateExamType from './pages/exams/CreateExamType'
-import ExamList from './pages/exams/ExamList'
-import CreateExam from './pages/exams/CreateExam'
-import CreateExamTimetable from './pages/exams/CreateExamTimetable'
-import ViewExamTimetable from './pages/exams/ViewExamTimetable'
-import TimetablePreview from './pages/exams/TimetablePreview'
-import AssignMarks from './pages/exams/AssignMarks'
-import MarksList from './pages/exams/MarksList'
-import PrintMarksheet from './pages/exams/PrintMarksheet'
-          import GenerateAdmitCard from './pages/exams/GenerateAdmitCard'
-
-import MarksheetGenerator from './pages/exams/MarksheetGenerator'
-
-// colastic----------------------
+import ExamList                 from './pages/exams/ExamList'
+import CreateExam               from './pages/exams/CreateExam'
+import ExamTypeList             from './pages/exams/ExamTypeList'
+import CreateExamType           from './pages/exams/CreateExamType'
+import ViewExamTimetable        from './pages/exams/ViewExamTimetable'
+import CreateExamTimetable      from './pages/exams/CreateExamTimetable'
+import TimetablePreview         from './pages/exams/TimetablePreview'
+import AssignMarks              from './pages/exams/AssignMarks'
+import MarksList                from './pages/exams/MarksList'
+import PrintMarksheet           from './pages/exams/PrintMarksheet'
+import GenerateAdmitCard        from './pages/exams/GenerateAdmitCard'
+import MarksheetGenerator       from './pages/exams/MarksheetGenerator'
 import CreateCoScholasticGrades from './pages/exams/CreateCoScholasticGrades'
 import CoScholasticGradesList   from './pages/exams/CoScholasticGradesList'
 
-
-// 🚍 TRANSPORT MODULE
-import RouteManagement from './pages/transport/RouteManagement'
-import StopManagement from './pages/transport/StopManagement'
-import AssignStudentTransport from "./pages/transport/AssignStudentTransport";
+// ════════════════════════════════════════════════
+// 🚍 TRANSPORT
+// ════════════════════════════════════════════════
+import RouteManagement        from './pages/transport/RouteManagement'
+import StopManagement         from './pages/transport/StopManagement'
+import AssignStudentTransport from './pages/transport/AssignStudentTransport'
 
 // ════════════════════════════════════════════════
-// 📖 HOMEWORK MODULE
+// 📖 HOMEWORK
 // ════════════════════════════════════════════════
-import HomeworkList from './pages/homework/HomeworkList'
-import CreateHomework from './pages/homework/CreateHomework'
+import HomeworkList    from './pages/homework/HomeworkList'
+import CreateHomework  from './pages/homework/CreateHomework'
 import HomeworkDetails from './pages/homework/HomeworkDetails'
-import EditHomework from './pages/homework/EditHomework'
-
-
+import EditHomework    from './pages/homework/EditHomework'
 
 // ════════════════════════════════════════════════
-// 👤 PROFILE MODULE
+// 👤 PROFILE
 // ════════════════════════════════════════════════
 import Profile from './pages/profile/Profile'
 
@@ -182,101 +176,99 @@ function AdminLayout() {
 }
 
 // ════════════════════════════════════════════════
-// 🚀 APP — ROUTES
+// 🚀 APP ROUTES
 // ════════════════════════════════════════════════
 function App() {
   return (
     <BrowserRouter>
       <Routes>
 
-        {/* ── Public Routes ── */}
+        {/* Public */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* ── Protected Admin Routes ── */}
+        {/* Protected — ✅ 'school_admin' matches backend role exactly */}
         <Route
           path="/admin/*"
           element={
-            <ProtectedRoute allowedRoles={['admin']}>
+            <ProtectedRoute allowedRoles={['school_admin']}>
               <AdminLayout />
             </ProtectedRoute>
           }
         >
-          {/* Dashboard */}
           <Route index element={<AdminDashboard />} />
 
-          {/* ── Profile ─────────────────────────────── */}
+          {/* Profile */}
           <Route path="profile" element={<Profile />} />
 
-          {/* ── Notifications ───────────────────────── */}
+          {/* Notifications */}
           <Route path="notifications"        element={<NotificationList />} />
           <Route path="notifications/create" element={<CreateNotification />} />
           <Route path="notifications/:id"    element={<NotificationDetails />} />
           <Route path="my-notifications"     element={<MyNotificationsPage />} />
 
-          {/* ── Students ────────────────────────────── */}
+          {/* Students */}
           <Route path="students"          element={<StudentList />} />
           <Route path="students/add"      element={<AddStudent />} />
           <Route path="students/edit/:id" element={<EditStudent />} />
 
-          {/* ── Teachers ────────────────────────────── */}
+          {/* Teachers */}
           <Route path="teachers"          element={<TeacherList />} />
           <Route path="teachers/add"      element={<AddTeacher />} />
           <Route path="teachers/edit/:id" element={<EditTeacher />} />
 
-          {/* ── Accountants ─────────────────────────── */}
+          {/* Accountants */}
           <Route path="accountants"          element={<AccountantList />} />
           <Route path="accountants/add"      element={<AddAccountant />} />
           <Route path="accountants/edit/:id" element={<EditAccountant />} />
 
-          {/* ── Classes ─────────────────────────────── */}
+          {/* Classes */}
           <Route path="classes"          element={<ClassList />} />
           <Route path="classes/add"      element={<AddClass />} />
           <Route path="classes/edit/:id" element={<EditClass />} />
-          {/* ✅ NEW — Classes & Sections accordion manager */}
           <Route path="classes/sections" element={<ClassSectionManager />} />
 
-          {/* ── Sections ────────────────────────────── */}
+          {/* Sections */}
           <Route path="sections"          element={<SectionList />} />
           <Route path="sections/add"      element={<AddSection />} />
           <Route path="sections/edit/:id" element={<EditSection />} />
 
-          {/* ── Subjects ────────────────────────────── */}
-          <Route path="subject"          element={<SubjectList />} />
-          <Route path="subject/add"      element={<AddSubject />} />
-          <Route path="subject/edit/:id" element={<EditSubject />} />
+          {/* Subjects */}
+          <Route path="subject"           element={<SubjectList />} />
+          <Route path="subject/add"       element={<AddSubject />} />
+          <Route path="subject/edit/:id"  element={<EditSubject />} />
 
-          {/* ── Student Attendance ──────────────────── */}
+          {/* Student Attendance */}
           <Route path="attendance"        element={<MarkAttendance />} />
           <Route path="attendance/list"   element={<AttendanceList />} />
           <Route path="attendance/report" element={<AttendanceReport />} />
 
-          {/* ── Teacher Attendance ──────────────────── */}
+          {/* Teacher Attendance */}
           <Route path="teacher-attendance"        element={<MarkTeacherAttendance />} />
           <Route path="teacher-attendance/list"   element={<TeacherAttendanceList />} />
           <Route path="teacher-attendance/report" element={<TeacherAttendanceReport />} />
 
-          {/* ── Accountant Attendance ───────────────── */}
+          {/* Accountant Attendance */}
           <Route path="accountant-attendance"        element={<MarkAccountantAttendance />} />
           <Route path="accountant-attendance/list"   element={<AccountantAttendanceList />} />
           <Route path="accountant-attendance/report" element={<AccountantAttendanceReport />} />
 
-          {/* ── Timetable ───────────────────────────── */}
+          {/* Timetable */}
           <Route path="timetable/create" element={<CreateTimetable />} />
           <Route path="timetable/view"   element={<ViewTimetable />} />
 
-          {/* ── Fees ────────────────────────────────── */}
+          {/* Fees */}
           <Route path="fees/heads"     element={<FeeHeads />} />
           <Route path="fees/fine-rule" element={<FineRule />} />
           <Route path="fees/create"    element={<CreateFee />} />
           <Route path="fees/preview"   element={<FeePreview />} />
 
-          {/* ── Fee Payment ─────────────────────────── */}
-          <Route path="fees-payment/collect"             element={<CollectFee />} />
-          <Route path="fees-payment/student/:studentId"  element={<StudentFeeProfile />} />  {/* ✅ NEW */}
-          <Route path="fees-payment/collect/:studentId"  element={<CollectFeePayment />} />
-          <Route path="fees-payment/receipt/:receiptId"  element={<FeeReceipt />} />
+          {/* Fee Payment */}
+          <Route path="fees-payment/collect"            element={<CollectFee />} />
+          <Route path="fees-payment/student/:studentId" element={<StudentFeeProfile />} />
+          <Route path="fees-payment/collect/:studentId" element={<CollectFeePayment />} />
+          <Route path="fees-payment/receipt/:receiptId" element={<FeeReceipt />} />
 
-          {/* ── Exams ───────────────────────────────── */}
+          {/* Exams */}
           <Route path="exams"                       element={<ExamList />} />
           <Route path="exams/add"                   element={<CreateExam />} />
           <Route path="exams/types"                 element={<ExamTypeList />} />
@@ -286,42 +278,36 @@ function App() {
           <Route path="exams/timetable/edit/:id"    element={<CreateExamTimetable />} />
           <Route path="exams/timetable/preview/:id" element={<TimetablePreview />} />
           <Route path="exams/assign-marks"          element={<AssignMarks />} />
-          <Route path="exams/marks-list"                 element={<MarksList />} />
+          <Route path="exams/marks-list"            element={<MarksList />} />
           <Route path="exams/print-marksheet"       element={<PrintMarksheet />} />
+          <Route path="exams/admit-card"            element={<GenerateAdmitCard />} />
+          <Route path="exams/marksheet-generator"   element={<MarksheetGenerator />} />
+          <Route path="exams/co-scholastic"         element={<CreateCoScholasticGrades />} />
+          <Route path="exams/co-scholastic/list"    element={<CoScholasticGradesList />} />
 
-<Route path="exams/admit-card" element={<GenerateAdmitCard />} />
-           
-          <Route path="exams/marksheet-generator" element={<MarksheetGenerator />} />
-  
-          {/* colstic */}
-
-          <Route path="exams/co-scholastic"      element={<CreateCoScholasticGrades />} />
-<Route path="exams/co-scholastic/list" element={<CoScholasticGradesList />}   />
-
-          {/* ── Homework ────────────────────────────── */}
+          {/* Homework */}
           <Route path="homework"          element={<HomeworkList />} />
           <Route path="homework/create"   element={<CreateHomework />} />
           <Route path="homework/:id"      element={<HomeworkDetails />} />
           <Route path="homework/edit/:id" element={<EditHomework />} />
 
-{/* ── Transport ───────────────────────── */}
+          {/* Transport */}
+          <Route path="transport/routes"         element={<RouteManagement />} />
+          <Route path="transport/stops"          element={<StopManagement />} />
+          <Route path="transport/assign-student" element={<AssignStudentTransport />} />
 
-<Route path="transport/routes" element={<RouteManagement />} />
-<Route path="transport/stops" element={<StopManagement />} />
-<Route path="transport/assign-student" element={<AssignStudentTransport />}/>
-
-          {/* ── Reports ─────────────────────────────── */}
+          {/* Reports */}
           <Route path="reports" element={<Report />} />
 
-          {/* ── Settings ────────────────────────────── */}
-         <Route path="settings">
-  <Route path="role-permissions" element={<RolePermissions />} />
-  <Route path="user-permissions" element={<UserPermissions />} />
-</Route>
+          {/* Settings */}
+          <Route path="settings">
+            <Route path="role-permissions" element={<RolePermissions />} />
+            <Route path="user-permissions" element={<UserPermissions />} />
+          </Route>
 
         </Route>
 
-        {/* ── Fallback Routes ── */}
+        {/* Fallback */}
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/"  element={<Navigate to="/login" replace />} />
         <Route path="*"  element={<Navigate to="/login" replace />} />

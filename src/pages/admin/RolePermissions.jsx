@@ -5,8 +5,8 @@ import {
   ShieldCheck, ArrowLeft, Save, Loader2,
   CheckSquare, Square, Users, BookOpen, Wallet,
   GraduationCap, DollarSign, ClipboardCheck, FileText,
-  BarChart3, Settings, AlertCircle, CheckCircle2, Lock,
-  Layers, Calendar, UserCog,
+  BarChart3, Settings, AlertCircle, CheckCircle2,
+  Layers, Calendar, UserCog, Bell, CreditCard, School,
 } from 'lucide-react'
 import { rolePermissionService } from '../../services/rolePermissionService/rolePermissionService'
 
@@ -18,38 +18,44 @@ const ROLES = [
   { id: 'admin',      label: 'Admin',      icon: UserCog,       color: 'rose',   activeBg: 'bg-rose-600',    activeRing: 'ring-rose-300',    gradient: 'from-rose-500 to-rose-700'    },
 ]
 
+// ── Section Meta — covers all keys returned by API (all lowercase) ──
 const SECTION_META = {
-  students:    { icon: Users,          color: 'blue'    },
-  teachers:    { icon: BookOpen,       color: 'indigo'  },
-  accountant:  { icon: Wallet,         color: 'violet'  },
-  accountants: { icon: Wallet,         color: 'violet'  },
-  admin:       { icon: UserCog,        color: 'rose'    },
-  fees:        { icon: DollarSign,     color: 'emerald' },
-  attendance:  { icon: ClipboardCheck, color: 'orange'  },
-  exams:       { icon: FileText,       color: 'pink'    },
-  reports:     { icon: BarChart3,      color: 'cyan'    },
-  settings:    { icon: Settings,       color: 'gray'    },
-  classes:     { icon: Calendar,       color: 'yellow'  },
-  sections:    { icon: Layers,         color: 'teal'    },
-  timetable:   { icon: Calendar,       color: 'teal'    },
-  subjects:    { icon: BookOpen,       color: 'purple'  },
-  homework:    { icon: FileText,       color: 'pink'    },
-  notices:     { icon: BookOpen,       color: 'blue'    },
+  students:     { icon: Users,          color: 'blue'    },
+  student:      { icon: Users,          color: 'blue'    },
+  teachers:     { icon: BookOpen,       color: 'indigo'  },
+  teacher:      { icon: BookOpen,       color: 'indigo'  },
+  accountant:   { icon: Wallet,         color: 'violet'  },
+  accountants:  { icon: Wallet,         color: 'violet'  },
+  admin:        { icon: UserCog,        color: 'rose'    },
+  fees:         { icon: DollarSign,     color: 'emerald' },
+  payments:     { icon: CreditCard,     color: 'emerald' },
+  attendance:   { icon: ClipboardCheck, color: 'orange'  },
+  exams:        { icon: FileText,       color: 'pink'    },
+  reports:      { icon: BarChart3,      color: 'cyan'    },
+  settings:     { icon: Settings,       color: 'gray'    },
+  classes:      { icon: Calendar,       color: 'yellow'  },
+  sections:     { icon: Layers,         color: 'teal'    },
+  timetable:    { icon: Calendar,       color: 'teal'    },
+  subjects:     { icon: BookOpen,       color: 'purple'  },
+  homework:     { icon: FileText,       color: 'pink'    },
+  notices:      { icon: BookOpen,       color: 'blue'    },
+  notification: { icon: Bell,           color: 'orange'  },
+  school:       { icon: School,         color: 'indigo'  },
 }
 
 const COLORS = {
-  blue:    { bg: 'bg-blue-50',    text: 'text-blue-600',    badge: 'bg-blue-100 text-blue-700',      border: 'border-blue-200',    check: 'accent-blue-600'    },
-  indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-600',  badge: 'bg-indigo-100 text-indigo-700',  border: 'border-indigo-200',  check: 'accent-indigo-600'  },
-  violet:  { bg: 'bg-violet-50',  text: 'text-violet-600',  badge: 'bg-violet-100 text-violet-700',  border: 'border-violet-200',  check: 'accent-violet-600'  },
-  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700',border: 'border-emerald-200', check: 'accent-emerald-600' },
-  orange:  { bg: 'bg-orange-50',  text: 'text-orange-600',  badge: 'bg-orange-100 text-orange-700',  border: 'border-orange-200',  check: 'accent-orange-600'  },
-  pink:    { bg: 'bg-pink-50',    text: 'text-pink-600',    badge: 'bg-pink-100 text-pink-700',      border: 'border-pink-200',    check: 'accent-pink-600'    },
-  cyan:    { bg: 'bg-cyan-50',    text: 'text-cyan-600',    badge: 'bg-cyan-100 text-cyan-700',      border: 'border-cyan-200',    check: 'accent-cyan-600'    },
-  gray:    { bg: 'bg-gray-50',    text: 'text-gray-600',    badge: 'bg-gray-100 text-gray-700',      border: 'border-gray-200',    check: 'accent-gray-600'    },
-  yellow:  { bg: 'bg-yellow-50',  text: 'text-yellow-600',  badge: 'bg-yellow-100 text-yellow-700',  border: 'border-yellow-200',  check: 'accent-yellow-600'  },
-  teal:    { bg: 'bg-teal-50',    text: 'text-teal-600',    badge: 'bg-teal-100 text-teal-700',      border: 'border-teal-200',    check: 'accent-teal-600'    },
-  purple:  { bg: 'bg-purple-50',  text: 'text-purple-600',  badge: 'bg-purple-100 text-purple-700',  border: 'border-purple-200',  check: 'accent-purple-600'  },
-  rose:    { bg: 'bg-rose-50',    text: 'text-rose-600',    badge: 'bg-rose-100 text-rose-700',      border: 'border-rose-200',    check: 'accent-rose-600'    },
+  blue:    { bg: 'bg-blue-50',    text: 'text-blue-600',    badge: 'bg-blue-100 text-blue-700',      border: 'border-blue-200',    },
+  indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-600',  badge: 'bg-indigo-100 text-indigo-700',  border: 'border-indigo-200',  },
+  violet:  { bg: 'bg-violet-50',  text: 'text-violet-600',  badge: 'bg-violet-100 text-violet-700',  border: 'border-violet-200',  },
+  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-600', badge: 'bg-emerald-100 text-emerald-700',border: 'border-emerald-200', },
+  orange:  { bg: 'bg-orange-50',  text: 'text-orange-600',  badge: 'bg-orange-100 text-orange-700',  border: 'border-orange-200',  },
+  pink:    { bg: 'bg-pink-50',    text: 'text-pink-600',    badge: 'bg-pink-100 text-pink-700',      border: 'border-pink-200',    },
+  cyan:    { bg: 'bg-cyan-50',    text: 'text-cyan-600',    badge: 'bg-cyan-100 text-cyan-700',      border: 'border-cyan-200',    },
+  gray:    { bg: 'bg-gray-50',    text: 'text-gray-600',    badge: 'bg-gray-100 text-gray-700',      border: 'border-gray-200',    },
+  yellow:  { bg: 'bg-yellow-50',  text: 'text-yellow-600',  badge: 'bg-yellow-100 text-yellow-700',  border: 'border-yellow-200',  },
+  teal:    { bg: 'bg-teal-50',    text: 'text-teal-600',    badge: 'bg-teal-100 text-teal-700',      border: 'border-teal-200',    },
+  purple:  { bg: 'bg-purple-50',  text: 'text-purple-600',  badge: 'bg-purple-100 text-purple-700',  border: 'border-purple-200',  },
+  rose:    { bg: 'bg-rose-50',    text: 'text-rose-600',    badge: 'bg-rose-100 text-rose-700',      border: 'border-rose-200',    },
 }
 
 // ── Component ──────────────────────────────────────────────────
@@ -75,6 +81,7 @@ const RolePermissions = () => {
       try {
         setLoadingAll(true)
         const res     = await rolePermissionService.getAllPermissions()
+        // Keys are already normalized to lowercase inside the service
         const grouped = res?.data || {}
         setAllGrouped(grouped)
       } catch {
@@ -91,6 +98,7 @@ const RolePermissions = () => {
       setLoadingRole(true)
       setError(null)
       const res   = await rolePermissionService.getRolePermissions(role)
+      // res.permissionIds is normalized in the service
       const perms = res?.data?.permissions || []
       const ids   = new Set(perms.map((p) => p.permission_id))
       setCheckedIds(ids)
@@ -215,7 +223,6 @@ const RolePermissions = () => {
             </p>
           </div>
 
-          {/* counter pill */}
           <div className="hidden sm:flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 shadow-sm flex-shrink-0">
             <span className="text-amber-500 text-base">🔒</span>
             <span className="text-sm font-bold text-gray-800">{totalSel}</span>
@@ -305,7 +312,6 @@ const RolePermissions = () => {
                           <p className="text-xs text-gray-400">
                             {checkedCnt} / {perms.length} permissions selected
                           </p>
-                          {/* mini progress bar */}
                           <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all duration-300 ${c.text.replace('text-', 'bg-')}`}
@@ -335,10 +341,10 @@ const RolePermissions = () => {
                   {/* Permission Rows */}
                   <div className="divide-y divide-gray-50">
                     {perms.map((perm) => {
-                      const checked    = checkedIds.has(perm.permission_id)
-                      const wasOrig    = originalIdsRef.current.has(perm.permission_id)
-                      const isNew      = checked && !wasOrig
-                      const isRemoved  = !checked && wasOrig
+                      const checked   = checkedIds.has(perm.permission_id)
+                      const wasOrig   = originalIdsRef.current.has(perm.permission_id)
+                      const isNew     = checked && !wasOrig
+                      const isRemoved = !checked && wasOrig
 
                       return (
                         <label

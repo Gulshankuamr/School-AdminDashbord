@@ -1,4 +1,3 @@
-// src/services/rolePermissionService/index.js
 import { API_BASE_URL, getAuthToken } from '../api'
 
 export const rolePermissionService = {
@@ -22,6 +21,15 @@ export const rolePermissionService = {
       const data = await response.json()
       console.log('📊 getAllPermissions raw response:', data)
       if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch permissions')
+
+      // ✅ Normalize all keys to lowercase
+      const rawGrouped = data.data || {}
+      const normalized = {}
+      Object.entries(rawGrouped).forEach(([key, value]) => {
+        normalized[key.toLowerCase()] = value
+      })
+      data.data = normalized
+
       return data
     } catch (error) {
       console.error('Get all permissions error:', error)
@@ -48,6 +56,14 @@ export const rolePermissionService = {
       const data = await response.json()
       console.log(`📊 getRolePermissions (${role}):`, data)
       if (!data || data.success !== true) throw new Error(data?.message || 'Failed to fetch role permissions')
+
+      // ✅ Normalize: extract permissionIds array for easy consumption
+      if (data.data?.permissions) {
+        data.permissionIds = data.data.permissions.map((p) => p.permission_id)
+      } else {
+        data.permissionIds = []
+      }
+
       return data
     } catch (error) {
       console.error('Get role permissions error:', error)
