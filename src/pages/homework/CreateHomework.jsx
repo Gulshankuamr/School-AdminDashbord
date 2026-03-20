@@ -382,7 +382,7 @@ export default function CreateHomework() {
                   <ul className="text-xs text-violet-700 leading-relaxed space-y-1.5 list-disc list-inside">
                     <li>Select class before section</li>
                     <li>Past dates are disabled</li>
-                    <li>Max 10 files, 5MB each</li>
+                    <li>Only One Pdf 5MB Limit</li>
                     <li>PDF format preferred</li>
                   </ul>
                 </div>

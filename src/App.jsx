@@ -24,6 +24,11 @@ import RolePermissions from './pages/admin/RolePermissions'
 import UserPermissions from './pages/admin/UserPermissions'
 
 // ════════════════════════════════════════════════
+// 🏫 SCHOOL PROFILE
+// ════════════════════════════════════════════════
+// import SchoolProfile from './pages/school/SchoolProfile'   // ✅ NEW
+
+// ════════════════════════════════════════════════
 // 🎓 STUDENTS
 // ════════════════════════════════════════════════
 import StudentList from './pages/students/StudentList'
@@ -177,6 +182,12 @@ function AdminLayout() {
 
 // ════════════════════════════════════════════════
 // 🚀 APP ROUTES
+//
+// Permission keys used in <ProtectedRoute permission="..."> MUST be
+// frontend keys (post-mapping) — the same keys used in sidebarConfig.js.
+//
+// school_admin always passes every ProtectedRoute check (bypass in can()).
+// Non-admin roles (e.g. accountant) are checked against their mapped perms.
 // ════════════════════════════════════════════════
 function App() {
   return (
@@ -186,7 +197,7 @@ function App() {
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* Protected — ✅ 'school_admin' matches backend role exactly */}
+        {/* Protected — 'school_admin' matches backend role exactly */}
         <Route
           path="/admin/*"
           element={
@@ -195,114 +206,582 @@ function App() {
             </ProtectedRoute>
           }
         >
+          {/* ── Dashboard (open to all logged-in) ── */}
           <Route index element={<AdminDashboard />} />
 
-          {/* Profile */}
+          {/* ── Profile (open to all logged-in) ── */}
           <Route path="profile" element={<Profile />} />
 
-          {/* Notifications */}
-          <Route path="notifications"        element={<NotificationList />} />
-          <Route path="notifications/create" element={<CreateNotification />} />
-          <Route path="notifications/:id"    element={<NotificationDetails />} />
-          <Route path="my-notifications"     element={<MyNotificationsPage />} />
+          {/* ── School Profile ── */}
+        
 
-          {/* Students */}
-          <Route path="students"          element={<StudentList />} />
-          <Route path="students/add"      element={<AddStudent />} />
-          <Route path="students/edit/:id" element={<EditStudent />} />
+          {/* ── Notifications ── */}
+          <Route
+            path="notifications"
+            element={
+              <ProtectedRoute permission="notification_view">    {/* ✅ mapped key */}
+                <NotificationList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="notifications/create"
+            element={
+              <ProtectedRoute permission="notification_send">   {/* ✅ mapped key */}
+                <CreateNotification />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="notifications/:id"
+            element={
+              <ProtectedRoute permission="notification_view">   {/* ✅ mapped key */}
+                <NotificationDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="my-notifications" element={<MyNotificationsPage />} /> {/* open to all */}
 
-          {/* Teachers */}
-          <Route path="teachers"          element={<TeacherList />} />
-          <Route path="teachers/add"      element={<AddTeacher />} />
-          <Route path="teachers/edit/:id" element={<EditTeacher />} />
+          {/* ── Students ── */}
+          <Route
+            path="students"
+            element={
+              <ProtectedRoute permission="view_all_student">    {/* ✅ mapped key */}
+                <StudentList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="students/add"
+            element={
+              <ProtectedRoute permission="add_student">
+                <AddStudent />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="students/edit/:id"
+            element={
+              <ProtectedRoute permission="edit_student">
+                <EditStudent />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Accountants */}
-          <Route path="accountants"          element={<AccountantList />} />
-          <Route path="accountants/add"      element={<AddAccountant />} />
-          <Route path="accountants/edit/:id" element={<EditAccountant />} />
+          {/* ── Teachers ── */}
+          <Route
+            path="teachers"
+            element={
+              <ProtectedRoute permission="view_all_teacher">    {/* ✅ mapped key */}
+                <TeacherList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teachers/add"
+            element={
+              <ProtectedRoute permission="add_teacher">
+                <AddTeacher />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teachers/edit/:id"
+            element={
+              <ProtectedRoute permission="edit_teacher">
+                <EditTeacher />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Classes */}
-          <Route path="classes"          element={<ClassList />} />
-          <Route path="classes/add"      element={<AddClass />} />
-          <Route path="classes/edit/:id" element={<EditClass />} />
-          <Route path="classes/sections" element={<ClassSectionManager />} />
+          {/* ── Accountants ── */}
+          <Route
+            path="accountants"
+            element={
+              <ProtectedRoute permission="view_accountants">
+                <AccountantList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="accountants/add"
+            element={
+              <ProtectedRoute permission="add_accountant">
+                <AddAccountant />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="accountants/edit/:id"
+            element={
+              <ProtectedRoute permission="edit_accountants">
+                <EditAccountant />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Sections */}
-          <Route path="sections"          element={<SectionList />} />
-          <Route path="sections/add"      element={<AddSection />} />
-          <Route path="sections/edit/:id" element={<EditSection />} />
+          {/* ── Classes ── */}
+          <Route
+            path="classes"
+            element={
+              <ProtectedRoute permission="view_classes">
+                <ClassList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="classes/add"
+            element={
+              <ProtectedRoute permission="manage_classes">
+                <AddClass />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="classes/edit/:id"
+            element={
+              <ProtectedRoute permission="manage_classes">
+                <EditClass />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="classes/sections"
+            element={
+              <ProtectedRoute permission="view_classes">
+                <ClassSectionManager />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Subjects */}
-          <Route path="subject"           element={<SubjectList />} />
-          <Route path="subject/add"       element={<AddSubject />} />
-          <Route path="subject/edit/:id"  element={<EditSubject />} />
+          {/* ── Sections ── */}
+          <Route
+            path="sections"
+            element={
+              <ProtectedRoute permission="view_sections">       {/* ✅ now used */}
+                <SectionList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sections/add"
+            element={
+              <ProtectedRoute permission="manage_sections">     {/* ✅ now used */}
+                <AddSection />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sections/edit/:id"
+            element={
+              <ProtectedRoute permission="manage_sections">     {/* ✅ now used */}
+                <EditSection />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Student Attendance */}
-          <Route path="attendance"        element={<MarkAttendance />} />
-          <Route path="attendance/list"   element={<AttendanceList />} />
-          <Route path="attendance/report" element={<AttendanceReport />} />
+          {/* ── Subjects ── */}
+          <Route
+            path="subject"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <SubjectList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="subject/add"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <AddSubject />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="subject/edit/:id"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <EditSubject />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Teacher Attendance */}
-          <Route path="teacher-attendance"        element={<MarkTeacherAttendance />} />
-          <Route path="teacher-attendance/list"   element={<TeacherAttendanceList />} />
-          <Route path="teacher-attendance/report" element={<TeacherAttendanceReport />} />
+          {/* ── Student Attendance ── */}
+          <Route
+            path="attendance"
+            element={
+              <ProtectedRoute permission="mark_student_attendance">  {/* ✅ NEW key */}
+                <MarkAttendance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/list"
+            element={
+              <ProtectedRoute permission="view_all_student">
+                <AttendanceList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="attendance/report"
+            element={
+              <ProtectedRoute permission="view_one_student_attendance">  {/* ✅ NEW key */}
+                <AttendanceReport />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Accountant Attendance */}
-          <Route path="accountant-attendance"        element={<MarkAccountantAttendance />} />
-          <Route path="accountant-attendance/list"   element={<AccountantAttendanceList />} />
-          <Route path="accountant-attendance/report" element={<AccountantAttendanceReport />} />
+          {/* ── Teacher Attendance ── */}
+          <Route
+            path="teacher-attendance"
+            element={
+              <ProtectedRoute permission="view_all_teacher">
+                <MarkTeacherAttendance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teacher-attendance/list"
+            element={
+              <ProtectedRoute permission="view_all_teacher">
+                <TeacherAttendanceList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="teacher-attendance/report"
+            element={
+              <ProtectedRoute permission="view_one_teacher_attendance">  {/* ✅ NEW key */}
+                <TeacherAttendanceReport />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Timetable */}
-          <Route path="timetable/create" element={<CreateTimetable />} />
-          <Route path="timetable/view"   element={<ViewTimetable />} />
+          {/* ── Accountant Attendance ── */}
+          <Route
+            path="accountant-attendance"
+            element={
+              <ProtectedRoute permission="view_accountants">
+                <MarkAccountantAttendance />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="accountant-attendance/list"
+            element={
+              <ProtectedRoute permission="view_accountants">
+                <AccountantAttendanceList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="accountant-attendance/report"
+            element={
+              <ProtectedRoute permission="view_accountants">
+                <AccountantAttendanceReport />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Fees */}
-          <Route path="fees/heads"     element={<FeeHeads />} />
-          <Route path="fees/fine-rule" element={<FineRule />} />
-          <Route path="fees/create"    element={<CreateFee />} />
-          <Route path="fees/preview"   element={<FeePreview />} />
+          {/* ── Timetable ── */}
+          <Route
+            path="timetable/create"
+            element={
+              <ProtectedRoute permission="manage_timetable">
+                <CreateTimetable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="timetable/view"
+            element={
+              <ProtectedRoute permission="view_timetable">
+                <ViewTimetable />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Fee Payment */}
-          <Route path="fees-payment/collect"            element={<CollectFee />} />
-          <Route path="fees-payment/student/:studentId" element={<StudentFeeProfile />} />
-          <Route path="fees-payment/collect/:studentId" element={<CollectFeePayment />} />
-          <Route path="fees-payment/receipt/:receiptId" element={<FeeReceipt />} />
+          {/* ── Fees ── */}
+          <Route
+            path="fees/heads"
+            element={
+              <ProtectedRoute permission="view_fees">
+                <FeeHeads />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fees/fine-rule"
+            element={
+              <ProtectedRoute permission="view_fees">
+                <FineRule />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fees/create"
+            element={
+              <ProtectedRoute permission="manage_fees">
+                <CreateFee />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fees/preview"
+            element={
+              <ProtectedRoute permission="view_fees">
+                <FeePreview />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Exams */}
-          <Route path="exams"                       element={<ExamList />} />
-          <Route path="exams/add"                   element={<CreateExam />} />
-          <Route path="exams/types"                 element={<ExamTypeList />} />
-          <Route path="exams/types/add"             element={<CreateExamType />} />
-          <Route path="exams/timetable"             element={<ViewExamTimetable />} />
-          <Route path="exams/timetable/create"      element={<CreateExamTimetable />} />
-          <Route path="exams/timetable/edit/:id"    element={<CreateExamTimetable />} />
-          <Route path="exams/timetable/preview/:id" element={<TimetablePreview />} />
-          <Route path="exams/assign-marks"          element={<AssignMarks />} />
-          <Route path="exams/marks-list"            element={<MarksList />} />
-          <Route path="exams/print-marksheet"       element={<PrintMarksheet />} />
-          <Route path="exams/admit-card"            element={<GenerateAdmitCard />} />
-          <Route path="exams/marksheet-generator"   element={<MarksheetGenerator />} />
-          <Route path="exams/co-scholastic"         element={<CreateCoScholasticGrades />} />
-          <Route path="exams/co-scholastic/list"    element={<CoScholasticGradesList />} />
+          {/* ── Fee Payment ── */}
+          <Route
+            path="fees-payment/collect"
+            element={
+              <ProtectedRoute permission="collect_payment">
+                <CollectFee />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fees-payment/student/:studentId"
+            element={
+              <ProtectedRoute permission="view_payments">      {/* ✅ now used */}
+                <StudentFeeProfile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fees-payment/collect/:studentId"
+            element={
+              <ProtectedRoute permission="collect_payment">
+                <CollectFeePayment />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="fees-payment/receipt/:receiptId"
+            element={
+              <ProtectedRoute permission="generate_receipt">   {/* ✅ now used */}
+                <FeeReceipt />
+              </ProtectedRoute>
+            }
+          />
+          {/* ── Payments list (new sidebar entry) ── */}
+          <Route
+            path="payments"
+            element={
+              <ProtectedRoute permission="view_payments">      {/* ✅ NEW route */}
+                <CollectFee />   {/* replace with a PaymentList page if you have one */}
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Homework */}
-          <Route path="homework"          element={<HomeworkList />} />
-          <Route path="homework/create"   element={<CreateHomework />} />
-          <Route path="homework/:id"      element={<HomeworkDetails />} />
-          <Route path="homework/edit/:id" element={<EditHomework />} />
+          {/* ── Exams ── */}
+          <Route
+            path="exams"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <ExamList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/add"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <CreateExam />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/types"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <ExamTypeList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/types/add"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <CreateExamType />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/timetable"
+            element={
+              <ProtectedRoute permission="view_timetable">
+                <ViewExamTimetable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/timetable/create"
+            element={
+              <ProtectedRoute permission="view_timetable">
+                <CreateExamTimetable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/timetable/edit/:id"
+            element={
+              <ProtectedRoute permission="view_timetable">
+                <CreateExamTimetable />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/timetable/preview/:id"
+            element={
+              <ProtectedRoute permission="view_timetable">
+                <TimetablePreview />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/assign-marks"
+            element={
+              <ProtectedRoute permission="manage_exam_marks">  {/* ✅ NEW key */}
+                <AssignMarks />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/marks-list"
+            element={
+              <ProtectedRoute permission="manage_exam_marks">  {/* ✅ NEW key */}
+                <MarksList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/print-marksheet"
+            element={
+              <ProtectedRoute permission="generate_marksheet"> {/* ✅ NEW key */}
+                <PrintMarksheet />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/admit-card"
+            element={
+              <ProtectedRoute permission="view_subjects">
+                <GenerateAdmitCard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/marksheet-generator"
+            element={
+              <ProtectedRoute permission="generate_marksheet"> {/* ✅ NEW key */}
+                <MarksheetGenerator />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/co-scholastic"
+            element={
+              <ProtectedRoute permission="manage_exam_marks">  {/* ✅ NEW key */}
+                <CreateCoScholasticGrades />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="exams/co-scholastic/list"
+            element={
+              <ProtectedRoute permission="manage_exam_marks">  {/* ✅ NEW key */}
+                <CoScholasticGradesList />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Transport */}
-          <Route path="transport/routes"         element={<RouteManagement />} />
-          <Route path="transport/stops"          element={<StopManagement />} />
-          <Route path="transport/assign-student" element={<AssignStudentTransport />} />
+          {/* ── Homework ── */}
+          <Route
+            path="homework"
+            element={
+              <ProtectedRoute permission="view_hw_from_student">
+                <HomeworkList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="homework/create"
+            element={
+              <ProtectedRoute permission="teacher_create_homework">
+                <CreateHomework />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="homework/:id"
+            element={
+              <ProtectedRoute permission="view_hw_from_student">
+                <HomeworkDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="homework/edit/:id"
+            element={
+              <ProtectedRoute permission="teacher_create_homework">
+                <EditHomework />
+              </ProtectedRoute>
+            }
+          />
 
-          {/* Reports */}
+          {/* ── Transport ── */}
+          <Route
+            path="transport/routes"
+            element={
+              <ProtectedRoute permission="manage_school_settings">
+                <RouteManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="transport/stops"
+            element={
+              <ProtectedRoute permission="manage_school_settings">
+                <StopManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="transport/assign-student"
+            element={
+              <ProtectedRoute permission="manage_school_settings">
+                <AssignStudentTransport />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ── Reports ── */}
           <Route path="reports" element={<Report />} />
 
-          {/* Settings */}
+          {/* ── Settings ── */}
           <Route path="settings">
-            <Route path="role-permissions" element={<RolePermissions />} />
-            <Route path="user-permissions" element={<UserPermissions />} />
+            <Route
+              path="role-permissions"
+              element={
+                <ProtectedRoute permission="manage_permissions">
+                  <RolePermissions />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="user-permissions"
+              element={
+                <ProtectedRoute permission="manage_permissions">
+                  <UserPermissions />
+                </ProtectedRoute>
+              }
+            />
           </Route>
 
         </Route>

@@ -2,9 +2,16 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { authService } from '../services/authService'
 import { mapPermissions } from '../config/permissionKeyMap'
-   // ✅ mapping layer
+   // ✅ mapping layer — converts backend keys → frontend keys
 
 const AuthContext = createContext(null)
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROLES that can access the admin panel
+// Add 'accountant' here so ProtectedRoute lets them in.
+// school_admin gets full bypass in can() regardless of their permissions array.
+// ─────────────────────────────────────────────────────────────────────────────
+export const ALLOWED_ROLES = ['school_admin', 'accountant']
 
 export function AuthProvider({ children }) {
   const [isLoading,   setIsLoading]   = useState(true)   // true until localStorage hydrated
@@ -50,14 +57,14 @@ export function AuthProvider({ children }) {
       const result = await authService.login(email, password)
 
       if (result?.success && result?.data?.token) {
-        const userData   = result.data.user
-        const rawPerms   = userData?.permissions || []          // backend keys
-        const mappedPerms = mapPermissions(rawPerms)            // ✅ → frontend keys
+        const userData    = result.data.user
+        const rawPerms    = userData?.permissions || []          // backend keys
+        const mappedPerms = mapPermissions(rawPerms)             // ✅ → frontend keys
 
         // Overwrite localStorage so hydration on reload also gets mapped keys
         localStorage.setItem('permissions', JSON.stringify(mappedPerms))
 
-        setUser(userData)              // full user object (role = 'school_admin')
+        setUser(userData)              // full user object (role = 'school_admin' | 'accountant')
         setPermissions(mappedPerms)    // ✅ frontend-key array stored in state
         setIsLoggedIn(true)
 
@@ -95,7 +102,7 @@ export function AuthProvider({ children }) {
   // ─────────────────────────────────────────────────────────────────────
   // PERMISSION HELPERS
   //
-  // NOTE: `permission` argument here is a FRONTEND KEY
+  // NOTE: `permission` argument is always a FRONTEND KEY
   //       e.g.  can('view_all_student')  — NOT 'view_students'
   //
   // Checking against `permissions` state which already holds mapped keys.
@@ -105,8 +112,10 @@ export function AuthProvider({ children }) {
    * can(frontendKey)
    *
    *   null / undefined     → true   open to all logged-in users
-   *   role = school_admin  → true   full access bypass
+   *   role = school_admin  → true   full access bypass (no perm check needed)
    *   otherwise            → permissions[].includes(frontendKey)
+   *
+   * Works for ALL roles: school_admin (bypass), accountant (perm check), etc.
    *
    * @example
    *   can('view_all_student')   // true for admin, or if mapped perm present
@@ -121,9 +130,11 @@ export function AuthProvider({ children }) {
   /**
    * canAny(frontendKeys[])
    * Returns true if user has AT LEAST ONE permission from the list.
+   * Useful for showing a menu group when any one of its sub-items is visible.
    *
    * @example
    *   canAny(['view_fees', 'manage_fees'])
+   *   canAny(['manage_exam_marks', 'generate_marksheet'])
    */
   const canAny = (permList = []) => {
     if (!permList.length) return true
@@ -131,7 +142,35 @@ export function AuthProvider({ children }) {
     return permList.some(p => permissions.includes(p))
   }
 
+  /**
+   * canAll(frontendKeys[])
+   * Returns true only if user has ALL permissions from the list.
+   * Useful for guarding actions that require multiple privileges.
+   *
+   * @example
+   *   canAll(['manage_fees', 'collect_payment'])
+   */
+  const canAll = (permList = []) => {
+    if (!permList.length) return true
+    if (user?.role === 'school_admin') return true
+    return permList.every(p => permissions.includes(p))
+  }
 
+  /**
+   * isRole(roleName | roleName[])
+   * Simple role check — independent of permissions.
+   *
+   * @example
+   *   isRole('school_admin')
+   *   isRole(['school_admin', 'accountant'])
+   */
+  const isRole = (role) => {
+    if (!user?.role) return false
+    if (Array.isArray(role)) return role.includes(user.role)
+    return user.role === role
+  }
+
+  // Legacy aliases — keep for backward compat with existing components
   const hasPermission    = can
   const hasAnyPermission = canAny
 
@@ -141,13 +180,15 @@ export function AuthProvider({ children }) {
         isLoggedIn,
         isLoading,
         user,
-        permissions,      // mapped frontend keys
+        permissions,          // mapped frontend keys
         login,
         logout,
-        can,              // ✅ primary helper (frontend keys)
-        canAny,           // ✅ primary helper (frontend keys)
-        hasPermission,    // legacy alias → can()
-        hasAnyPermission, // legacy alias → canAny()
+        can,                  // ✅ primary helper  (single frontend key)
+        canAny,               // ✅ primary helper  (any of list)
+        canAll,               // ✅ NEW             (all of list)
+        isRole,               // ✅ NEW             (role check)
+        hasPermission,        // legacy alias → can()
+        hasAnyPermission,     // legacy alias → canAny()
       }}
     >
       {children}
