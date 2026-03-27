@@ -16,9 +16,108 @@ const GRADING_SCALE = [
   { grade:"E",  desc:"Needs Effort",  color:"#991b1b" },
 ];
 
+// ═══════════════════════════════════════
+//  PARSE SCHOLASTIC — handles new API structure:
+//  scholastic.term1.subject_totals / scholastic.term2.subject_totals
+// ═══════════════════════════════════════
 const parseScholastic = (scholastic) => {
   if (!scholastic) return [];
-  if (Array.isArray(scholastic)) return scholastic;
+
+  // ✅ NEW API FORMAT: { term1: { subject_totals: { "120": { subject_name, total_obtained, per_exam } } }, term2: {...} }
+  if (scholastic.term1 && scholastic.term1.subject_totals) {
+    const term1Subs = scholastic.term1.subject_totals || {};
+    const term2Subs = scholastic.term2?.subject_totals || {};
+
+    const allSubjectIds = new Set([
+      ...Object.keys(term1Subs),
+      ...Object.keys(term2Subs),
+    ]);
+
+    // Collect all unique exam names for term1 and term2 (for dynamic column headers)
+    const t1ExamNames = [];
+    const t2ExamNames = [];
+    Object.values(term1Subs).forEach(s => {
+      Object.keys(s.per_exam || {}).forEach(name => {
+        if (!t1ExamNames.includes(name)) t1ExamNames.push(name);
+      });
+    });
+    Object.values(term2Subs).forEach(s => {
+      Object.keys(s.per_exam || {}).forEach(name => {
+        if (!t2ExamNames.includes(name)) t2ExamNames.push(name);
+      });
+    });
+
+    return Array.from(allSubjectIds).map((id) => {
+      const s1 = term1Subs[id] || {};
+      const s2 = term2Subs[id] || {};
+
+      const t1Total = typeof s1.total_obtained === "number" ? Math.round(s1.total_obtained * 10) / 10 : (s1.total_obtained ?? "—");
+      const t2Total = typeof s2.total_obtained === "number" ? Math.round(s2.total_obtained * 10) / 10 : (s2.total_obtained ?? "—");
+
+      const t1Exams = Object.entries(s1.per_exam || {}).map(([name, e]) => ({
+        name,
+        marks: e.marks_obtained ?? "—",
+        max_marks: e.max_marks ?? "—",
+        normalized: e.marks_obtained ?? "—",
+      }));
+      const t2Exams = Object.entries(s2.per_exam || {}).map(([name, e]) => ({
+        name,
+        marks: e.marks_obtained ?? "—",
+        max_marks: e.max_marks ?? "—",
+        normalized: e.marks_obtained ?? "—",
+      }));
+
+      const finalMark = (typeof s1.total_obtained === "number" && typeof s2.total_obtained === "number")
+        ? s1.total_obtained + s2.total_obtained
+        : (s1.total_obtained ?? s2.total_obtained ?? "—");
+
+      const finalPct = (typeof s1.total_obtained === "number" && typeof s2.total_obtained === "number")
+        ? `${Math.round((s1.total_obtained + s2.total_obtained) / 2 * 10) / 10}%`
+        : s1.total_obtained != null ? `${s1.total_obtained}%` : "—";
+
+      const gradeVal = typeof s1.total_obtained === "number"
+        ? getGrade(Number(finalPct) || s1.total_obtained)
+        : "—";
+
+      return {
+        subject: s1.subject_name || s2.subject_name || id,
+        term1_exams: t1Exams,
+        term1_total: t1Total,
+        term2_exams: t2Exams,
+        term2_total: t2Total,
+        final_marks: finalMark,
+        final_percentage: finalPct,
+        final_grade: gradeVal,
+        final_grade_point: gradeVal,
+        // legacy fields
+        fa1: t1Exams[0]?.marks ?? "—",
+        fa2: t1Exams[1]?.marks ?? "—",
+        sa1: "—", total1: t1Total,
+        fa3: t2Exams[0]?.marks ?? "—",
+        fa4: t2Exams[1]?.marks ?? "—",
+        sa2: "—", total2: t2Total,
+        fa_final: finalMark, sa_final: "—",
+        overall: finalMark, grade: gradeVal, gp: gradeVal,
+        isNew: true,
+      };
+    });
+  }
+
+  // ✅ FLAT ARRAY FORMAT
+  if (Array.isArray(scholastic)) return scholastic.map((row, i) => ({
+    subject: row.subject_name || row.subject || `Subject ${i + 1}`,
+    fa1: row.fa1 ?? "—", fa2: row.fa2 ?? "—", sa1: row.sa1 ?? "—",
+    total1: row.total1 ?? "—",
+    fa3: row.fa3 ?? "—", fa4: row.fa4 ?? "—", sa2: row.sa2 ?? "—",
+    total2: row.total2 ?? "—",
+    fa_final: row.fa_final ?? "—", sa_final: row.sa_final ?? "—",
+    overall: row.overall ?? "—", grade: row.grade ?? "—", gp: row.gp ?? "—",
+    term1_exams: [], term2_exams: [],
+    final_marks: row.overall ?? "—", final_percentage: "—",
+    final_grade: row.grade ?? "—", final_grade_point: row.gp ?? "—", isNew: false,
+  }));
+
+  // ✅ NESTED OBJECT FORMAT
   const { term1 = {}, term2 = {}, final = {} } = scholastic;
   if (Array.isArray(term1)) {
     return term1.map((row, i) => ({
@@ -65,8 +164,16 @@ const parseScholastic = (scholastic) => {
   });
 };
 
-// NEW FIX — API returns objects like { subject_id, subject_name, grade }
-// Extract subject_name for activity label and grade as the value
+// Simple getGrade helper (mirrors MarksheetPreview)
+const getGrade = (pct) => {
+  const n = Number(pct);
+  if (n >= 91) return "A1"; if (n >= 81) return "A2";
+  if (n >= 71) return "B1"; if (n >= 61) return "B2";
+  if (n >= 51) return "C1"; if (n >= 41) return "C2";
+  if (n >= 33) return "D";  return "E";
+};
+
+// ✅ FIX: co_scholastic term keys are subject IDs, values are { subject_id, subject_name, grade }
 const parseCoScholastic = (co) => {
   if (!co) return [];
   if (Array.isArray(co)) return co;
@@ -102,10 +209,19 @@ const triggerPrint = (studentName = "Student", pageId = "printable-report") => {
 
 const PrintableCard = React.forwardRef(({ data, school }, ref) => {
   if (!data) return null;
-  const { student_info = {}, attendance = {}, scholastic, co_scholastic, cgpa, overall_percentage } = data;
+  const {
+    student_info = {}, attendance = {},
+    scholastic, co_scholastic,
+    cgpa, overall_percentage,
+    academic_year,              // ✅ FIX: top-level field
+  } = data;
+
   const rows    = parseScholastic(scholastic);
   const coRows  = parseCoScholastic(co_scholastic);
+
+  // ✅ FIX: cgpa can be "0.0" string
   const isPassed = overall_percentage != null && Number(overall_percentage) >= 33;
+  const cgpaDisplay = (cgpa && Number(cgpa) > 0) ? cgpa : "—";
 
   const bc = "1px solid #bbb";
   const td = (x = {}) => ({ border: bc, padding: "3.5px 4px", fontSize: 8, color: "#111", verticalAlign: "middle", ...x });
@@ -127,7 +243,7 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
       <div style={{ display:"flex", alignItems:"center", gap:12, paddingBottom:6, borderBottom:"2.5px solid #1e3a8a", marginBottom:6 }}>
         <div style={{ width:52,height:52,borderRadius:"50%",flexShrink:0,border:"3px solid #1e3a8a",background:"linear-gradient(135deg,#1e3a8a,#2563eb)",display:"flex",alignItems:"center",justifyContent:"center" }}>
           <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/>
           </svg>
         </div>
         <div style={{ flex:1, textAlign:"center" }}>
@@ -140,7 +256,8 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
 
       <div style={{ textAlign:"center", marginBottom:5 }}>
         <div style={{ display:"inline-block",width:"100%",fontSize:11,fontWeight:900,color:"#1e3a8a",letterSpacing:2,textTransform:"uppercase",borderTop:"1.5px solid #1e3a8a",borderBottom:"1.5px solid #1e3a8a",padding:"3px 0" }}>
-          REPORT CARD • SESSION {student_info?.academic_year||"2024-2025"}
+          {/* ✅ FIX: academic_year is top-level */}
+          REPORT CARD • SESSION {academic_year || student_info?.academic_year || "2024-2025"}
         </div>
         <div style={{ fontSize:10,fontWeight:700,marginTop:2,letterSpacing:1,textTransform:"uppercase",color:"#222" }}>CLASS - {student_info?.class_name||"—"}</div>
       </div>
@@ -153,7 +270,10 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
             ["Roll No",         student_info?.roll_no ?? "—"],
             ["Admission No.",   student_info?.admission_no],
             ["Section",         student_info?.section_name],
-            ["Date of Birth",   student_info?.date_of_birth ?? student_info?.dob],
+            // ✅ FIX: API sends dob not date_of_birth — handle both
+            ["Date of Birth",   student_info?.dob
+              ? new Date(student_info.dob).toLocaleDateString("en-IN")
+              : student_info?.date_of_birth ?? "—"],
             ["Class",           student_info?.class_name],
             ["Mother's Name",   student_info?.mother_name],
             ["Father's Name",   student_info?.father_name],
@@ -167,7 +287,7 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
         </div>
       </div>
 
-      {/* NEW FIX — use present_days instead of total_attendance (matches API) */}
+      {/* ✅ FIX: API uses present_days not total_attendance */}
       <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5,background:"#eff6ff",border:"1px solid #bfdbfe",borderRadius:4,padding:"4px 10px" }}>
         <div style={{ display:"flex",gap:20 }}>
           <span style={{ fontSize:8.5 }}><b>Attendance</b></span>
@@ -214,9 +334,15 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
               {rows.map((row, i) => (
                 <tr key={i} style={{ background:i%2===0?"#f8faff":"#fff" }}>
                   <td style={td({textAlign:"left",fontWeight:700,textTransform:"uppercase",fontSize:7.5})}>{row.subject}</td>
-                  {t1Names.map((en, ei) => { const e = (row.term1_exams||[]).find(x => x.name===en); return <td key={ei} style={td({textAlign:"center"})}>{e ? `${e.marks}/${e.max_marks}` : "—"}</td>; })}
+                  {t1Names.map((en, ei) => {
+                    const e = (row.term1_exams||[]).find(x => x.name===en);
+                    return <td key={ei} style={td({textAlign:"center"})}>{e ? `${e.marks}/${e.max_marks}` : "—"}</td>;
+                  })}
                   {hasT1 && <td style={td({textAlign:"center",fontWeight:700,background:"#eef4ff"})}>{row.term1_total}</td>}
-                  {t2Names.map((en, ei) => { const e = (row.term2_exams||[]).find(x => x.name===en); return <td key={ei} style={td({textAlign:"center"})}>{e ? `${e.marks}/${e.max_marks}` : "—"}</td>; })}
+                  {t2Names.map((en, ei) => {
+                    const e = (row.term2_exams||[]).find(x => x.name===en);
+                    return <td key={ei} style={td({textAlign:"center"})}>{e ? `${e.marks}/${e.max_marks}` : "—"}</td>;
+                  })}
                   {hasT2 && <td style={td({textAlign:"center",fontWeight:700,background:"#eef4ff"})}>{row.term2_total}</td>}
                   <td style={td({textAlign:"center",fontWeight:700})}>{row.final_marks}</td>
                   <td style={td({textAlign:"center"})}>{row.final_percentage}</td>
@@ -268,7 +394,8 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
         )}
         <div style={{ border:bc,borderTop:"none",background:"#f0f4ff",padding:"3px 8px",fontSize:7.5,color:"#444",marginBottom:6,display:"flex",justifyContent:"space-between" }}>
           <span>8 Point Scale : A1(91%-100%), A2(81%-90%), B1(71%-80%), B2(61%-70%), C1(51%-60%), C2(41%-50%), D(33%-40%), F(32% AND BELOW)</span>
-          <span style={{ fontWeight:800,color:"#1e3a8a" }}>CGPA &nbsp;{cgpa ?? "—"}</span>
+          {/* ✅ FIX: only show cgpa if > 0 */}
+          <span style={{ fontWeight:800,color:"#1e3a8a" }}>CGPA &nbsp;{cgpaDisplay}</span>
         </div>
       </>) : (
         <div style={{ border:bc,borderTop:"none",background:"#f8fafc",padding:10,textAlign:"center",color:"#999",fontSize:9,marginBottom:6 }}>No scholastic records for this session.</div>
@@ -276,7 +403,7 @@ const PrintableCard = React.forwardRef(({ data, school }, ref) => {
 
       <div style={{ display:"flex",gap:8,marginBottom:8 }}>
         {[
-          { label:"CGPA",      value:cgpa ?? "—",                                              bg:"#eff6ff", border:"#bfdbfe", color:"#1e3a8a" },
+          { label:"CGPA",      value: cgpaDisplay,                                              bg:"#eff6ff", border:"#bfdbfe", color:"#1e3a8a" },
           { label:"Overall %", value:overall_percentage != null ? `${overall_percentage}%`:"—", bg:"#f0fdf4", border:"#bbf7d0", color:"#059669" },
           { label:"Result",    value:overall_percentage != null ? (isPassed ? "PASS ✓" : "FAIL ✗") : "—", bg:isPassed?"#f0fdf4":"#fef2f2", border:isPassed?"#86efac":"#fca5a5", color:isPassed?"#059669":"#dc2626" },
         ].map(({ label, value, bg, border, color }) => (
