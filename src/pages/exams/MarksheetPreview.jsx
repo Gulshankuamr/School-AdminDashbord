@@ -30,10 +30,63 @@ const pctColor = (pct) => {
 };
 
 // ═══════════════════════════════════════
-//  PARSE — new nested API structure
+//  PARSE — handles new API structure:
+//  scholastic.term1.subject_totals / scholastic.term2.subject_totals
 // ═══════════════════════════════════════
 const parseSubjects = (scholastic) => {
   if (!scholastic) return [];
+
+  // ✅ NEW API FORMAT: { term1: { subject_totals: { "120": { subject_name, total_obtained, per_exam, ... } } }, term2: {...} }
+  if (scholastic.term1 && scholastic.term1.subject_totals) {
+    const term1Subs = scholastic.term1.subject_totals || {};
+    const term2Subs = scholastic.term2?.subject_totals || {};
+
+    // Build a unified subject list from both terms
+    const allSubjectIds = new Set([
+      ...Object.keys(term1Subs),
+      ...Object.keys(term2Subs),
+    ]);
+
+    return Array.from(allSubjectIds).map((id) => {
+      const s1 = term1Subs[id] || {};
+      const s2 = term2Subs[id] || {};
+
+      const t1 = safeNum(s1.total_obtained) ?? 0;
+      const t2 = safeNum(s2.total_obtained) ?? 0;
+
+      // per_exam is an object keyed by exam name: { "Unit Test 2": { marks_obtained, max_marks } }
+      const t1ExamEntries = Object.entries(s1.per_exam || {});
+      const t2ExamEntries = Object.entries(s2.per_exam || {});
+
+      const perTest1   = t1ExamEntries[0]?.[1]?.marks_obtained ?? "—";
+      const noteBook1  = t1ExamEntries[1]?.[1]?.marks_obtained ?? "—";
+      const subEnrich1 = t1ExamEntries[2]?.[1]?.marks_obtained ?? "—";
+      const halfYearly = t1ExamEntries[3]?.[1]?.marks_obtained ?? (t1ExamEntries.length === 1 ? t1ExamEntries[0]?.[1]?.marks_obtained : "—");
+
+      const perTest2   = t2ExamEntries[0]?.[1]?.marks_obtained ?? "—";
+      const noteBook2  = t2ExamEntries[1]?.[1]?.marks_obtained ?? "—";
+      const subEnrich2 = t2ExamEntries[2]?.[1]?.marks_obtained ?? "—";
+      const annual     = t2ExamEntries[3]?.[1]?.marks_obtained ?? (t2ExamEntries.length === 1 ? t2ExamEntries[0]?.[1]?.marks_obtained : "—");
+
+      // overall: if both terms exist, average; if only term1, use term1
+      const overall = t2 > 0 ? Math.round((t1 + t2) / 2) : t1;
+
+      return {
+        subject: getSubjectName(s1.subject_name || s2.subject_name || id),
+        perTest1, noteBook1, subEnrich1, halfYearly,
+        term1Total: t1, gp1: getGrade(t1),
+        perTest2, noteBook2, subEnrich2, annual,
+        term2Total: t2, gp2: getGrade(t2),
+        overall,
+        grade: getGrade(overall),
+        term1_exams: t1ExamEntries.map(([name, e]) => ({ name, marks: e.marks_obtained ?? 0, max_marks: e.max_marks ?? 100 })),
+        term2_exams: t2ExamEntries.map(([name, e]) => ({ name, marks: e.marks_obtained ?? 0, max_marks: e.max_marks ?? 100 })),
+        isNew: false,
+      };
+    });
+  }
+
+  // ✅ FLAT ARRAY FORMAT: [{ subject_name, total1, total2, overall, grade, fa1, fa2, sa1, fa3, fa4, sa2 }]
   if (Array.isArray(scholastic)) {
     return scholastic.map(r => {
       const t1 = safeNum(r.total1 ?? r.term1 ?? r.fa1) ?? 0;
@@ -54,7 +107,9 @@ const parseSubjects = (scholastic) => {
     });
   }
 
+  // ✅ NESTED OBJECT FORMAT: { term1: { SubjectName: { exams: {...}, total } }, term2: {...}, final: {...} }
   const { term1 = {}, term2 = {}, final = {} } = scholastic;
+
   if (Array.isArray(term1)) {
     return term1.map(r => {
       const t1 = safeNum(r.total1 ?? 0) ?? 0;
@@ -196,11 +251,12 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
     student_info = {}, attendance = {},
     scholastic, co_scholastic,
     cgpa, overall_percentage,
+    academic_year,              // ✅ FIX: academic_year is top-level in API response
   } = data;
 
   const subjects = useMemo(() => parseSubjects(scholastic), [scholastic]);
 
-  // ✅ FIXED: Extract subject_name and grade from object instead of rendering object directly
+  // ✅ FIX: co_scholastic term keys are subject IDs (numbers), values are { subject_id, subject_name, grade }
   const coRows = useMemo(() => {
     if (!co_scholastic) return [];
     const t1 = co_scholastic.term1 || {};
@@ -208,8 +264,8 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
     const acts = new Set([...Object.keys(t1), ...Object.keys(t2)]);
     return Array.from(acts).map(a => ({
       activity: t1[a]?.subject_name || t2[a]?.subject_name || a,
-      term1: t1[a]?.grade || "—",
-      term2: t2[a]?.grade || "—",
+      term1: typeof t1[a] === "object" ? (t1[a]?.grade || "—") : (t1[a] || "—"),
+      term2: typeof t2[a] === "object" ? (t2[a]?.grade || "—") : (t2[a] || "—"),
     }));
   }, [co_scholastic]);
 
@@ -218,7 +274,9 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
   const totalT1 = subjects.reduce((a, s) => a + (safeNum(s.term1Total) ?? 0), 0);
   const totalT2 = subjects.reduce((a, s) => a + (safeNum(s.term2Total) ?? 0), 0);
   const totalMax = subjects.length * 100 * 2;
-  const overallGrade = cgpa || getGrade(Number(overall_percentage) || 0);
+
+  // ✅ FIX: cgpa can be "0.0" string — only show it if > 0, else compute from percentage
+  const overallGrade = (cgpa && Number(cgpa) > 0) ? cgpa : getGrade(Number(overall_percentage) || 0);
 
   const bc = "1px solid #ccc";
   const tdS = (x = {}) => ({
@@ -259,7 +317,7 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
           boxShadow: "0 2px 6px rgba(185,28,28,0.35)",
         }}>
           <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
           </svg>
         </div>
 
@@ -295,7 +353,8 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
           borderTop: "2px solid #b91c1c", borderBottom: "2px solid #b91c1c",
           padding: "3px 20px",
         }}>
-          PROGRESS REPORT • {student_info?.academic_year || "2024-2025"}
+          {/* ✅ FIX: academic_year is top-level in API, not inside student_info */}
+          PROGRESS REPORT • {academic_year || student_info?.academic_year || "2024-2025"}
         </div>
       </div>
 
@@ -309,7 +368,9 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
             ["Mother's Name", student_info?.mother_name],
             ["Roll No", student_info?.roll_no ?? "—"],
             ["Father's Name", student_info?.father_name],
-            ["D.O.B.", student_info?.date_of_birth ?? student_info?.dob],
+            ["D.O.B.", student_info?.dob
+              ? new Date(student_info.dob).toLocaleDateString("en-IN")
+              : student_info?.date_of_birth ?? "—"],
             ["Admission No.", student_info?.admission_no],
           ].map(([lbl, val]) => (
             <div key={lbl} style={{ display: "flex", gap: 4 }}>
@@ -392,7 +453,8 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
 
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 8 }}>
             <span><b>Remarks :</b> {isPassed ? "Excellent" : "Needs Improvement"}</span>
-            <span><b>Attendance :</b> {attendance?.total_attendance ?? "—"}/{attendance?.total_working_days ?? "—"}</span>
+            {/* ✅ FIX: API uses present_days not total_attendance */}
+            <span><b>Attendance :</b> {attendance?.present_days ?? "—"}/{attendance?.total_working_days ?? "—"}</span>
             <span><b>Rank :</b> —</span>
           </div>
         </>
