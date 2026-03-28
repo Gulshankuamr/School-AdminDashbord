@@ -85,7 +85,7 @@ function TeacherDetailsModal({ teacher, onClose, onDelete }) {
   const teacherFatherName = getValue('father_name')
   const teacherMotherName = getValue('mother_name')
   const teacherAddress = getValue('address')
-  const teacherStatus = getValue('status')
+  // const teacherStatus = getValue('status')
   const teacherEmployeeId = getValue('employee_id')
   const teacherDob = getValue('dob')
   const teacherEmploymentType = getValue('employment_type')
@@ -128,7 +128,7 @@ function TeacherDetailsModal({ teacher, onClose, onDelete }) {
                 {teacherDesignation && (
                   <p className="text-emerald-100 text-sm font-medium mt-0.5">{teacherDesignation}</p>
                 )}
-                <div className="flex items-center gap-2 mt-2">
+                {/* <div className="flex items-center gap-2 mt-2">
                   <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full ${
                     teacherStatus === 1
                       ? 'bg-white/20 text-white border border-white/30'
@@ -142,7 +142,7 @@ function TeacherDetailsModal({ teacher, onClose, onDelete }) {
                       {formatEmploymentType(teacherEmploymentType)}
                     </span>
                   )}
-                </div>
+                </div> */}
               </div>
             </div>
             <div className="flex items-center gap-2">

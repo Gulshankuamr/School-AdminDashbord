@@ -1,45 +1,27 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as createExamService from '../../services/examService/createExamService';
-import * as examTypesService from '../../services/examService/examTypesService';
 import { toast } from 'react-hot-toast';
 
 const ACADEMIC_YEARS = [
-  '2026-2027', '2027-2028', '2028-2029', '2029-2030', '2030-2031', '2031-2032'
+  '2026-27', '2027-28', '2028-29', '2029-30', '2030-31', '2031-32'
 ];
 
 const CreateExam = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [examTypes, setExamTypes] = useState([]);
 
   const [formData, setFormData] = useState({
-    exam_type_id: '',
     exam_name: '',
     term: '',
     weightage_percentage: '',
-    academic_year: '2026-2027',
+    academic_year: '2026-27',
     start_date: '',
     end_date: '',
     result_date: ''
   });
 
   const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    fetchExamTypes();
-  }, []);
-
-  const fetchExamTypes = async () => {
-    try {
-      const response = await examTypesService.getAllExamTypes();
-      if (response && response.success) {
-        setExamTypes(response.data || []);
-      }
-    } catch (error) {
-      toast.error('Failed to load exam types');
-    }
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,9 +62,9 @@ const CreateExam = () => {
       ? parseFloat(String(rawWeightage))
       : null;
 
-    const snap = {
+    const payload = {
       exam_name: formData.exam_name.trim(),
-      term: formData.term,                    // exact value: 'term1' or 'term2'
+      term: formData.term,
       weightage_percentage: parsedWeightage,
       academic_year: formData.academic_year,
       start_date: formData.start_date,
@@ -90,12 +72,7 @@ const CreateExam = () => {
       result_date: formData.result_date || null,
     };
 
-    const payload = { ...snap };
-    if (formData.exam_type_id) {
-      payload.exam_type_id = parseInt(formData.exam_type_id);
-    }
-
-    console.log('📤 Creating exam | term:', snap.term, '| payload:', payload);
+    console.log('📤 Creating exam | term:', payload.term, '| payload:', payload);
 
     setLoading(true);
     try {
@@ -104,18 +81,7 @@ const CreateExam = () => {
 
       if (response && response.success) {
         toast.success(response.message || 'Exam created successfully!');
-
-        // ✅ Pass the full created exam data (with exact term) via navigation state
-        // ExamList will inject this directly into its list — no API re-fetch needed
-        navigate('/admin/exams', {
-          state: {
-            newExam: {
-              ...snap,
-              exam_id: response.data?.exam_id,
-              ...(payload.exam_type_id ? { exam_type_id: payload.exam_type_id } : {})
-            }
-          }
-        });
+        navigate('/admin/exams');
       } else {
         toast.error(response?.message || 'Failed to create exam');
       }

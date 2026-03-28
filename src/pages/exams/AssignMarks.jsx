@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react'
-import { Save, FileText, BarChart2, Search } from 'lucide-react'
+import { Save, BarChart2, Search } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { markExameService } from '../../services/examService/markExameService'
 
 const AssignMarks = () => {
+  const navigate = useNavigate()
 
   // ─── Dropdown Source Data ─────────────────────────────────────
-  const [examList,       setExamList]       = useState([])
-  const [classList,      setClassList]      = useState([])
-  const [sectionList,    setSectionList]    = useState([])
-  const [timetableList,  setTimetableList]  = useState([])
+  const [examList,      setExamList]      = useState([])
+  const [classList,     setClassList]     = useState([])
+  const [sectionList,   setSectionList]   = useState([])
+  const [timetableList, setTimetableList] = useState([])
 
   // subjects derived from timetable rows (unique by subject_id)
   const subjectList = timetableList.filter(
@@ -133,6 +135,7 @@ const AssignMarks = () => {
           })
         : ''
       setExamData({
+        // ✅ FIX: parseFloat for max_marks & min_passing_marks (API returns strings)
         maxMarks:  parseFloat(match.max_marks)         || 100,
         minPass:   parseFloat(match.min_passing_marks) || 33,
         date:      rawDate,
@@ -147,8 +150,6 @@ const AssignMarks = () => {
 
   // ═══════════════════════════════════════════════════════════════
   // LOAD STUDENTS
-  // ✅ Uses: /getTotalStudentsListBySchoolId?class_id=&section_id=
-  // Response fields: student_id, name, roll_no, admission_no, gender
   // ═══════════════════════════════════════════════════════════════
   const handleLoadStudents = async () => {
     if (!selectedClass)   return setMessage({ type: 'error', text: 'Please select a class.' })
@@ -164,9 +165,7 @@ const AssignMarks = () => {
       const mapped = raw.map((item) => ({
         id:         item.student_id,
         student_id: item.student_id,
-        // API returns 'name' field (not 'student_name')
         name:       item.name        || item.student_name || `Student ${item.student_id}`,
-        // roll_no may be null — fall back to admission_no then student_id
         rollNo:     item.roll_no     || item.admission_no || item.student_id,
         marks:      0,
         is_absent:  false,
@@ -191,24 +190,30 @@ const AssignMarks = () => {
   // HELPERS
   // ═══════════════════════════════════════════════════════════════
   const computeStatus = (marks, isAbsent) => {
-    if (isAbsent || !marks || marks === 0) return 'ABSENT'
+    if (isAbsent) return 'ABSENT'
+    if (!marks || marks === 0) return 'FAIL'
     return marks >= examData.minPass ? 'PASS' : 'FAIL'
   }
 
+  // ✅ FIX: average ab actual maxMarks use karta hai
   const computeStats = (list) => {
     const total   = list.length
     const absent  = list.filter((s) => s.is_absent).length
     const present = total - absent
-    const totalM  = list.filter((s) => !s.is_absent).reduce((sum, s) => sum + (s.marks || 0), 0)
-    const avg     = present > 0
-      ? ((totalM / (present * examData.maxMarks)) * 100).toFixed(1)
+    const presentStudents = list.filter((s) => !s.is_absent)
+    const totalMarks = presentStudents.reduce((sum, s) => sum + (s.marks || 0), 0)
+    const totalMax   = presentStudents.reduce((sum, s) => sum + examData.maxMarks, 0)
+    const avg = present > 0 && totalMax > 0
+      ? ((totalMarks / totalMax) * 100).toFixed(1)
       : '0.0'
     setStats({ total, present, absent, average: avg })
   }
 
   const handleMarksChange = (studentId, value) => {
-    let marks = parseInt(value) || 0
-    marks = Math.max(0, Math.min(marks, examData.maxMarks))
+    // ✅ FIX: parseInt se NaN aata tha empty string pe — Number() use karo
+    let marks = Number(value)
+    if (isNaN(marks) || marks < 0) marks = 0
+    marks = Math.min(marks, examData.maxMarks)
     const updated = students.map((s) =>
       s.id === studentId ? { ...s, marks, status: computeStatus(marks, s.is_absent) } : s
     )
@@ -243,20 +248,27 @@ const AssignMarks = () => {
       return setMessage({ type: 'error', text: 'No timetable matched. Select exam, class, section & subject.' })
     if (students.length === 0)
       return setMessage({ type: 'error', text: 'No students loaded.' })
-    const invalid = students.filter((s) => !s.is_absent && s.marks === 0)
+
+    // ✅ FIX: present students with 0 marks ko properly validate karo
+    const invalid = students.filter((s) => !s.is_absent && (s.marks === 0 || s.marks === ''))
     if (invalid.length > 0)
       return setMessage({
         type: 'error',
         text: `${invalid.length} present student(s) have 0 marks. Enter marks or mark as absent.`,
       })
+
     setSaving(true)
     setMessage({ type: '', text: '' })
     try {
       const result = await markExameService.saveAllMarks(students, matchedTimetable.timetable_id)
       setMessage({
         type: result.success ? 'success' : 'error',
-        text: result.success ? `✅ ${result.message}` : `⚠️ ${result.message}`,
+        text: result.success
+          ? `✅ ${result.message}`
+          : `⚠️ ${result.message}${result.errors?.length ? ` — Failed IDs: ${result.errors.map((e) => e.studentId).join(', ')}` : ''}`,
       })
+      // ✅ FIX: success ke baad auto scroll to top
+      if (result.success) window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Failed to save marks.' })
     } finally {
@@ -274,7 +286,7 @@ const AssignMarks = () => {
   const marksInputBorder = (s) => ({
     PASS:   'border-green-400 focus:ring-green-200',
     FAIL:   'border-red-400   focus:ring-red-200',
-    ABSENT: 'border-gray-200  bg-gray-100',
+    ABSENT: 'border-gray-200  bg-gray-100 cursor-not-allowed',
   }[s] || 'border-gray-300')
 
   const initials = (name = '') =>
@@ -286,6 +298,10 @@ const AssignMarks = () => {
   }
 
   const selectCls = 'border border-gray-300 rounded-lg px-3 py-2 text-sm text-black bg-white focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed'
+
+  // ─── Pass/Fail counts for quick summary ──────────────────────
+  const passCount = students.filter((s) => s.status === 'PASS').length
+  const failCount = students.filter((s) => s.status === 'FAIL').length
 
   // ═══════════════════════════════════════════════════════════════
   // RENDER
@@ -301,14 +317,12 @@ const AssignMarks = () => {
             Select exam and class details to manage student performance.
           </p>
         </div>
-       <div className="flex justify-end">
-  <button
-    onClick={() => navigate("/admin/exams/marks-list")}
-    className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold"
-  >
-    View Mark List
-  </button>
-</div>
+        <button
+          onClick={() => navigate('/admin/exams/marks-list')}
+          className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold"
+        >
+          View Mark List
+        </button>
       </div>
 
       {/* ── Alert ── */}
@@ -331,9 +345,7 @@ const AssignMarks = () => {
 
             {/* 1. SELECT EXAM */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-black uppercase tracking-wide">
-                Select Exam
-              </label>
+              <label className="text-xs font-bold text-black uppercase tracking-wide">Select Exam</label>
               <select
                 className={`${selectCls} min-w-[200px]`}
                 value={selectedExam}
@@ -355,9 +367,7 @@ const AssignMarks = () => {
 
             {/* 2. CLASS */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-black uppercase tracking-wide">
-                Class
-              </label>
+              <label className="text-xs font-bold text-black uppercase tracking-wide">Class</label>
               <select
                 className={`${selectCls} min-w-[130px]`}
                 value={selectedClass}
@@ -376,11 +386,9 @@ const AssignMarks = () => {
               </select>
             </div>
 
-            {/* 3. SECTION — enabled after class */}
+            {/* 3. SECTION */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-black uppercase tracking-wide">
-                Section
-              </label>
+              <label className="text-xs font-bold text-black uppercase tracking-wide">Section</label>
               <select
                 className={`${selectCls} min-w-[130px]`}
                 value={selectedSection}
@@ -402,11 +410,9 @@ const AssignMarks = () => {
               </select>
             </div>
 
-            {/* 4. SUBJECT — derived from timetable after exam+class+section */}
+            {/* 4. SUBJECT */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-bold text-black uppercase tracking-wide">
-                Subject
-              </label>
+              <label className="text-xs font-bold text-black uppercase tracking-wide">Subject</label>
               <select
                 className={`${selectCls} min-w-[150px]`}
                 value={selectedSubject}
@@ -486,10 +492,10 @@ const AssignMarks = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-5">
 
         {/* Table Header */}
-        <div className="grid grid-cols-[80px_1fr_190px_100px_1fr] gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs font-bold text-black uppercase tracking-wide">
+        <div className="grid grid-cols-[80px_1fr_220px_100px_1fr] gap-4 px-6 py-3 bg-gray-50 border-b border-gray-100 text-xs font-bold text-black uppercase tracking-wide">
           <span>Roll No</span>
           <span>Student Name</span>
-          <span>Marks Obtained</span>
+          <span>Marks Obtained ({examData.maxMarks} max)</span>
           <span>Absent</span>
           <span>Remarks / Comments</span>
         </div>
@@ -514,7 +520,9 @@ const AssignMarks = () => {
           students.map((student) => (
             <div
               key={student.id}
-              className="grid grid-cols-[80px_1fr_190px_100px_1fr] gap-4 items-center px-6 py-4 border-b border-gray-50 hover:bg-gray-50 transition-colors"
+              className={`grid grid-cols-[80px_1fr_220px_100px_1fr] gap-4 items-center px-6 py-4 border-b border-gray-50 transition-colors ${
+                student.is_absent ? 'bg-red-50/40' : 'hover:bg-gray-50'
+              }`}
             >
               {/* Roll No */}
               <span className="text-sm font-bold text-black">{student.rollNo}</span>
@@ -545,7 +553,14 @@ const AssignMarks = () => {
                   className={`w-20 border rounded-lg px-3 py-1.5 text-sm text-center text-black font-semibold focus:outline-none focus:ring-2 transition-all ${marksInputBorder(student.status)}`}
                   min="0"
                   max={examData.maxMarks}
+                  placeholder="0"
                 />
+                {/* ✅ FIX: percentage bhi dikhao */}
+                {!student.is_absent && student.marks > 0 && (
+                  <span className="text-xs text-gray-400 font-medium">
+                    {((student.marks / examData.maxMarks) * 100).toFixed(0)}%
+                  </span>
+                )}
                 <span className={`text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${statusColor(student.status)}`}>
                   {student.status}
                 </span>
@@ -558,6 +573,7 @@ const AssignMarks = () => {
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
                     student.is_absent ? 'bg-red-500' : 'bg-gray-200'
                   }`}
+                  title={student.is_absent ? 'Mark as Present' : 'Mark as Absent'}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
@@ -590,7 +606,7 @@ const AssignMarks = () => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-4 flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-8 text-sm flex-wrap">
           <div>
-            <span className="text-gray-500 font-medium">TOTAL STUDENTS</span>
+            <span className="text-gray-500 font-medium">TOTAL</span>
             <span className="ml-2 font-bold text-black">{stats.total}</span>
           </div>
           <div>
@@ -603,8 +619,17 @@ const AssignMarks = () => {
               {String(stats.absent).padStart(2, '0')}
             </span>
           </div>
+          {/* ✅ FIX: Pass/Fail counts bhi dikhao */}
           <div>
-            <span className="text-gray-500 font-medium">CLASS AVERAGE</span>
+            <span className="text-gray-500 font-medium">PASS</span>
+            <span className="ml-2 font-bold text-green-600">{passCount}</span>
+          </div>
+          <div>
+            <span className="text-gray-500 font-medium">FAIL</span>
+            <span className="ml-2 font-bold text-red-500">{failCount}</span>
+          </div>
+          <div>
+            <span className="text-gray-500 font-medium">CLASS AVG</span>
             <span className="ml-2 font-bold text-blue-600">{stats.average}%</span>
           </div>
         </div>

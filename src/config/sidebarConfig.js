@@ -1,35 +1,30 @@
 // src/config/sidebarConfig.js
+//
+// ✅ All permission references use P.* constants
+//    which resolve to snake_case strings exactly matching the backend.
+// ✅ edit_accountants typo fixed via permissions.js (P.EDIT_ACCOUNTANT → 'edit_accountants')
+
 import {
   LayoutDashboard, Users, BookOpen, Wallet, Calendar,
   DollarSign, ClipboardCheck, FileText, Settings, MapPin,
   Bell, GraduationCap, UserCheck, BadgeDollarSign,
   MessageSquare, Bus, Cpu, UsersRound, BookUser, LayoutGrid,
-  School, Receipt, CreditCard,
+  Receipt, CreditCard,
 } from 'lucide-react'
+import { PERMISSIONS as P } from './permissions.js'
 
 export const sidebarMenuItems = [
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 📊 DASHBOARD — no restriction
+  // 📊 DASHBOARD — open to all logged-in users
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   {
     id:         'dashboard',
     label:      'Dashboard',
     icon:       LayoutDashboard,
     path:       '/admin',
-    permission: null,           // open to all logged-in users
+    permission: null,
   },
-
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // 🏫 SCHOOL PROFILE
-  // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  // {
-  //   id:         'school-profile',
-  //   label:      'School Profile',
-  //   icon:       School,
-  //   path:       '/admin/school-profile',
-  //   permission: 'view_school_profile',              // ✅ NEW mapped key
-  // },
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   // 🎓 ACADEMIC MANAGEMENT
@@ -48,10 +43,10 @@ export const sidebarMenuItems = [
         label:       'Students',
         icon:        Users,
         hasDropdown: true,
-        permission:  'view_all_student',            // ✅ frontend key
+        permission:  P.VIEW_ALL_STUDENT,
         subItems: [
-          { id: 'student-list', label: 'All Students', path: '/admin/students',     permission: 'view_all_student' },
-          { id: 'add-student',  label: 'Add Student',  path: '/admin/students/add', permission: 'add_student'      },
+          { id: 'student-list', label: 'All Students', path: '/admin/students',     permission: P.VIEW_ALL_STUDENT },
+          { id: 'add-student',  label: 'Add Student',  path: '/admin/students/add', permission: P.ADD_STUDENT      },
         ],
       },
 
@@ -61,7 +56,7 @@ export const sidebarMenuItems = [
         icon:        LayoutGrid,
         hasDropdown: false,
         path:        '/admin/classes/sections',
-        permission:  'view_classes',
+        permission:  [P.VIEW_CLASSES, P.VIEW_SECTIONS],
       },
 
       {
@@ -69,10 +64,10 @@ export const sidebarMenuItems = [
         label:       'Subjects',
         icon:        BookOpen,
         hasDropdown: true,
-        permission:  'view_subjects',
+        permission:  P.VIEW_SUBJECTS,
         subItems: [
-          { id: 'subject-list', label: 'All Subjects', path: '/admin/subject',     permission: 'view_subjects' },
-          { id: 'add-subject',  label: 'Add Subject',  path: '/admin/subject/add', permission: 'view_subjects' },
+          { id: 'subject-list', label: 'All Subjects', path: '/admin/subject',      permission: P.VIEW_SUBJECTS },
+          { id: 'add-subject',  label: 'Add Subject',  path: '/admin/subject/add',  permission: P.ADD_SUBJECT   },
         ],
       },
 
@@ -81,22 +76,22 @@ export const sidebarMenuItems = [
         label:       'Homework',
         icon:        BookOpen,
         hasDropdown: true,
-        permission:  'view_hw_from_student',
+        permission:  [P.VIEW_HW_FROM_STUDENT, P.TEACHER_CREATE_HOMEWORK],
         subItems: [
-          { id: 'create-homework', label: 'Create Homework', path: '/admin/homework/create', permission: 'teacher_create_homework' },
-          { id: 'homework-list',   label: 'Homework List',   path: '/admin/homework',        permission: 'view_hw_from_student'   },
+          { id: 'create-homework', label: 'Create Homework', path: '/admin/homework/create', permission: P.TEACHER_CREATE_HOMEWORK },
+          { id: 'homework-list',   label: 'Homework List',   path: '/admin/homework',        permission: P.VIEW_HW_FROM_STUDENT   },
         ],
       },
 
       {
         id:          'timetable',
-        label:       'Timetable',
+        label:       'School Timetable',
         icon:        Calendar,
         hasDropdown: true,
-        permission:  'view_timetable',
+        permission:  [P.VIEW_TIMETABLE, P.MANAGE_TIMETABLE],
         subItems: [
-          { id: 'create-timetable', label: 'Create Timetable', path: '/admin/timetable/create', permission: 'manage_timetable' },
-          { id: 'view-timetable',   label: 'View Timetable',   path: '/admin/timetable/view',   permission: 'view_timetable'   },
+          { id: 'create-timetable', label: 'Create Timetable', path: '/admin/timetable/create', permission: P.MANAGE_TIMETABLE },
+          { id: 'view-timetable',   label: 'View Timetable',   path: '/admin/timetable/view',   permission: P.VIEW_TIMETABLE   },
         ],
       },
 
@@ -119,15 +114,15 @@ export const sidebarMenuItems = [
         label:       'Exams',
         icon:        FileText,
         hasDropdown: true,
-        permission:  'view_subjects',
+        permission:  [P.MANAGE_EXAM_MARKS, P.GENERATE_MARKSHEET],
         subItems: [
-          { id: 'create-exam',           label: 'Create Exam',          path: '/admin/exams/add',                 permission: 'view_subjects'     },
-          { id: 'exam-timetable-create', label: 'Exam Timetable',       path: '/admin/exams/timetable/create',    permission: 'view_timetable'    },
-          { id: 'assign-marks',          label: 'Create Marks',         path: '/admin/exams/assign-marks',        permission: 'manage_exam_marks' },  // ✅ updated key
-          { id: 'marks-list',            label: 'Marks List',           path: '/admin/exams/marks-list',          permission: 'manage_exam_marks' },  // ✅ updated key
-          { id: 'co-scholastic-grades',  label: 'Co-Scholastic Grades', path: '/admin/exams/co-scholastic',       permission: 'manage_exam_marks' },  // ✅ updated key
-          { id: 'marksheet-generator',   label: 'Generate Marksheet',   path: '/admin/exams/marksheet-generator', permission: 'generate_marksheet' }, // ✅ NEW key
-          { id: 'generate-admit-card',   label: 'Admit & ID Cards',     path: '/admin/exams/admit-card',          permission: 'view_subjects'     },
+          { id: 'create-exam',           label: 'Create Exam',          path: '/admin/exams/add',                 permission: P.MANAGE_EXAM_MARKS  },
+          { id: 'exam-timetable-create', label: 'Exam Timetable',       path: '/admin/exams/timetable/create',    permission: P.MANAGE_EXAM_MARKS  },
+          { id: 'assign-marks',          label: 'Create Marks',         path: '/admin/exams/assign-marks',        permission: P.MANAGE_EXAM_MARKS  },
+          { id: 'marks-list',            label: 'Marks List',           path: '/admin/exams/marks-list',          permission: P.MANAGE_EXAM_MARKS  },
+          { id: 'co-scholastic-grades',  label: 'Co-Scholastic Grades', path: '/admin/exams/co-scholastic',       permission: P.MANAGE_EXAM_MARKS  },
+          { id: 'marksheet-generator',   label: 'Generate Marksheet',   path: '/admin/exams/marksheet-generator', permission: P.GENERATE_MARKSHEET },
+          { id: 'generate-admit-card',   label: 'Admit & ID Cards',     path: '/admin/exams/admit-card',          permission: P.MANAGE_EXAM_MARKS  },
         ],
       },
     ],
@@ -150,10 +145,10 @@ export const sidebarMenuItems = [
         label:       'Teachers',
         icon:        BookUser,
         hasDropdown: true,
-        permission:  'view_all_teacher',            // ✅ frontend key
+        permission:  P.VIEW_ALL_TEACHER,
         subItems: [
-          { id: 'teacher-list', label: 'All Teachers', path: '/admin/teachers',     permission: 'view_all_teacher' },
-          { id: 'add-teacher',  label: 'Add Teacher',  path: '/admin/teachers/add', permission: 'add_teacher'      },
+          { id: 'teacher-list', label: 'All Teachers', path: '/admin/teachers',     permission: P.VIEW_ALL_TEACHER },
+          { id: 'add-teacher',  label: 'Add Teacher',  path: '/admin/teachers/add', permission: P.ADD_TEACHER      },
         ],
       },
 
@@ -162,10 +157,10 @@ export const sidebarMenuItems = [
         label:       'Accountants',
         icon:        Wallet,
         hasDropdown: true,
-        permission:  'view_accountants',
+        permission:  P.VIEW_ACCOUNTANTS,
         subItems: [
-          { id: 'accountant-list', label: 'All Accountants', path: '/admin/accountants',     permission: 'view_accountants' },
-          { id: 'add-accountant',  label: 'Add Accountant',  path: '/admin/accountants/add', permission: 'add_accountant'   },
+          { id: 'accountant-list', label: 'All Accountants', path: '/admin/accountants',     permission: P.VIEW_ACCOUNTANTS },
+          { id: 'add-accountant',  label: 'Add Accountant',  path: '/admin/accountants/add', permission: P.ADD_ACCOUNTANT   },
         ],
       },
 
@@ -189,8 +184,7 @@ export const sidebarMenuItems = [
         label:      'Student Attendance',
         icon:       Users,
         path:       '/admin/attendance',
-        // ✅ either mark_student_attendance OR view_all_student grants access
-        permission: 'mark_student_attendance',
+        permission: [P.MARK_STUDENT_ATTENDANCE, P.VIEW_ALL_STUDENT],
       },
 
       {
@@ -198,7 +192,7 @@ export const sidebarMenuItems = [
         label:      'Teacher Attendance',
         icon:       BookUser,
         path:       '/admin/teacher-attendance',
-        permission: 'view_all_teacher',             // ✅ frontend key
+        permission: P.VIEW_ONE_TEACHER_ATTENDANCE,
       },
 
       {
@@ -206,7 +200,7 @@ export const sidebarMenuItems = [
         label:      'Accountant Attendance',
         icon:       Wallet,
         path:       '/admin/accountant-attendance',
-        permission: 'view_accountants',
+        permission: P.VIEW_ACCOUNTANTS,
       },
 
     ],
@@ -229,7 +223,7 @@ export const sidebarMenuItems = [
         label:      'Routes Management',
         icon:       Bus,
         path:       '/admin/transport/routes',
-        permission: 'manage_school_settings',
+        permission: P.MANAGE_TRANSPORT,
       },
 
       {
@@ -237,7 +231,7 @@ export const sidebarMenuItems = [
         label:      'Stops Management',
         icon:       MapPin,
         path:       '/admin/transport/stops',
-        permission: 'manage_school_settings',
+        permission: P.MANAGE_TRANSPORT,
       },
 
       {
@@ -245,7 +239,7 @@ export const sidebarMenuItems = [
         label:      'Assign Transport',
         icon:       UserCheck,
         path:       '/admin/transport/assign-student',
-        permission: 'manage_school_settings',
+        permission: P.MANAGE_TRANSPORT,
       },
 
     ],
@@ -268,25 +262,13 @@ export const sidebarMenuItems = [
         label:       'Fee Management',
         icon:        DollarSign,
         hasDropdown: true,
-        permission:  'view_fees',
+        permission:  P.VIEW_FEES,
         subItems: [
-          { id: 'fee-heads',      label: 'Fee Heads',            path: '/admin/fees/heads',           permission: 'view_fees'      },
-          { id: 'fee-fine-rules', label: 'Fine Rules',           path: '/admin/fees/fine-rule',       permission: 'view_fees'      },
-          { id: 'create-fee',     label: 'Create Fee Structure', path: '/admin/fees/create',          permission: 'manage_fees'    },
-          { id: 'fee-preview',    label: 'View Fee Structure',   path: '/admin/fees/preview',         permission: 'view_fees'      },
-          { id: 'collect-fee',    label: 'Collect Fee',          path: '/admin/fees-payment/collect', permission: 'collect_payment' },
-        ],
-      },
-
-      {
-        id:          'payments',
-        label:       'Payments',
-        icon:        CreditCard,
-        hasDropdown: true,
-        permission:  'view_payments',               // ✅ NEW menu entry for view_payments
-        subItems: [
-          { id: 'view-payments', label: 'Payment Records', path: '/admin/payments',        permission: 'view_payments'   },
-          { id: 'fee-receipt',   label: 'Fee Receipts',    path: '/admin/fees-payment/receipts', permission: 'generate_receipt' }, // ✅ NEW
+          { id: 'fee-heads',      label: 'Fee Heads',            path: '/admin/fees/heads',           permission: P.VIEW_FEES       },
+          { id: 'fee-fine-rules', label: 'Fine Rules',           path: '/admin/fees/fine-rule',       permission: P.VIEW_FEES       },
+          { id: 'create-fee',     label: 'Create Fee Structure', path: '/admin/fees/create',          permission: P.MANAGE_FEES     },
+          { id: 'fee-preview',    label: 'View Fee Structure',   path: '/admin/fees/preview',         permission: P.VIEW_FEES       },
+          { id: 'collect-fee',    label: 'Collect Fee',          path: '/admin/fees-payment/collect', permission: P.COLLECT_PAYMENT },
         ],
       },
 
@@ -310,11 +292,11 @@ export const sidebarMenuItems = [
         label:       'Notifications',
         icon:        Bell,
         hasDropdown: true,
-        permission:  'notification_view',           // ✅ frontend key (was notification.view)
+        permission:  P.NOTIFICATION_VIEW,
         subItems: [
-          { id: 'create-notification', label: 'Send Notification',  path: '/admin/notifications/create', permission: 'notification_send'   }, // ✅
-          { id: 'sent-notifications',  label: 'Sent Notifications', path: '/admin/notifications',        permission: 'notification_view'   }, // ✅
-          { id: 'my-notifications',    label: 'My Inbox',           path: '/admin/my-notifications',     permission: null                  },
+          { id: 'create-notification', label: 'Send Notification',  path: '/admin/notifications/create', permission: P.NOTIFICATION_SEND },
+          { id: 'sent-notifications',  label: 'Sent Notifications', path: '/admin/notifications',        permission: P.NOTIFICATION_VIEW },
+          { id: 'my-notifications',    label: 'My Inbox',           path: '/admin/my-notifications',     permission: null                },
         ],
       },
 
@@ -338,10 +320,10 @@ export const sidebarMenuItems = [
         label:       'Settings',
         icon:        Settings,
         hasDropdown: true,
-        permission:  'manage_permissions',
+        permission:  P.MANAGE_PERMISSIONS,
         subItems: [
-          { id: 'role-permissions', label: 'Role Permissions', path: '/admin/settings/role-permissions', permission: 'manage_permissions' },
-          { id: 'user-permissions', label: 'User Permissions', path: '/admin/settings/user-permissions', permission: 'manage_permissions' },
+          { id: 'role-permissions', label: 'Role Permissions', path: '/admin/settings/role-permissions', permission: P.MANAGE_PERMISSIONS },
+          { id: 'user-permissions', label: 'User Permissions', path: '/admin/settings/user-permissions', permission: P.MANAGE_PERMISSIONS },
         ],
       },
 

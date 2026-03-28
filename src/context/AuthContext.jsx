@@ -1,7 +1,7 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react'
 import { authService } from '../services/authService'
-import { mapPermissions } from '../config/permissionKeyMap'
+import { mapPermissions } from '../config/permissions.js'
    // ✅ mapping layer — converts backend keys → frontend keys
 
 const AuthContext = createContext(null)

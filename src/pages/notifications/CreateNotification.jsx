@@ -30,12 +30,13 @@ const Toast = ({ toast, onClose }) => {
   )
 }
 
-// ─── Target Types (removed individual & parent) ───────────────────────────────
+// ─── Target Types ─────────────────────────────────────────────────────────────
+// ✅ FIX: key changed from 'role' → 'role_based' to match backend expectation
 const TARGET_TYPES = [
-  { key: 'school_wide', label: 'School Wide', icon: Users, color: 'text-orange-500', bg: 'bg-orange-50 border-orange-300' },
-  { key: 'class', label: 'Class', icon: BookOpen, color: 'text-purple-500', bg: 'bg-purple-50 border-purple-300' },
+  { key: 'school_wide', label: 'School Wide',    icon: Users,    color: 'text-orange-500', bg: 'bg-orange-50 border-orange-300' },
+  { key: 'class',       label: 'Class',          icon: BookOpen, color: 'text-purple-500', bg: 'bg-purple-50 border-purple-300' },
   { key: 'class_section', label: 'Class + Section', icon: Layers, color: 'text-green-500', bg: 'bg-green-50 border-green-300' },
-  { key: 'role', label: 'Role Based', icon: Shield, color: 'text-gray-500', bg: 'bg-gray-50 border-gray-300' },
+  { key: 'role_based',  label: 'Role Based',     icon: Shield,   color: 'text-gray-500',   bg: 'bg-gray-50 border-gray-300'   },
 ]
 
 const ROLES = ['teacher', 'student', 'staff']
@@ -60,30 +61,29 @@ const SkeletonCreateForm = () => (
 const CreateNotification = () => {
   const navigate = useNavigate()
 
-  const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
+  const [title, setTitle]                   = useState('')
+  const [description, setDescription]       = useState('')
   const [selectedTargetType, setSelectedTargetType] = useState('school_wide')
-  const [targets, setTargets] = useState([])
-  const [selectedClass, setSelectedClass] = useState('')
+  const [targets, setTargets]               = useState([])
+  const [selectedClass, setSelectedClass]   = useState('')
   const [selectedSection, setSelectedSection] = useState('')
-  const [selectedRole, setSelectedRole] = useState('')
+  const [selectedRole, setSelectedRole]     = useState('')
 
-  const [classes, setClasses] = useState([])
-  const [sections, setSections] = useState([])
+  const [classes, setClasses]               = useState([])
+  const [sections, setSections]             = useState([])
   const [loadingClasses, setLoadingClasses] = useState(true)
   const [loadingSections, setLoadingSections] = useState(false)
 
   const [submitting, setSubmitting] = useState(false)
-  const [toast, setToast] = useState(null)
-  const [errors, setErrors] = useState({})
+  const [toast, setToast]           = useState(null)
+  const [errors, setErrors]         = useState({})
 
-  // Load classes from API
+  // Load classes
   useEffect(() => {
     const fetchClasses = async () => {
       try {
         setLoadingClasses(true)
         const res = await notificationService.getAllClasses()
-        // API: { success: true, data: [{ class_id, class_name }] }
         setClasses(res?.data || [])
       } catch (err) {
         console.error('Failed to load classes:', err)
@@ -102,12 +102,10 @@ const CreateNotification = () => {
       setSelectedSection('')
       return
     }
-
     const fetchSections = async () => {
       try {
         setLoadingSections(true)
         const res = await notificationService.getSectionsByClass(selectedClass)
-        // API: { success: true, data: [{ section_id, class_id, section_name, class_name }] }
         setSections(res?.data || [])
       } catch (err) {
         console.error('Failed to load sections:', err)
@@ -120,11 +118,12 @@ const CreateNotification = () => {
     fetchSections()
   }, [selectedClass])
 
-  // Reset class/section when target type changes
+  // Reset selectors on target type change
   useEffect(() => {
     setSelectedClass('')
     setSelectedSection('')
     setSelectedRole('')
+    setTargets([])
   }, [selectedTargetType])
 
   const validate = () => {
@@ -138,19 +137,28 @@ const CreateNotification = () => {
     return Object.keys(errs).length === 0
   }
 
+  // ✅ FIX: 'role_based' used in case and target_type value
   const buildTargetObj = () => {
     switch (selectedTargetType) {
       case 'school_wide':
         return { target_type: 'school_wide' }
+
       case 'class':
         if (!selectedClass) return null
         return { target_type: 'class', class_id: Number(selectedClass) }
+
       case 'class_section':
         if (!selectedClass || !selectedSection) return null
-        return { target_type: 'class_section', class_id: Number(selectedClass), section_id: Number(selectedSection) }
-      case 'role':
+        return {
+          target_type: 'class_section',
+          class_id: Number(selectedClass),
+          section_id: Number(selectedSection),
+        }
+
+      case 'role_based':
         if (!selectedRole) return null
-        return { target_type: 'role', role: selectedRole }
+        return { target_type: 'role_based', role: selectedRole }  // ✅ FIXED
+
       default:
         return null
     }
@@ -175,15 +183,16 @@ const CreateNotification = () => {
       const sec = sections.find(s => String(s.section_id) === String(selectedSection))
       label = `${cls?.class_name || selectedClass} - ${sec?.section_name || selectedSection}`
     }
-    if (selectedTargetType === 'role') {
+    // ✅ FIX: 'role_based' check
+    if (selectedTargetType === 'role_based') {
       label = selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1) + 's'
     }
 
     const duplicate = targets.find(t =>
       t.target_type === obj.target_type &&
-      t.class_id === obj.class_id &&
-      t.section_id === obj.section_id &&
-      t.role === obj.role
+      t.class_id    === obj.class_id    &&
+      t.section_id  === obj.section_id  &&
+      t.role        === obj.role
     )
     if (!duplicate) {
       setTargets(prev => [...prev, { ...obj, label }])
@@ -199,16 +208,17 @@ const CreateNotification = () => {
       ? targets.map(({ label, ...rest }) => rest)
       : [{ target_type: 'school_wide' }]
 
+    console.log('📤 Sending targets:', finalTargets) // debug
+
     setSubmitting(true)
     setErrors({})
 
     try {
       await notificationService.createNotification({
-        title: title.trim(),
+        title:       title.trim(),
         description: description.trim(),
-        targets: finalTargets,
+        targets:     finalTargets,
       })
-
       setToast({ type: 'success', message: 'Notification Sent Successfully!' })
       setTimeout(() => navigate('/admin/notifications'), 1800)
     } catch (err) {
@@ -352,8 +362,8 @@ const CreateNotification = () => {
                 </div>
               )}
 
-              {/* Role selector */}
-              {selectedTargetType === 'role' && (
+              {/* ✅ FIX: 'role_based' check */}
+              {selectedTargetType === 'role_based' && (
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">Select Role</label>
                   <div className="relative">

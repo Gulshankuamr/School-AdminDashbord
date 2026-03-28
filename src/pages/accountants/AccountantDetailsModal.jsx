@@ -119,7 +119,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
                 </div>
               )}
               {/* Status badge */}
-              <div className="mt-3">
+              {/* <div className="mt-3">
                 <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full border ${
                   a?.status === 1
                     ? 'bg-green-50 text-green-700 border-green-200'
@@ -128,7 +128,7 @@ function AccountantDetailsModal({ accountant: listAccountant, onClose, onDelete 
                   <span className={`w-2 h-2 rounded-full ${a?.status === 1 ? 'bg-green-500' : 'bg-red-400'}`}></span>
                   {a?.status === 1 ? 'Active' : 'Inactive'}
                 </span>
-              </div>
+              </div> */}
             </div>
 
             {/* Quick Info Grid - REMOVED ID CARD, ONLY NAME AND CONTACT */}

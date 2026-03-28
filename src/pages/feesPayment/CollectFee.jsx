@@ -182,9 +182,7 @@ const CollectFee = () => {
 
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <h2 className="font-bold text-gray-900 text-base">Recent Fee Transactions</h2>
-          <button className="flex items-center gap-2 text-sm font-semibold hover:opacity-80 transition-opacity" style={{ color: '#EA580C' }}>
-            <Download className="w-4 h-4" /> Download Report
-          </button>
+          
         </div>
 
         <div className="grid grid-cols-12 gap-3 px-6 py-3 bg-gray-50 border-b border-gray-100">

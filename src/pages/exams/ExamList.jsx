@@ -1,18 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as createExamService from '../../services/examService/createExamService';
-import * as examTypesService from '../../services/examService/examTypesService';
 import { toast } from 'react-hot-toast';
 
 const ExamList = () => {
   const navigate = useNavigate();
   const [exams, setExams] = useState([]);
-  const [examTypes, setExamTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState(null);
   const [editFormData, setEditFormData] = useState({
     exam_name: '',
-    exam_type_id: '',
     academic_year: '',
     start_date: '',
     end_date: '',
@@ -27,19 +24,12 @@ const ExamList = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [examsRes, typesRes] = await Promise.all([
-        createExamService.getAllExams(),
-        examTypesService.getAllExamTypes()
-      ]);
+      const examsRes = await createExamService.getAllExams();
 
       if (examsRes && examsRes.success) {
         setExams(examsRes.data || []);
       } else {
         toast.error(examsRes?.message || 'Failed to load exams');
-      }
-
-      if (typesRes && typesRes.success) {
-        setExamTypes(typesRes.data || []);
       }
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -53,7 +43,6 @@ const ExamList = () => {
     setEditingId(exam.exam_id);
     setEditFormData({
       exam_name: exam.exam_name || '',
-      exam_type_id: exam.exam_type_id || '',
       academic_year: exam.academic_year || '',
       start_date: exam.start_date ? exam.start_date.split('T')[0] : '',
       end_date: exam.end_date ? exam.end_date.split('T')[0] : '',
@@ -66,17 +55,13 @@ const ExamList = () => {
     setEditFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // ✅ FIXED: Using async handler with proper error handling and button type="button"
+  // ✅ FIXED: Correct examId passing and no exam_type_id
   const handleSave = async (examId) => {
     if (saving) return; // prevent double click
 
     // Validation
     if (!editFormData.exam_name || !editFormData.exam_name.trim()) {
       toast.error('Exam name is required');
-      return;
-    }
-    if (!editFormData.exam_type_id) {
-      toast.error('Exam type is required');
       return;
     }
     if (!editFormData.academic_year) {
@@ -100,9 +85,8 @@ const ExamList = () => {
       return;
     }
 
+    // ✅ Clean payload - NO exam_id here (service adds it)
     const payload = {
-      exam_id: examId,
-      exam_type_id: parseInt(editFormData.exam_type_id),
       exam_name: editFormData.exam_name.trim(),
       academic_year: editFormData.academic_year,
       start_date: editFormData.start_date,
@@ -110,11 +94,12 @@ const ExamList = () => {
       result_date: editFormData.result_date || null
     };
 
-    console.log('📤 Sending update payload:', payload);
+    console.log('📤 FIXED update payload:', payload);
 
     try {
       setSaving(true);
-      const response = await createExamService.updateExam(payload);
+      // ✅ CORRECT: Pass examId as first argument
+      const response = await createExamService.updateExam(examId, payload);
       console.log('📥 Update response:', response);
 
       if (response && response.success === true) {
@@ -183,11 +168,6 @@ const ExamList = () => {
     } catch {
       return '-';
     }
-  };
-
-  const getExamTypeName = (typeId) => {
-    const type = examTypes.find(t => t.exam_type_id === typeId);
-    return type ? type.type_name : 'N/A';
   };
 
   if (loading) {
@@ -266,7 +246,6 @@ const ExamList = () => {
                   <tr>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">SR NO</th>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">Exam Name</th>
-                    {/* <th className="p-4 text-left text-sm font-semibold text-gray-700">Exam Type</th> */}
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">Academic Year</th>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">Start Date</th>
                     <th className="p-4 text-left text-sm font-semibold text-gray-700">End Date</th>
@@ -293,30 +272,18 @@ const ExamList = () => {
                           </td>
                           <td className="p-4">
                             <select
-                              name="exam_type_id"
-                              value={editFormData.exam_type_id}
-                              onChange={handleEditChange}
-                              className="w-full border border-gray-300 rounded-lg p-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
-                            >
-                              <option value="">Select Type</option>
-                              {examTypes.map((type) => (
-                                <option key={type.exam_type_id} value={type.exam_type_id}>
-                                  {type.type_name}
-                                </option>
-                              ))}
-                            </select>
-                          </td>
-                          <td className="p-4">
-                            <select
                               name="academic_year"
                               value={editFormData.academic_year}
                               onChange={handleEditChange}
                               className="w-full border border-gray-300 rounded-lg p-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500"
                             >
                               <option value="">Select Year</option>
-                              <option value="2024-2025">2024-2025</option>
-                              <option value="2025-2026">2025-2026</option>
-                              <option value="2026-2027">2026-2027</option>
+                              <option value="2026-27">2026-27</option>
+                              <option value="2027-28">2027-28</option>
+                              <option value="2028-29">2028-29</option>
+                              <option value="2029-30">2029-30</option>
+                              <option value="2030-31">2030-31</option>
+                              <option value="2031-32">2031-32</option>
                             </select>
                           </td>
                           <td className="p-4">
@@ -405,7 +372,6 @@ const ExamList = () => {
                           <td className="p-4">
                             <div className="font-medium text-gray-900">{exam.exam_name}</div>
                           </td>
-                          {/* <td className="p-4 text-gray-600">{getExamTypeName(exam.exam_type_id)}</td> */}
                           <td className="p-4 text-gray-600">{exam.academic_year}</td>
                           <td className="p-4 text-gray-600">{formatDate(exam.start_date)}</td>
                           <td className="p-4 text-gray-600">{formatDate(exam.end_date)}</td>

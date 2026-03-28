@@ -1,7 +1,7 @@
 import { API_BASE_URL, getAuthToken } from '../api'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// markExameService — all exam-related API calls
+// markExameService — all exam-related API calls (FIXED)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const markExameService = {
@@ -9,8 +9,6 @@ const markExameService = {
   // ═══════════════════════════════════════════════════════════════════════════
   // 1. GET EXAMS LIST
   //    GET /api/schooladmin/getExams
-  //    Returns: exam_id, exam_name, weightage_percentage, term,
-  //             academic_year, start_date, end_date, status
   // ═══════════════════════════════════════════════════════════════════════════
   getExams: async () => {
     const token = getAuthToken()
@@ -28,10 +26,7 @@ const markExameService = {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 2. GET EXAM TIMETABLE
-  //    GET /api/schooladmin/getExamTimetable?exam_id=6&class_id=88&section_id=6
-  //    Returns: timetable_id, subject_id, subject_name, exam_date,
-  //             start_time, end_time, room_no, max_marks, min_passing_marks
-  //    NOTE: Returns [] when no timetable for given combination
+  //    GET /api/schooladmin/getExamTimetable?exam_id=&class_id=&section_id=
   // ═══════════════════════════════════════════════════════════════════════════
   getExamTimetable: async (examId, classId, sectionId) => {
     const token = getAuthToken()
@@ -55,7 +50,6 @@ const markExameService = {
   // ═══════════════════════════════════════════════════════════════════════════
   // 3. GET ALL CLASSES
   //    GET /api/schooladmin/getAllClasses  (fallback: getAllClassList)
-  //    Returns: class_id, class_name, class_code, status
   // ═══════════════════════════════════════════════════════════════════════════
   getAllClassList: async () => {
     const token = getAuthToken()
@@ -84,9 +78,7 @@ const markExameService = {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 4. GET ALL SECTIONS (by class_id)
-  //    GET /api/schooladmin/getAllSections?class_id=122
-  //    Returns: section_id, class_id, section_name, capacity,
-  //             current_students, display_name, full
+  //    GET /api/schooladmin/getAllSections?class_id=
   // ═══════════════════════════════════════════════════════════════════════════
   getAllSections: async (classId) => {
     const token = getAuthToken()
@@ -105,7 +97,6 @@ const markExameService = {
   // ═══════════════════════════════════════════════════════════════════════════
   // 5. GET ALL SUBJECTS
   //    GET /api/schooladmin/getAllSubjects
-  //    Returns: subject_id, subject_name, assessment_model, status
   // ═══════════════════════════════════════════════════════════════════════════
   getAllSubjects: async () => {
     const token = getAuthToken()
@@ -122,10 +113,8 @@ const markExameService = {
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // 6. ✅ GET STUDENTS BY CLASS + SECTION  ← CORRECT ENDPOINT
-  //    GET /api/schooladmin/getTotalStudentsListBySchoolId?class_id=133&section_id=150
-  //    Returns: user_id, name, student_id, class_id, section_id,
-  //             admission_no, roll_no, gender, dob, mobile_number, ...
+  // 6. GET STUDENTS BY CLASS + SECTION
+  //    GET /api/schooladmin/getTotalStudentsListBySchoolId?class_id=&section_id=
   // ═══════════════════════════════════════════════════════════════════════════
   getStudentsByClass: async (classId, sectionId) => {
     const token = getAuthToken()
@@ -152,15 +141,18 @@ const markExameService = {
   // ═══════════════════════════════════════════════════════════════════════════
   // 7. GET EXAM MARKS LIST (MarksList page)
   //    GET /api/schooladmin/getExamMarks?exam_id=&class_id=&section_id=&subject_id=
+  //    ✅ FIX: timetable_id + student_id bhi support karta hai
   // ═══════════════════════════════════════════════════════════════════════════
   getExamMarks: async (params = {}) => {
     const token = getAuthToken()
     if (!token) throw new Error('Token missing')
     const query = new URLSearchParams()
-    if (params.exam_id)    query.append('exam_id',    params.exam_id)
-    if (params.class_id)   query.append('class_id',   params.class_id)
-    if (params.section_id) query.append('section_id', params.section_id)
-    if (params.subject_id) query.append('subject_id', params.subject_id)
+    if (params.exam_id)      query.append('exam_id',      params.exam_id)
+    if (params.class_id)     query.append('class_id',     params.class_id)
+    if (params.section_id)   query.append('section_id',   params.section_id)
+    if (params.subject_id)   query.append('subject_id',   params.subject_id)
+    if (params.timetable_id) query.append('timetable_id', params.timetable_id)
+    if (params.student_id)   query.append('student_id',   params.student_id)
     const qs = query.toString()
     const response = await fetch(
       `${API_BASE_URL}/schooladmin/getExamMarks${qs ? `?${qs}` : ''}`,
@@ -198,6 +190,7 @@ const markExameService = {
 
   // ═══════════════════════════════════════════════════════════════════════════
   // 9. SAVE ALL MARKS (batch loop per student)
+  //    ✅ FIX: marks_obtained properly Number cast kiya
   // ═══════════════════════════════════════════════════════════════════════════
   saveAllMarks: async (studentsArray, timetableId) => {
     const token = getAuthToken()

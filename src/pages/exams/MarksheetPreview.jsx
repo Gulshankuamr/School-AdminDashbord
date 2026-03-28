@@ -12,17 +12,13 @@ const getGrade = (pct) => {
   if (pct >= 33) return "D";  return "E";
 };
 
-// Color per grade — matches GFA chart colors (dark grey T1, red T2)
-const BAR_COLORS_T1 = [
-  "#374151","#374151","#374151","#374151","#374151",
-  "#374151","#374151","#374151","#374151","#374151","#374151",
-];
-const BAR_COLORS_T2 = [
-  "#b91c1c","#b91c1c","#b91c1c","#b91c1c","#b91c1c",
-  "#b91c1c","#b91c1c","#b91c1c","#b91c1c","#b91c1c","#b91c1c",
-];
+const getSubjectName = (sub) => {
+  if (!sub) return "SUBJECT";
+  if (typeof sub === "string") return sub.toUpperCase();
+  if (typeof sub === "object") return (sub.subject_name || sub.name || "SUBJECT").toUpperCase();
+  return "SUBJECT";
+};
 
-// Color by percentage for progress bars
 const pctColor = (pct) => {
   if (pct >= 91) return "#16a34a";
   if (pct >= 81) return "#2563eb";
@@ -34,10 +30,63 @@ const pctColor = (pct) => {
 };
 
 // ═══════════════════════════════════════
-//  PARSE — new nested API structure
+//  PARSE — handles new API structure:
+//  scholastic.term1.subject_totals / scholastic.term2.subject_totals
 // ═══════════════════════════════════════
 const parseSubjects = (scholastic) => {
   if (!scholastic) return [];
+
+  // ✅ NEW API FORMAT: { term1: { subject_totals: { "120": { subject_name, total_obtained, per_exam, ... } } }, term2: {...} }
+  if (scholastic.term1 && scholastic.term1.subject_totals) {
+    const term1Subs = scholastic.term1.subject_totals || {};
+    const term2Subs = scholastic.term2?.subject_totals || {};
+
+    // Build a unified subject list from both terms
+    const allSubjectIds = new Set([
+      ...Object.keys(term1Subs),
+      ...Object.keys(term2Subs),
+    ]);
+
+    return Array.from(allSubjectIds).map((id) => {
+      const s1 = term1Subs[id] || {};
+      const s2 = term2Subs[id] || {};
+
+      const t1 = safeNum(s1.total_obtained) ?? 0;
+      const t2 = safeNum(s2.total_obtained) ?? 0;
+
+      // per_exam is an object keyed by exam name: { "Unit Test 2": { marks_obtained, max_marks } }
+      const t1ExamEntries = Object.entries(s1.per_exam || {});
+      const t2ExamEntries = Object.entries(s2.per_exam || {});
+
+      const perTest1   = t1ExamEntries[0]?.[1]?.marks_obtained ?? "—";
+      const noteBook1  = t1ExamEntries[1]?.[1]?.marks_obtained ?? "—";
+      const subEnrich1 = t1ExamEntries[2]?.[1]?.marks_obtained ?? "—";
+      const halfYearly = t1ExamEntries[3]?.[1]?.marks_obtained ?? (t1ExamEntries.length === 1 ? t1ExamEntries[0]?.[1]?.marks_obtained : "—");
+
+      const perTest2   = t2ExamEntries[0]?.[1]?.marks_obtained ?? "—";
+      const noteBook2  = t2ExamEntries[1]?.[1]?.marks_obtained ?? "—";
+      const subEnrich2 = t2ExamEntries[2]?.[1]?.marks_obtained ?? "—";
+      const annual     = t2ExamEntries[3]?.[1]?.marks_obtained ?? (t2ExamEntries.length === 1 ? t2ExamEntries[0]?.[1]?.marks_obtained : "—");
+
+      // overall: if both terms exist, average; if only term1, use term1
+      const overall = t2 > 0 ? Math.round((t1 + t2) / 2) : t1;
+
+      return {
+        subject: getSubjectName(s1.subject_name || s2.subject_name || id),
+        perTest1, noteBook1, subEnrich1, halfYearly,
+        term1Total: t1, gp1: getGrade(t1),
+        perTest2, noteBook2, subEnrich2, annual,
+        term2Total: t2, gp2: getGrade(t2),
+        overall,
+        grade: getGrade(overall),
+        term1_exams: t1ExamEntries.map(([name, e]) => ({ name, marks: e.marks_obtained ?? 0, max_marks: e.max_marks ?? 100 })),
+        term2_exams: t2ExamEntries.map(([name, e]) => ({ name, marks: e.marks_obtained ?? 0, max_marks: e.max_marks ?? 100 })),
+        isNew: false,
+      };
+    });
+  }
+
+  // ✅ FLAT ARRAY FORMAT: [{ subject_name, total1, total2, overall, grade, fa1, fa2, sa1, fa3, fa4, sa2 }]
   if (Array.isArray(scholastic)) {
     return scholastic.map(r => {
       const t1 = safeNum(r.total1 ?? r.term1 ?? r.fa1) ?? 0;
@@ -45,7 +94,7 @@ const parseSubjects = (scholastic) => {
       const overall = safeNum(r.overall) ?? Math.round((t1 + t2) / 2);
       const grade = r.grade || getGrade(overall);
       return {
-        subject: (r.subject_name || r.subject || "Subject").toUpperCase(),
+        subject: getSubjectName(r.subject_name || r.subject),
         perTest1: safeNum(r.fa1) ?? "—", noteBook1: safeNum(r.fa2) ?? "—",
         subEnrich1: safeNum(r.sa1) ?? "—", halfYearly: "—",
         term1Total: t1, gp1: grade,
@@ -58,14 +107,16 @@ const parseSubjects = (scholastic) => {
     });
   }
 
+  // ✅ NESTED OBJECT FORMAT: { term1: { SubjectName: { exams: {...}, total } }, term2: {...}, final: {...} }
   const { term1 = {}, term2 = {}, final = {} } = scholastic;
+
   if (Array.isArray(term1)) {
     return term1.map(r => {
       const t1 = safeNum(r.total1 ?? 0) ?? 0;
       const t2 = safeNum(r.total2 ?? 0) ?? 0;
       const overall = safeNum(r.overall) ?? Math.round((t1 + t2) / 2);
       return {
-        subject: (r.subject_name || r.subject || "Subject").toUpperCase(),
+        subject: getSubjectName(r.subject_name || r.subject),
         perTest1: "—", noteBook1: "—", subEnrich1: "—", halfYearly: "—",
         term1Total: t1, gp1: r.grade || getGrade(overall),
         perTest2: "—", noteBook2: "—", subEnrich2: "—", annual: "—",
@@ -76,7 +127,6 @@ const parseSubjects = (scholastic) => {
     });
   }
 
-  // NEW nested: term1/term2/final object
   const names = new Set([...Object.keys(term1), ...Object.keys(term2), ...Object.keys(final)]);
   return Array.from(names).map(sub => {
     const t1 = term1[sub] || {};
@@ -98,7 +148,6 @@ const parseSubjects = (scholastic) => {
     const finMark = safeNum(fin.marks) ?? 0;
     const grade   = fin.grade || getGrade(finPct || finMark);
 
-    // Map exams to GFA columns (Per Test, Note Book, Sub Enrichment, Half Yearly)
     const perTest1    = t1Exams[0]?.marks ?? "—";
     const noteBook1   = t1Exams[1]?.marks ?? "—";
     const subEnrich1  = t1Exams[2]?.marks ?? "—";
@@ -109,7 +158,7 @@ const parseSubjects = (scholastic) => {
     const annual      = t2Exams[3]?.marks ?? (t2Exams.length === 1 ? t2Exams[0]?.marks : "—");
 
     return {
-      subject: sub.toUpperCase(),
+      subject: getSubjectName(sub),
       perTest1, noteBook1, subEnrich1, halfYearly,
       term1Total: t1Total, gp1: grade,
       perTest2, noteBook2, subEnrich2, annual,
@@ -123,7 +172,7 @@ const parseSubjects = (scholastic) => {
 };
 
 // ═══════════════════════════════════════
-//  CUSTOM BAR CHART (pure SVG — no recharts, pixel-perfect like GFA)
+//  CUSTOM BAR CHART
 // ═══════════════════════════════════════
 const GFABarChart = ({ subjects }) => {
   if (!subjects || subjects.length === 0) return null;
@@ -136,7 +185,6 @@ const GFABarChart = ({ subjects }) => {
   const maxVal = 100;
   const yLines = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
-  // Each subject has T1 and T2 bars → 2 bars per subject + gap
   const groupCount = subjects.length;
   const groupW = chartW / groupCount;
   const barW = Math.min(groupW * 0.35, 14);
@@ -144,23 +192,8 @@ const GFABarChart = ({ subjects }) => {
 
   const yScale = (val) => chartH - (val / maxVal) * chartH;
 
-  // X-axis labels — "ENG(T-1)" style
-  const xLabels = subjects.flatMap((s, i) => {
-    const shortName = s.subject.length > 4 ? s.subject.slice(0, 4) : s.subject;
-    const gx = PAD_LEFT + i * groupW + groupW / 2;
-    return [
-      { label: `${shortName}(T-1)`, x: gx - barW / 2 - barGap / 2 },
-      { label: `${shortName}(T-2)`, x: gx + barW / 2 + barGap / 2 },
-    ];
-  });
-
   return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      width="100%"
-      style={{ display: "block", overflow: "visible" }}
-    >
-      {/* Y grid lines */}
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", overflow: "visible" }}>
       {yLines.map(y => {
         const yPos = PAD_TOP + yScale(y);
         return (
@@ -172,10 +205,8 @@ const GFABarChart = ({ subjects }) => {
         );
       })}
 
-      {/* Y axis line */}
       <line x1={PAD_LEFT} x2={PAD_LEFT} y1={PAD_TOP} y2={PAD_TOP + chartH} stroke="#666" strokeWidth={1.2} />
 
-      {/* Bars */}
       {subjects.map((s, i) => {
         const gx = PAD_LEFT + i * groupW + groupW / 2;
         const t1 = Math.max(0, Math.min(100, safeNum(s.term1Total) ?? safeNum(s.term1) ?? 0));
@@ -184,41 +215,24 @@ const GFABarChart = ({ subjects }) => {
         const t2H = (t2 / maxVal) * chartH;
         const t1x = gx - barW - barGap / 2;
         const t2x = gx + barGap / 2;
+        const shortName = s.subject.length > 4 ? s.subject.slice(0, 4) : s.subject;
 
         return (
           <g key={i}>
-            {/* T1 bar — dark grey */}
-            <rect
-              x={t1x} y={PAD_TOP + chartH - t1H}
-              width={barW} height={t1H}
-              fill="#374151" rx={1}
-            />
-            {/* T2 bar — red */}
-            <rect
-              x={t2x} y={PAD_TOP + chartH - t2H}
-              width={barW} height={t2H}
-              fill="#b91c1c" rx={1}
-            />
-            {/* X labels — rotated like GFA */}
-            <text
-              x={t1x + barW / 2} y={PAD_TOP + chartH + 8}
-              fontSize={5.5} textAnchor="start" fill="#374151"
-              transform={`rotate(-45, ${t1x + barW / 2}, ${PAD_TOP + chartH + 8})`}
-            >
-              {s.subject.length > 4 ? s.subject.slice(0, 4) : s.subject}(T-1)
+            <rect x={t1x} y={PAD_TOP + chartH - t1H} width={barW} height={t1H} fill="#374151" rx={1} />
+            <rect x={t2x} y={PAD_TOP + chartH - t2H} width={barW} height={t2H} fill="#b91c1c" rx={1} />
+            <text x={t1x + barW / 2} y={PAD_TOP + chartH + 8} fontSize={5.5} textAnchor="start" fill="#374151"
+              transform={`rotate(-45, ${t1x + barW / 2}, ${PAD_TOP + chartH + 8})`}>
+              {shortName}(T-1)
             </text>
-            <text
-              x={t2x + barW / 2} y={PAD_TOP + chartH + 8}
-              fontSize={5.5} textAnchor="start" fill="#b91c1c"
-              transform={`rotate(-45, ${t2x + barW / 2}, ${PAD_TOP + chartH + 8})`}
-            >
-              {s.subject.length > 4 ? s.subject.slice(0, 4) : s.subject}(T-2)
+            <text x={t2x + barW / 2} y={PAD_TOP + chartH + 8} fontSize={5.5} textAnchor="start" fill="#b91c1c"
+              transform={`rotate(-45, ${t2x + barW / 2}, ${PAD_TOP + chartH + 8})`}>
+              {shortName}(T-2)
             </text>
           </g>
         );
       })}
 
-      {/* Legend */}
       <rect x={PAD_LEFT} y={H - 10} width={10} height={7} fill="#374151" rx={1}/>
       <text x={PAD_LEFT + 13} y={H - 4} fontSize={7} fill="#374151">Term-1</text>
       <rect x={PAD_LEFT + 55} y={H - 10} width={10} height={7} fill="#b91c1c" rx={1}/>
@@ -228,7 +242,7 @@ const GFABarChart = ({ subjects }) => {
 };
 
 // ═══════════════════════════════════════
-//  PRINTABLE CHART PAGE — GOLDEN FUTURE ACADEMY EXACT FORMAT
+//  PRINTABLE CHART PAGE
 // ═══════════════════════════════════════
 export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
   if (!data) return null;
@@ -237,24 +251,32 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
     student_info = {}, attendance = {},
     scholastic, co_scholastic,
     cgpa, overall_percentage,
+    academic_year,              // ✅ FIX: academic_year is top-level in API response
   } = data;
 
   const subjects = useMemo(() => parseSubjects(scholastic), [scholastic]);
 
+  // ✅ FIX: co_scholastic term keys are subject IDs (numbers), values are { subject_id, subject_name, grade }
   const coRows = useMemo(() => {
     if (!co_scholastic) return [];
-    const t1 = co_scholastic.term1 || {}, t2 = co_scholastic.term2 || {};
+    const t1 = co_scholastic.term1 || {};
+    const t2 = co_scholastic.term2 || {};
     const acts = new Set([...Object.keys(t1), ...Object.keys(t2)]);
-    return Array.from(acts).map(a => ({ activity: a, term1: t1[a] || "—", term2: t2[a] || "—" }));
+    return Array.from(acts).map(a => ({
+      activity: t1[a]?.subject_name || t2[a]?.subject_name || a,
+      term1: typeof t1[a] === "object" ? (t1[a]?.grade || "—") : (t1[a] || "—"),
+      term2: typeof t2[a] === "object" ? (t2[a]?.grade || "—") : (t2[a] || "—"),
+    }));
   }, [co_scholastic]);
 
   const isPassed = overall_percentage != null && Number(overall_percentage) >= 33;
 
   const totalT1 = subjects.reduce((a, s) => a + (safeNum(s.term1Total) ?? 0), 0);
   const totalT2 = subjects.reduce((a, s) => a + (safeNum(s.term2Total) ?? 0), 0);
-  const totalObtained = subjects.reduce((a, s) => a + (safeNum(s.finalMark ?? s.overall) ?? 0), 0);
-  const totalMax = subjects.length * 100 * 2; // 100 per term x 2 terms
-  const overallGrade = cgpa || getGrade(Number(overall_percentage) || 0);
+  const totalMax = subjects.length * 100 * 2;
+
+  // ✅ FIX: cgpa can be "0.0" string — only show it if > 0, else compute from percentage
+  const overallGrade = (cgpa && Number(cgpa) > 0) ? cgpa : getGrade(Number(overall_percentage) || 0);
 
   const bc = "1px solid #ccc";
   const tdS = (x = {}) => ({
@@ -267,7 +289,6 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
     verticalAlign: "middle", ...x,
   });
 
-  // Split co-scholastic into two halves
   const half1 = coRows.slice(0, Math.ceil(coRows.length / 2));
   const half2 = coRows.slice(Math.ceil(coRows.length / 2));
 
@@ -283,13 +304,11 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
         padding: "5mm 7mm",
         color: "#000",
         pageBreakBefore: "always",
-        // GFA watermark pattern
         backgroundImage: "repeating-linear-gradient(45deg,rgba(185,28,28,0.018) 0px,rgba(185,28,28,0.018) 1px,transparent 1px,transparent 10px)",
       }}
     >
       {/* ══ SCHOOL HEADER ══ */}
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        {/* Logo */}
         <div style={{
           width: 54, height: 54, borderRadius: "50%", flexShrink: 0,
           border: "3px solid #b91c1c",
@@ -298,11 +317,10 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
           boxShadow: "0 2px 6px rgba(185,28,28,0.35)",
         }}>
           <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0112 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z" />
           </svg>
         </div>
 
-        {/* School name + details */}
         <div style={{ flex: 1, textAlign: "center" }}>
           <div style={{
             fontSize: 22, fontWeight: 900, color: "#b91c1c",
@@ -319,7 +337,6 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
           </div>
         </div>
 
-        {/* Book icon right */}
         <div style={{ width: 54, height: 54, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <svg width="46" height="46" fill="none" viewBox="0 0 24 24" stroke="#b91c1c" strokeWidth={1.1}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
@@ -336,7 +353,8 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
           borderTop: "2px solid #b91c1c", borderBottom: "2px solid #b91c1c",
           padding: "3px 20px",
         }}>
-          PROGRESS REPORT • {student_info?.academic_year || "2024-2025"}
+          {/* ✅ FIX: academic_year is top-level in API, not inside student_info */}
+          PROGRESS REPORT • {academic_year || student_info?.academic_year || "2024-2025"}
         </div>
       </div>
 
@@ -350,7 +368,9 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
             ["Mother's Name", student_info?.mother_name],
             ["Roll No", student_info?.roll_no ?? "—"],
             ["Father's Name", student_info?.father_name],
-            ["D.O.B.", student_info?.date_of_birth ?? student_info?.dob],
+            ["D.O.B.", student_info?.dob
+              ? new Date(student_info.dob).toLocaleDateString("en-IN")
+              : student_info?.date_of_birth ?? "—"],
             ["Admission No.", student_info?.admission_no],
           ].map(([lbl, val]) => (
             <div key={lbl} style={{ display: "flex", gap: 4 }}>
@@ -374,14 +394,12 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
                 <th colSpan={6} style={thS("#7f1d1d")}>Term-2 (100 marks)</th>
               </tr>
               <tr>
-                {/* T1 columns */}
                 <th style={thS("#4b5563", { fontSize: 7 })}>Per Test<br/>(20)</th>
                 <th style={thS("#4b5563", { fontSize: 7 })}>Note Book<br/>CW/HW (20)</th>
                 <th style={thS("#4b5563", { fontSize: 7 })}>Sub<br/>Enrichment (10)</th>
                 <th style={thS("#4b5563", { fontSize: 7 })}>Half Yearly<br/>Exam (50)</th>
                 <th style={thS("#374151", { fontSize: 7 })}>Marks<br/>Obtained (100)</th>
                 <th style={thS("#374151", { fontSize: 7 })}>GP</th>
-                {/* T2 columns */}
                 <th style={thS("#991b1b", { fontSize: 7 })}>Per Test<br/>(20)</th>
                 <th style={thS("#991b1b", { fontSize: 7 })}>Note Book<br/>CW/HW (20)</th>
                 <th style={thS("#991b1b", { fontSize: 7 })}>Sub<br/>Enrichment (10)</th>
@@ -408,7 +426,6 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
                   <td style={tdS({ textAlign: "center", fontWeight: 900, color: "#b91c1c", fontSize: 8 })}>{row.gp2}</td>
                 </tr>
               ))}
-              {/* Totals row */}
               <tr style={{ background: "#f0f4ff", fontWeight: 700 }}>
                 <td style={tdS({ fontWeight: 800, textAlign: "center" })}>Total</td>
                 <td colSpan={3} style={tdS({ textAlign: "center" })}></td>
@@ -423,7 +440,6 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
             </tbody>
           </table>
 
-          {/* Summary bar */}
           <div style={{
             border: bc, borderTop: "none", background: "#fafafa",
             padding: "4px 8px", fontSize: 8, marginBottom: 6,
@@ -435,10 +451,10 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
             <span>Total Grade : <b style={{ color: "#374151" }}>{overallGrade}</b></span>
           </div>
 
-          {/* Remarks + Attendance row */}
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5, fontSize: 8 }}>
             <span><b>Remarks :</b> {isPassed ? "Excellent" : "Needs Improvement"}</span>
-            <span><b>Attendance :</b> {attendance?.total_attendance ?? "—"}/{attendance?.total_working_days ?? "—"}</span>
+            {/* ✅ FIX: API uses present_days not total_attendance */}
+            <span><b>Attendance :</b> {attendance?.present_days ?? "—"}/{attendance?.total_working_days ?? "—"}</span>
             <span><b>Rank :</b> —</span>
           </div>
         </>
@@ -446,7 +462,7 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
         <div style={{ border: bc, padding: 12, textAlign: "center", color: "#aaa", fontSize: 9, marginBottom: 6 }}>No scholastic records.</div>
       )}
 
-      {/* ══ BAR CHART — GFA STYLE (SVG tower bars) ══ */}
+      {/* ══ BAR CHART ══ */}
       {subjects.length > 0 && (
         <div style={{ border: bc, borderRadius: 3, padding: "6px 8px 2px", marginBottom: 6, background: "#fafafa" }}>
           <GFABarChart subjects={subjects} />
@@ -455,7 +471,6 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
 
       {/* ══ CO-SCHOLASTIC + GRADING SCALE ══ */}
       <div style={{ display: "flex", gap: 8, marginBottom: 6, alignItems: "flex-start" }}>
-        {/* Left co-scholastic */}
         {(half1.length > 0 || half2.length > 0) && (
           <>
             <div style={{ flex: 1 }}>
@@ -501,7 +516,6 @@ export const PrintableChartPage = React.forwardRef(({ data, school }, ref) => {
           </>
         )}
 
-        {/* Grading scale (right side) */}
         <div style={{ minWidth: 90 }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 8 }}>
             <tbody>

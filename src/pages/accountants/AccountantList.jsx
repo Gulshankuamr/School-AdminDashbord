@@ -262,7 +262,7 @@ function AccountantList() {
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Qualification</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Experience</th>
                       <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Mobile</th>
-                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                      {/* <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th> */}
                       <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                     </tr>
                   </thead>
@@ -331,7 +331,7 @@ function AccountantList() {
                         </td>
 
                         {/* Status */}
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        {/* <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                             accountant.status === 1
                               ? 'bg-green-50 text-green-700 border border-green-200'
@@ -340,7 +340,7 @@ function AccountantList() {
                             <span className={`w-2 h-2 rounded-full ${accountant.status === 1 ? 'bg-green-500' : 'bg-red-400'}`}></span>
                             {accountant.status === 1 ? 'Active' : 'Inactive'}
                           </span>
-                        </td>
+                        </td> */}
 
                         {/* Actions */}
                         <td className="px-6 py-4 whitespace-nowrap">

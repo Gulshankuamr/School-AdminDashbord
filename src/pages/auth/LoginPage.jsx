@@ -273,32 +273,10 @@ function LoginPage() {
                   </form>
 
                   {/* API Testing Notice */}
-                  <div className="mt-6 p-4 bg-amber-500/10 backdrop-blur-xl border border-amber-500/20 rounded-xl">
-                    <div className="flex items-start gap-2">
-                      <span className="text-2xl">⚡</span>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-amber-200 mb-1">
-                          Admin Access Only
-                        </p>
-                        <p className="text-xs text-amber-100/80">
-                          Only admin users can login to this dashboard. Other roles will be denied access.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+               
 
                   {/* Test Credentials */}
-                  <details className="mt-4">
-                    <summary className="text-xs text-blue-200 cursor-pointer hover:text-white transition-colors select-none">
-                      View test credentials (for development)
-                    </summary>
-                    <div className="mt-3 space-y-2">
-                      <div className="text-xs p-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg">
-                        <span className="text-blue-200">Admin:</span>{' '}
-                        <span className="text-white font-mono">avi@abc.com / Avdi@123</span>
-                      </div>
-                    </div>
-                  </details>
+              
                 </div>
               </div>
             </motion.div>

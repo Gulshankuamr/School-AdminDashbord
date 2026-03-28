@@ -175,7 +175,7 @@ function TeacherList() {
                     <th className="px-5 py-3.5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Qualification</th>
                     <th className="px-5 py-3.5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Designation</th>
                     <th className="px-5 py-3.5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Experience</th>
-                    <th className="px-5 py-3.5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Status</th>
+                    {/* <th className="px-5 py-3.5 text-left text-xs font-black text-gray-500 uppercase tracking-wider">Status</th> */}
                     <th className="px-5 py-3.5 text-center text-xs font-black text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -230,7 +230,7 @@ function TeacherList() {
                           {teacher.experience_years != null ? `${teacher.experience_years} yr${teacher.experience_years !== 1 ? 's' : ''}` : '—'}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5 whitespace-nowrap">
+                      {/* <td className="px-5 py-3.5 whitespace-nowrap">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border ${
                           teacher.status === 1
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-100'
@@ -239,7 +239,7 @@ function TeacherList() {
                           <span className={`w-1.5 h-1.5 rounded-full ${teacher.status === 1 ? 'bg-emerald-500' : 'bg-red-400'}`}></span>
                           {teacher.status === 1 ? 'Active' : 'Inactive'}
                         </span>
-                      </td>
+                      </td> */}
                       <td className="px-5 py-3.5 whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
                           <button onClick={() => handleViewTeacher(teacher)}

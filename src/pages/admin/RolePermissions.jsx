@@ -15,7 +15,7 @@ const ROLES = [
   { id: 'teacher',    label: 'Teacher',    icon: BookOpen,      color: 'blue',   activeBg: 'bg-blue-600',    activeRing: 'ring-blue-300',   gradient: 'from-blue-500 to-blue-700'    },
   { id: 'student',    label: 'Student',    icon: GraduationCap, color: 'emerald',activeBg: 'bg-emerald-600', activeRing: 'ring-emerald-300', gradient: 'from-emerald-500 to-emerald-700'},
   { id: 'accountant', label: 'Accountant', icon: Wallet,        color: 'violet', activeBg: 'bg-violet-600',  activeRing: 'ring-violet-300',  gradient: 'from-violet-500 to-violet-700' },
-  { id: 'admin',      label: 'Admin',      icon: UserCog,       color: 'rose',   activeBg: 'bg-rose-600',    activeRing: 'ring-rose-300',    gradient: 'from-rose-500 to-rose-700'    },
+  // { id: 'admin',      label: 'Admin',      icon: UserCog,       color: 'rose',   activeBg: 'bg-rose-600',    activeRing: 'ring-rose-300',    gradient: 'from-rose-500 to-rose-700'    },
 ]
 
 // ── Section Meta — covers all keys returned by API (all lowercase) ──
@@ -26,7 +26,7 @@ const SECTION_META = {
   teacher:      { icon: BookOpen,       color: 'indigo'  },
   accountant:   { icon: Wallet,         color: 'violet'  },
   accountants:  { icon: Wallet,         color: 'violet'  },
-  admin:        { icon: UserCog,        color: 'rose'    },
+  // admin:        { icon: UserCog,        color: 'rose'    },
   fees:         { icon: DollarSign,     color: 'emerald' },
   payments:     { icon: CreditCard,     color: 'emerald' },
   attendance:   { icon: ClipboardCheck, color: 'orange'  },

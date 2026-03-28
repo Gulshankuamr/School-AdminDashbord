@@ -9,7 +9,7 @@ import {
 import { studentService } from '../../services/studentService/studentService'
 import ImageModal from '../../components/ImageModal'
 
-// ─── Fee head id parser ────────────────────────────────────────────────────
+// ─── Fee heads parser (supports both name arrays AND id arrays) ────────────
 function parseFeeHeadIds(raw) {
   if (!raw) return []
   if (Array.isArray(raw)) {
@@ -32,6 +32,12 @@ function parseFeeHeadIds(raw) {
   }
   const n = Number(raw)
   return n > 0 ? [n] : []
+}
+
+// ─── Title-case helper ─────────────────────────────────────────────────────
+function toTitleCase(str) {
+  if (!str) return str
+  return String(str).toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 }
 
 // ─── Main component ────────────────────────────────────────────────────────
@@ -65,12 +71,27 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
     run()
   }, [listStudent?.student_id])
 
+  // ✅ FIXED: Use fee_heads (names array from API) with fallback to selected_fee_heads (ID-based)
   const feeHeadsList = (() => {
+    // Priority 1: fee_heads — array of name strings (what the API actually returns)
+    const directNames = student?.fee_heads
+    if (Array.isArray(directNames) && directNames.length > 0) {
+      return directNames.map((name, index) => ({
+        id: index + 1,
+        name: typeof name === 'object' ? (name.head_name || name.fee_head_name || name.name || `Fee #${index + 1}`) : String(name),
+      }))
+    }
+
+    // Priority 2: selected_fee_heads — ID-based (legacy / future backend format)
     const ids = parseFeeHeadIds(student?.selected_fee_heads)
-    return ids.map(id => {
-      const match = allFeeHeads.find(fh => Number(fh.fee_head_id) === id)
-      return { id, name: match?.head_name || match?.fee_head_name || null }
-    })
+    if (ids.length > 0) {
+      return ids.map(id => {
+        const match = allFeeHeads.find(fh => Number(fh.fee_head_id) === id)
+        return { id, name: match?.head_name || match?.fee_head_name || null }
+      })
+    }
+
+    return []
   })()
 
   const handleEdit = () => {
@@ -133,7 +154,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
           {/* ── PROFILE BANNER ── */}
           <div className="flex items-start gap-5 pb-5 border-b border-gray-100">
 
-            {/* Photo + Status */}
+            {/* Photo */}
             <div className="flex-shrink-0 text-center">
               {student?.student_photo_url ? (
                 <img
@@ -149,16 +170,6 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                   </span>
                 </div>
               )}
-              <div className="mt-2">
-                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                  student?.status === 1
-                    ? 'bg-green-50 text-green-700 border-green-200'
-                    : 'bg-red-50 text-red-600 border-red-200'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${student?.status === 1 ? 'bg-green-500' : 'bg-red-400'}`} />
-                  {student?.status === 1 ? 'Active' : 'Inactive'}
-                </span>
-              </div>
             </div>
 
             {/* Core Info Grid */}
@@ -167,7 +178,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
               <InfoCell label="Full Name" value={student?.name} />
 
               <InfoCell label="Admission No">
-                {student?.admission_no
+                {student?.admission_no && student.admission_no !== 'null'
                   ? <span className="inline-flex items-center gap-1 text-sm font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
                       <IdCard className="w-3 h-3" /> {student.admission_no}
                     </span>
@@ -201,12 +212,9 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
 
               <InfoCell label="Class & Section" value={classSection || null} />
 
-              {/* ── Roll Number — no # icon, plain clean display ── */}
               <InfoCell label="Roll Number">
                 {student?.roll_no
-                  ? <span className="text-sm font-bold text-gray-900">
-                      {student.roll_no}
-                    </span>
+                  ? <span className="text-sm font-bold text-gray-900">{student.roll_no}</span>
                   : <span className="text-sm text-gray-400 italic">Not assigned</span>
                 }
               </InfoCell>
@@ -264,7 +272,6 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                   </span>
                 </InfoCell>
               )}
-              {/* Section — show only section_name (no display_name) */}
               {student?.section_name && (
                 <InfoCell label="Section">
                   <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
@@ -331,8 +338,9 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
                 )}
                 {student?.city && (
                   <InfoCell label="City">
+                    {/* ✅ FIXED: ALL CAPS city converted to Title Case */}
                     <span className="inline-flex items-center gap-1 text-sm font-semibold text-gray-900">
-                      <Building2 className="w-3.5 h-3.5 text-gray-400" /> {student.city}
+                      <Building2 className="w-3.5 h-3.5 text-gray-400" /> {toTitleCase(student.city)}
                     </span>
                   </InfoCell>
                 )}
@@ -399,7 +407,7 @@ function StudentDetailsModal({ student: listStudent, onClose, onDelete }) {
             </div>
           )}
 
-          {/* ── FEE HEADS ── */}
+          {/* ── FEE HEADS ── ✅ FIXED: now reads student.fee_heads correctly */}
           {feeHeadsList.length > 0 && (
             <div className="p-3 bg-yellow-50 border border-yellow-100 rounded-xl">
               <p className="text-xs font-bold text-yellow-700 uppercase tracking-wide mb-2">

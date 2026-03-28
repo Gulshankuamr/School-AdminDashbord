@@ -1,26 +1,31 @@
 // src/components/ProtectedRoute.jsx
+//
+// ✅ FINAL STABLE VERSION
+// Supports string and array permissions.
+// Array = OR logic: any one match grants access.
+// school_admin bypasses all permission checks inside hasPermission() (AuthContext).
+//
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 /**
- * ProtectedRoute
+ * checkPermission — internal helper
  *
- * Props:
- *   allowedRoles  {string[]}  – checks user.role,     e.g. ['school_admin']
- *   permission    {string}    – checks permissions[], e.g. 'view_students'
- *
- * Check order:
- *   1. isLoading     → spinner (avoids flash of redirect)
- *   2. !isLoggedIn   → /login
- *   3. role mismatch → /unauthorized
- *   4. perm missing  → /unauthorized
- *   5. all pass      → render children
+ * @param {Function} hasPermission  - from useAuth()
+ * @param {string | string[]} req   - required permission(s)
+ * @returns {boolean}
  */
+const checkPermission = (hasPermission, req) => {
+  if (!req) return true
+  if (Array.isArray(req)) return req.some(p => hasPermission(p))
+  return hasPermission(req)
+}
+
 function ProtectedRoute({ children, permission, allowedRoles }) {
   const { isLoggedIn, isLoading, user, hasPermission } = useAuth()
   const location = useLocation()
 
-  // 1. Still reading localStorage
+  // 1. Auth still loading — spinner prevents flash redirect
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -29,24 +34,22 @@ function ProtectedRoute({ children, permission, allowedRoles }) {
     )
   }
 
-  // 2. Not logged in → go to login, remember where user was trying to go
+  // 2. Not logged in
   if (!isLoggedIn) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  // 3. Role check
-  //    ✅ Backend sends role = "school_admin" — NOT "admin"
-  //    Old code had ['admin'] which NEVER matched → always unauthorized
+  // 3. Role check — backend sends role = "school_admin" (exact string)
   if (allowedRoles?.length && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/unauthorized" replace />
   }
 
-  // 4. Permission check
-  //    school_admin bypasses this automatically inside hasPermission()
-  if (permission && !hasPermission(permission)) {
+  // 4. Permission check — string OR array, school_admin always passes
+  if (permission && !checkPermission(hasPermission, permission)) {
     return <Navigate to="/unauthorized" replace />
   }
 
+  // 5. All clear
   return children
 }
 

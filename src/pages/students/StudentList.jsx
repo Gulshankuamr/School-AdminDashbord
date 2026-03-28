@@ -346,7 +346,7 @@ function StudentList() {
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Class</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Section</th>
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Mobile</th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                      {/* <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th> */}
                       <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Gender</th>
                       <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
@@ -414,7 +414,7 @@ function StudentList() {
                         </td>
 
                         {/* Status */}
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        {/* <td className="px-4 py-3 whitespace-nowrap">
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border ${
                             student.status === 1
                               ? 'bg-green-50 text-green-700 border-green-200'
@@ -423,7 +423,7 @@ function StudentList() {
                             <span className={`w-1.5 h-1.5 rounded-full ${student.status === 1 ? 'bg-green-500' : 'bg-red-400'}`}></span>
                             {student.status === 1 ? 'Active' : 'Inactive'}
                           </span>
-                        </td>
+                        </td> */}
 
                         {/* Gender */}
                         <td className="px-4 py-3 whitespace-nowrap">
